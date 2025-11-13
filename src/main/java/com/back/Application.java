@@ -1,13 +1,13 @@
-package com.moci_ddasoop_be;
+package com.back;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MociDdaSoopBeApplication {
+public class Application {
 
     public static void main(String[] args) {
-        SpringApplication.run(MociDdaSoopBeApplication.class, args);
+        SpringApplication.run(Application.class, args);
     }
 
 }

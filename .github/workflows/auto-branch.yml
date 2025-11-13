@@ -1,0 +1,38 @@
+name: Auto Branch from Issue
+
+on:
+  issues:
+    types: [ opened ]
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+  
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  
+      - name: Create branch from issue
+        run: |
+          issue_number=${{ github.event.issue.number }}
+          issue_title="${{ github.event.issue.title }}"
+
+          # 콜론(:) 앞 단어를 prefix로 추출
+          prefix=$(echo "$issue_title" | cut -d':' -f1 | tr -d '[:space:]')
+
+          branch_name="${prefix}/${issue_number}"
+
+          echo "📌 Creating branch: $branch_name from origin/dev"
+
+          git fetch origin dev
+          git checkout -b "$branch_name" origin/dev
+          git push origin "$branch_name"
