@@ -65,5 +65,5 @@ jobs:
       - name: 이슈를 프로젝트의 Backlog 컬럼에 추가
         uses: actions/add-to-project@v1.0.2
         with:
-          project-url: "https://github.com/orgs/prgrms-web-devcourse-final-project/projects/147"
+          project-url: "https://github.com/orgs/MOCI-ddasoop/projects/1"
           github-token: ${{ secrets.PROJECT_ACCESS_TOKEN }}

@@ -22,16 +22,16 @@ jobs:
         ports:
           - 6379:6379
 
-      mysql:
-        image: mysql:8
+      postgres:  # MYSQL 대신 PostgreSQL 사용
+        image: postgres:16
         ports:
-          - 3306:3306
+          - 5432:5432
         env:
-          MYSQL_ROOT_PASSWORD: root_pass
-          MYSQL_DATABASE: testdb
-        # MySQL 헬스체크, MySQL 실행 준비 중인 동안 스프링부트 실행을 방지
+          POSTGRES_DB: testdb
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD"
+          --health-cmd="pg_isready -U test"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
