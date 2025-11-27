@@ -52,6 +52,10 @@ jobs:
       - name: Create .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
 
+      # Gradle 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
       # Build (테스트 제외)
       - name: Build project
         run: ./gradlew clean build -x test
@@ -85,6 +89,10 @@ jobs:
 
       - name: Create .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
+
+      # Gradle 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
       - name: Build project
         run: ./gradlew clean build -x test
