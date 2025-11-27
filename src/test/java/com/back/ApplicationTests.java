@@ -1,10 +1,10 @@
-package com.moci_ddasoop_be;
+package com.back;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MociDdaSoopBeApplicationTests {
+class ApplicationTests {
 
     @Test
     void contextLoads() {
