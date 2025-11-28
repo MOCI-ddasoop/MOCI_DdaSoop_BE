@@ -19,7 +19,7 @@ public class Together extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "tilte", nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Column(name = "description")
