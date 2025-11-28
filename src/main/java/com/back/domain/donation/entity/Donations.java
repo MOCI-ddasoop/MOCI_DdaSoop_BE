@@ -23,16 +23,16 @@ public class Donations extends BaseEntity {
     private String description;
 
     @Column(name = "goal_amount")
-    private int goal_amount;
+    private int goalAmount;
 
     @Column(name = "current_amount")
-    private int current_amount;
+    private int currentAmount;
 
     @Column(name = "start_date")
-    private LocalDateTime start_date;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    private LocalDateTime end_date;
+    private LocalDateTime endDate;
 
     @Column(name = "status")
     private String status;

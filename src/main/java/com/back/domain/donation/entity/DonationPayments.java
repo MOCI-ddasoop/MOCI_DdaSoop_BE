@@ -26,5 +26,5 @@ public class DonationPayments extends BaseEntity {
     private int amount;
 
     @Column(name = "payment_method")
-    private String payment_method;
+    private String paymentMethod;
 }
