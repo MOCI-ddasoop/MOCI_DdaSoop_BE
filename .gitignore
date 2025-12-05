@@ -38,3 +38,6 @@ out/
 
 ### envorionment ###
 .env
+
+*.mv.db
+*.trace.db
