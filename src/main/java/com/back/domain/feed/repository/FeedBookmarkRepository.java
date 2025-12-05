@@ -58,12 +58,26 @@ public interface FeedBookmarkRepository extends JpaRepository<FeedBookmark, Long
     Long countByMemberId(Long memberId);
 
     /**
-     * 특정 피드의 모든 북마크 삭제
+     * 특정 피드에 대한 특정 회원의 북마크 삭제
+     * 사용 예: 회원이 북마크 취소 버튼을 누를 때
+     * @param feedId 피드 ID
+     * @param memberId 회원 ID
+     */
+    void deleteByFeedIdAndMemberId(Long feedId, Long memberId);
+
+    /**
+     * 특정 피드를 북마크한 모든 회원의 북마크 삭제
+     * 사용 예: 피드가 삭제될 때, 해당 피드를 북마크한 모든 사람의 북마크도 함께 제거
+     * @param feedId 피드 ID
+     * 예시: 피드100을 회원1,2,3이 북마크 → deleteByFeedId(100) → 3개 모두 삭제
      */
     void deleteByFeedId(Long feedId);
 
     /**
-     * 특정 회원의 모든 북마크 삭제
+     * 특정 회원이 북마크한 모든 피드의 북마크 삭제
+     * 사용 예: 회원 탈퇴 시, 해당 회원이 북마크한 모든 피드의 북마크 제거
+     * @param memberId 회원 ID
+     * 예시: 회원1이 피드100,200,300 북마크 → deleteByMemberId(1) → 3개 모두 삭제
      */
     void deleteByMemberId(Long memberId);
 }
