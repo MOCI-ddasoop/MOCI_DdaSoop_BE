@@ -27,13 +27,13 @@ public class FeedResponse {
     private List<FeedImageResponse> images;
     private List<String> tags;
     private FeedVisibility visibility;
-    
+
     // 카운트
     private Integer reactionCount;
     private Integer commentCount;
     private Integer bookmarkCount;
     
-    // 작성자 정보 (Member 엔티티 연결 후 추가)
+    // 작성자 정보 (Member 엔티티 연결 후 추가 - 수정 가능성 많음.)
     // private MemberSummaryResponse author;
     
     // 함께하기 정보 (Together 엔티티 연결 후 추가)

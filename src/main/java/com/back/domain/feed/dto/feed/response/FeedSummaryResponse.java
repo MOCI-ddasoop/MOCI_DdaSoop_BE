@@ -33,9 +33,9 @@ public class FeedSummaryResponse {
     private Integer bookmarkCount;
     
     // 작성자 정보, 멤버가 아직 없어서 주석 처리
-    // private Long authorId;
-    // private String authorNickname;
-    // private String authorProfileImage;
+    private Long authorId;
+    private String authorNickname;
+    private String authorProfileImage;
     
     private LocalDateTime createdAt;
 

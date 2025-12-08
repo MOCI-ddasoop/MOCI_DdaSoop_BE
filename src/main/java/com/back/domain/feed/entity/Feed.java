@@ -1,5 +1,7 @@
 package com.back.domain.feed.entity;
 
+import com.back.domain.member.entity.Member;
+import com.back.domain.together.entity.Together;
 import com.back.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,11 +20,11 @@ import java.util.List;
 @AllArgsConstructor
 public class Feed extends BaseEntity {
 
-    /*
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;                 // 작성자
-    */
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -46,17 +48,12 @@ public class Feed extends BaseEntity {
     @Column(nullable = false, length = 20)
     private FeedVisibility visibility;     // 피드 공개 범위
 
-    /*
+
     // 함께하기 인증 피드인 경우, 연결된 함께하기 모임 (null 가능)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "together_id")
     private Together together;
 
-    // 함께하기 카테고리 (null 가능)
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    private TogetherCategory category;
-    */
 
     // ========== 카운트 필드 ==========
     @Column(nullable = false)

@@ -1,6 +1,7 @@
 package com.back.domain.comment.entity;
 
 import com.back.domain.feed.entity.Feed;
+import com.back.domain.member.entity.Member;
 import com.back.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -19,11 +20,11 @@ import java.util.List;
 @AllArgsConstructor
 public class Comment extends BaseEntity {
 
-    /*
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;                 // 댓글 작성자
-    */
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "feed_id", nullable = false)
