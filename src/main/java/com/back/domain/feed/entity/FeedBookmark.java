@@ -1,5 +1,6 @@
 package com.back.domain.feed.entity;
 
+import com.back.domain.member.entity.Member;
 import com.back.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,11 +32,11 @@ import lombok.experimental.SuperBuilder;
 )
 public class FeedBookmark extends BaseEntity {
 
-    /*
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;                 // 북마크한 사용자
-    */
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "feed_id", nullable = false)

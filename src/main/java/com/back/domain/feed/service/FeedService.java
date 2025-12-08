@@ -23,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -159,9 +160,9 @@ public class FeedService {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
 
         // 권한 체크 (작성자만 수정 가능)
-        // if (!feed.getMember().getId().equals(currentMemberId)) {
-        //     throw new IllegalArgumentException(ErrorCode.FEED_FORBIDDEN.getMessage());
-        // }
+        if (!feed.getMember().getId().equals(currentMemberId)) {
+            throw new IllegalArgumentException(ErrorCode.FEED_FORBIDDEN.getMessage());
+        }
 
         // 내용 수정
         if (request.getContent() != null) {
@@ -210,9 +211,9 @@ public class FeedService {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
 
         // 권한 체크
-        // if (!feed.getMember().getId().equals(currentMemberId)) {
-        //     throw new IllegalArgumentException(ErrorCode.FEED_FORBIDDEN.getMessage());
-        // }
+        if (!feed.getMember().getId().equals(currentMemberId)) {
+            throw new IllegalArgumentException(ErrorCode.FEED_FORBIDDEN.getMessage());
+        }
 
         feed.delete();
         log.info("피드 삭제 완료 - ID: {}", feedId);
@@ -290,11 +291,9 @@ public class FeedService {
      */
     public List<FeedSummaryResponse> getPopularFeeds(int size) {
         Pageable pageable = PageRequest.of(0, size);
-        // LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        // List<Feed> feeds = feedRepository.findPopularFeedsSince(weekAgo, pageable);
-        
-        // 임시로 리액션 많은 순으로
-        List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByReactionCountDescCreatedAtDesc();
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        List<Feed> feeds = feedRepository.findPopularFeedsSince(weekAgo, pageable);
+
         
         return feeds.stream()
                 .limit(size)

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * 전역 예외 처리 핸들러 (간소화 버전)
+ * 전역 예외 처리 핸들러
  * 모든 컨트롤러에서 발생하는 예외를 일관된 형식으로 처리
  */
 @Slf4j
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
     ) {
         log.warn("Validation failed: {}", e.getMessage());
         
-        // 첫 번째 에러 메시지만 반환 (간소화)
+
         String errorMessage = e.getBindingResult().getFieldErrors().isEmpty()
                 ? ErrorCode.INVALID_INPUT_VALUE.getMessage()
                 : e.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
