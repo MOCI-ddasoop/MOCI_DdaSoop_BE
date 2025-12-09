@@ -28,8 +28,8 @@ public class Member extends BaseEntity {
     private String name;
 
     @NotBlank
-    @Size(min = 2, max = 20)
-    @Column(name = "nickname", nullable = false, unique = true, length = 20)
+    @Size(min = 2, max = 12)
+    @Column(name = "nickname", nullable = false, unique = true, length = 12)
     private String nickname;
 
     @Email
