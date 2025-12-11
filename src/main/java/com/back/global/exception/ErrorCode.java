@@ -47,7 +47,14 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED("FILE001", "파일 업로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     FILE_SIZE_EXCEEDED("FILE002", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST),
     FILE_INVALID_EXTENSION("FILE003", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
-    FILE_NOT_FOUND("FILE004", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+    FILE_NOT_FOUND("FILE004", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
+    // ========== 회원 (MEMBER) ==========
+    MEMBER_NOT_FOUND("MEMBER001", "회원을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    MEMBER_ALREADY_DELETED("MEMBER002", "이미 탈퇴한 회원입니다.", HttpStatus.BAD_REQUEST),
+    MEMBER_FORBIDDEN("MEMBER003", "회원 정보에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    MEMBER_EMAIL_DUPLICATE("MEMBER004", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
+    MEMBER_NICKNAME_DUPLICATE("MEMBER005", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
