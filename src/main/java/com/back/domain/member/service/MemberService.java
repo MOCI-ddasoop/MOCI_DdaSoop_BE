@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Random;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -17,12 +19,44 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int MEMBER_CODE_LENGTH = 8;
 
     public Member getMember(Long memberId) {
         return memberRepository.findByIdAndDeletedAtIsNull(memberId)
             .orElseThrow(() -> new IllegalArgumentException(
                 ErrorCode.MEMBER_NOT_FOUND.getMessage()
             ));
+    }
+
+    public Member getMemberByCode(String memberCode) {
+        return memberRepository.findByMemberCodeAndDeletedAtIsNull(memberCode)
+            .orElseThrow(() -> new IllegalArgumentException(
+                ErrorCode.MEMBER_NOT_FOUND.getMessage()
+            ));
+    }
+
+    public String generateMemberCode() {
+        Random random = new Random();
+        StringBuilder code = new StringBuilder(MEMBER_CODE_LENGTH);
+
+        for (int i = 0; i < MEMBER_CODE_LENGTH; i++) {
+            int index = random.nextInt(CHARACTERS.length());
+            code.append(CHARACTERS.charAt(index));
+        }
+
+        String generatedCode = code.toString();
+
+        while (memberRepository.existsByMemberCodeAndDeletedAtIsNull(generatedCode)) {
+            code = new StringBuilder(MEMBER_CODE_LENGTH);
+            for (int i = 0; i < MEMBER_CODE_LENGTH; i++) {
+                int index = random.nextInt(CHARACTERS.length());
+                code.append(CHARACTERS.charAt(index));
+            }
+            generatedCode = code.toString();
+        }
+
+        return generatedCode;
     }
 
     public MemberInfoResponse getMemberInfo(Long memberId) {
@@ -42,7 +76,7 @@ public class MemberService {
     public void updateMember(Long memberId, MemberUpdateRequest request) {
         Member member = getMember(memberId);
 
-        if (request.getEmail() != null) {
+        if (request.getEmail() != null && !member.getEmail().equals(request.getEmail())) {
             if (checkEmail(request.getEmail())) {
                 throw new IllegalArgumentException(
                     ErrorCode.MEMBER_EMAIL_DUPLICATE.getMessage()
@@ -51,7 +85,7 @@ public class MemberService {
             member.updateEmail(request.getEmail());
         }
 
-        if (request.getNickname() != null) {
+        if (request.getNickname() != null && !member.getNickname().equals(request.getNickname())) {
             if (checkNickname(request.getNickname())) {
                 throw new IllegalArgumentException(
                     ErrorCode.MEMBER_NICKNAME_DUPLICATE.getMessage()
@@ -71,6 +105,13 @@ public class MemberService {
     @Transactional
     public void withdrawMember(Long memberId, String reason) {
         Member member = getMember(memberId);
+
+        if (member.isDeleted()) {
+            throw new IllegalArgumentException(
+                ErrorCode.MEMBER_ALREADY_DELETED.getMessage()
+            );
+        }
+
         member.delete();
         memberRepository.save(member);
         log.info("회원 탈퇴 완료 - ID: {}, 사유: {}", memberId, reason);
