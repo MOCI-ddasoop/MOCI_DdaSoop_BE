@@ -139,16 +139,42 @@ public class FeedService {
 
     /**
      * 피드 무한 스크롤 조회
+     * hasNext 정보를 포함한 커서 기반 페이징
      */
-    public List<FeedSummaryResponse> getFeedListInfiniteScroll(Long lastFeedId) {
+    public InfiniteScrollResponse<FeedSummaryResponse> getFeedListInfiniteScroll(
+            Long lastFeedId, 
+            Integer size
+    ) {
+        // 기본 size는 20
+        int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
         
+        // hasNext 판단을 위해 요청 size + 1개를 가져옴
         List<Feed> feeds = feedRepository
-                .findTop20ByIdLessThanAndDeletedAtIsNullOrderByIdDesc(cursorId);
-
-        return feeds.stream()
+                .findTop21ByIdLessThanAndDeletedAtIsNullOrderByIdDesc(cursorId);
+        
+        // hasNext 계산: 요청한 개수보다 많이 조회되면 다음 페이지 존재
+        boolean hasNext = feeds.size() > requestedSize;
+        
+        // 실제 반환할 데이터는 요청한 size만큼만
+        List<Feed> actualFeeds = hasNext ? feeds.subList(0, requestedSize) : feeds;
+        
+        // DTO 변환
+        List<FeedSummaryResponse> responses = actualFeeds.stream()
                 .map(FeedSummaryResponse::from)
                 .collect(Collectors.toList());
+        
+        // nextCursor: 마지막 아이템의 ID (없으면 null)
+        Long nextCursor = actualFeeds.isEmpty() ? null : 
+                          actualFeeds.get(actualFeeds.size() - 1).getId();
+        
+        return InfiniteScrollResponse.<FeedSummaryResponse>builder()
+                .content(responses)
+                .nextCursor(nextCursor)
+                .hasNext(hasNext)
+                .size(responses.size())
+                .requestedSize(requestedSize)
+                .build();
     }
 
     /**

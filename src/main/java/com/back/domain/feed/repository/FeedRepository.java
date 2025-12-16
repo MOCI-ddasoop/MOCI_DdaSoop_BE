@@ -36,16 +36,18 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     // ========== 무한 스크롤 (커서 기반 페이징) ==========
 
     /**
-     * 무한 스크롤: ID 기준 (최신순, 최대 20개)
+     * 무한 스크롤: ID 기준 (최신순, 최대 21개)
+     * ⚠️ hasNext 판단을 위해 21개를 가져옴 (실제로는 20개만 반환)
      * 사용 예: 모바일 앱 피드 스크롤
      * @param lastFeedId 마지막으로 조회한 피드 ID (첫 조회면 Long.MAX_VALUE)
-     * @return 최대 20개 피드 리스트
+     * @return 최대 21개 피드 리스트
      * 
      * 동작 원리:
-     * - 첫 조회: lastFeedId = Long.MAX_VALUE → ID가 큰 순서대로 20개
-     * - 두 번째: lastFeedId = 980 → 980보다 작은 ID 중 20개 (979, 978, ...)
+     * - 첫 조회: lastFeedId = Long.MAX_VALUE → ID가 큰 순서대로 21개
+     * - 두 번째: lastFeedId = 980 → 980보다 작은 ID 중 21개 (979, 978, ...)
+     * - 21개를 가져와서 21번째가 있으면 hasNext = true
      */
-    List<Feed> findTop20ByIdLessThanAndDeletedAtIsNullOrderByIdDesc(Long lastFeedId);
+    List<Feed> findTop21ByIdLessThanAndDeletedAtIsNullOrderByIdDesc(Long lastFeedId);
 
     /**
      * 무한 스크롤: 생성일 기준 (최신순, 최대 20개)
