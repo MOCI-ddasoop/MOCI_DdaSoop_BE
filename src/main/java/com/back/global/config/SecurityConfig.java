@@ -15,9 +15,13 @@ public class SecurityConfig {
         http
             // CSRF 비활성화 (개발 단계)
             .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers // h2-console 사용을 위해 frameOptions 비활성화
+                        .frameOptions(frame -> frame.disable())
+                )
             
             // 모든 요청 허용
             .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().permitAll()
             );
 
