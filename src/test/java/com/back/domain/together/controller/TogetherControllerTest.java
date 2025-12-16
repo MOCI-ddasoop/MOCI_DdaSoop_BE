@@ -46,7 +46,7 @@ public class TogetherControllerTest {
     {
       "title": "주말 플로깅 같이 해요",
       "description": "한강에서 플로깅 하실 분 모집합니다",
-      "category": "category1",
+      "category": "PLOGGING",
       "mode": "OFFLINE",
       "capacity": 10,
       "startDate": "2025-01-20",
