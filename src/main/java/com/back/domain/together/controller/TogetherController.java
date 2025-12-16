@@ -2,7 +2,6 @@ package com.back.domain.together.controller;
 
 import com.back.domain.together.dto.request.TogetherRequest;
 import com.back.domain.together.dto.response.TogetherResponse;
-import com.back.domain.together.entity.Together;
 import com.back.domain.together.service.TogetherService;
 import com.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,15 +10,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import jdk.jfr.Description;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Description;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/together")
+@RequestMapping("/api/v1/together")
 @RequiredArgsConstructor
 public class TogetherController {
 
@@ -61,8 +60,8 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherResponse>> getTogether(
             @PathVariable Long id
     ) {
-        TogetherResponse listId = togetherService.getTogether(id);
-        return ResponseEntity.ok().body(RsData.success("함께하기 상세 조회 성공", listId));
+        TogetherResponse response = togetherService.getTogether(id);
+        return ResponseEntity.ok().body(RsData.success("함께하기 상세 조회 성공", response));
     }
 
 

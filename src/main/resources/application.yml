@@ -10,4 +10,4 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: create # 재시작마다 테이블 초기화 (개발용)

@@ -5,7 +5,7 @@ import lombok.NonNull;
 
 public record RsData<T> (
         @NonNull String resultCode,
-//        @JsonIgnore int statusCode,
+//        @JsonIgnore int statusCode, //TODO: 추후에 수정
         @NonNull String msg,
         @NonNull T data
 ) {

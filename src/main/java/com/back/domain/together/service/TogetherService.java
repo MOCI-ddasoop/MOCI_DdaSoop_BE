@@ -26,14 +26,14 @@ public class TogetherService {
 
     public TogetherResponse getTogether(Long id) {
         Together together = togetherRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("함께하기 없음"));
+                .orElseThrow(() -> new IllegalArgumentException(id+"번 함께하기 없음"));
         return TogetherResponse.from(together);
     }
 
     public TogetherResponse create(TogetherRequest request, Long organizerId) {
 
         Member organizer = memberRepository.findById(organizerId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new IllegalArgumentException("회원번호:"+organizerId+"회원 없음"));
 
         Together together = Together.builder()
                 .title(request.getTitle())
