@@ -38,9 +38,14 @@ public class InfiniteScrollResponse<T> {
     private boolean hasNext;
 
     /**
-     * 현재 페이지의 데이터 개수
+     * 현재 페이지의 실제 데이터 개수
      */
     private int size;
+
+    /**
+     * 요청한 페이지 크기 (기본 20)
+     */
+    private int requestedSize;
 
     /**
      * 정적 팩토리 메서드 - 제네릭 타입 추론을 위해
@@ -55,6 +60,7 @@ public class InfiniteScrollResponse<T> {
                 .nextCursor(nextCursor)
                 .hasNext(hasNext)
                 .size(content.size())
+                .requestedSize(20)  // 기본값
                 .build();
     }
 }
