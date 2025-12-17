@@ -24,10 +24,12 @@ public class Together extends BaseEntity {
     private String description;
 
     @Column(name = "category")
-    private String category;
+    @Enumerated(EnumType.STRING)
+    private TogetherCategory category;
 
     @Column(name = "mode")
-    private String mode;
+    @Enumerated(EnumType.STRING)
+    private TogetherMode mode;
 
     @Column(name = "capacity")
     private int capacity;
@@ -38,10 +40,11 @@ public class Together extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "organizer_id")
-//    private Member member;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizer_id")
+    private Member member;
 
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private TogetherStatus status;
 }
