@@ -31,9 +31,13 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         // 1. 동적 조건 생성
         BooleanBuilder builder = createBaseCondition(condition);
 
-        // 2. 쿼리 실행 (Content 조회)
+        // 2. 쿼리 실행 (Content 조회 + Fetch Join, N+1 문제 해결)
         List<Feed> content = queryFactory
                 .selectFrom(feed)
+                .distinct()  // 중복 제거 (컬렉션 fetch join 시 필요)
+                .leftJoin(feed.member).fetchJoin()        // Member Fetch Join (N+1 방지)
+                .leftJoin(feed.images).fetchJoin()        // FeedImage Fetch Join (N+1 방지)
+                .leftJoin(feed.together).fetchJoin()      // Together Fetch Join (N+1 방지)
                 .where(builder)
                 .orderBy(getOrderSpecifier(condition.getSortBy()))
                 .offset(pageable.getOffset())
