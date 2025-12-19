@@ -363,4 +363,77 @@ public class FeedController {
 
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+            summary = "내가 북마크한 피드 목록 조회",
+            description = "특정 회원이 북마크한 피드 목록을 페이징 방식으로 조회합니다. (내가 저장한 게시물)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Page.class))
+            )
+    })
+    @GetMapping("/bookmarks/me")
+    public ResponseEntity<Page<FeedSummaryResponse>> getMyBookmarkedFeeds(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "20")
+            @RequestParam(defaultValue = "20") int size
+            // @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long currentMemberId = 1L;  // 임시
+
+        Page<FeedSummaryResponse> response = feedService.getBookmarkedFeeds(currentMemberId, page, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 회원이 북마크한 피드 목록 조회",
+            description = "특정 회원이 북마크한 피드 목록을 페이징 방식으로 조회합니다. (다른 사람의 북마크 목록)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Page.class))
+            )
+    })
+    @GetMapping("/bookmarks/members/{memberId}")
+    public ResponseEntity<Page<FeedSummaryResponse>> getMemberBookmarkedFeeds(
+            @Parameter(description = "회원 ID", required = true, example = "1")
+            @PathVariable Long memberId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "20")
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Page<FeedSummaryResponse> response = feedService.getBookmarkedFeeds(memberId, page, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "내 북마크 개수 조회",
+            description = "현재 로그인한 회원이 북마크한 피드의 총 개수를 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Long.class))
+            )
+    })
+    @GetMapping("/bookmarks/me/count")
+    public ResponseEntity<Long> getMyBookmarkCount(
+            // @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long currentMemberId = 1L;  // 임시
+
+        Long count = feedService.getBookmarkCount(currentMemberId);
+
+        return ResponseEntity.ok(count);
+    }
 }

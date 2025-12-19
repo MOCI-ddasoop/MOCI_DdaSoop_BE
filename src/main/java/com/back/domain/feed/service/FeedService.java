@@ -340,6 +340,23 @@ public class FeedService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 특정 회원이 북마크한 피드 목록 조회 (페이징)
+     */
+    public Page<FeedSummaryResponse> getBookmarkedFeeds(Long memberId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Feed> feeds = feedBookmarkRepository.findBookmarkedFeedsByMemberId(memberId, pageable);
+
+        return feeds.map(FeedSummaryResponse::from);
+    }
+
+    /**
+     * 특정 회원의 북마크 개수
+     */
+    public Long getBookmarkCount(Long memberId) {
+        return feedBookmarkRepository.countByMemberId(memberId);
+    }
+
     // ========== Private 헬퍼 메서드 ==========
 
     /**
