@@ -1,0 +1,23 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ""
+            client-secret: ""
+          kakao:
+            client-id: ""
+            client-secret: ""
+          naver:
+            client-id: ""
+            client-secret: ""
+
+jwt:
+  secret: test-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-test
+  access-token-validity: 3600000
+  refresh-token-validity: 604800000
+

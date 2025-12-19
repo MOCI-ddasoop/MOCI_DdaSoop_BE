@@ -3,12 +3,16 @@ package com.back.global.config;
 import com.back.global.security.JwtAuthenticationFilter;
 import com.back.global.security.OAuth2AuthenticationSuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StringUtils;
@@ -19,8 +23,13 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    @Autowired(required = false)
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    private final ApplicationContext applicationContext;
+    
+    @Autowired(required = false)
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
@@ -37,10 +46,14 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            );
+        
+        if (jwtAuthenticationFilter != null) {
+            http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        }
 
-        if (hasOAuth2ClientConfigured()) {
+        if (hasOAuth2ClientConfigured() && oAuth2AuthenticationSuccessHandler != null 
+                && hasOAuth2Bean()) {
             http.oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2AuthenticationSuccessHandler)
             );
@@ -63,5 +76,17 @@ public class SecurityConfig {
         return StringUtils.hasText(googleClientId) 
                 || StringUtils.hasText(kakaoClientId) 
                 || StringUtils.hasText(naverClientId);
+    }
+
+    /** OAuth2 관련 빈 존재 여부 확인 */
+    private boolean hasOAuth2Bean() {
+        if (applicationContext == null) {
+            return false;
+        }
+        try {
+            return applicationContext.getBean(ClientRegistrationRepository.class) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
