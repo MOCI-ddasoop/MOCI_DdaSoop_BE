@@ -1,5 +1,6 @@
 package com.back.domain.feed.repository;
 
+import com.back.domain.feed.entity.Feed;
 import com.back.domain.feed.entity.FeedBookmark;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,77 +8,31 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
-
+/**
+ * FeedBookmark Repository ( Spring Data JPA 기반)
+ */
 public interface FeedBookmarkRepository extends JpaRepository<FeedBookmark, Long> {
 
     /**
-     * 특정 피드에 특정 회원이 북마크했는지 확인
-     */
-    Optional<FeedBookmark> findByFeedIdAndMemberId(Long feedId, Long memberId);
-
-    /**
-     * 특정 피드의 북마크 여부 확인
+     * 특정 회원이 특정 피드를 북마크했는지 확인
      */
     boolean existsByFeedIdAndMemberId(Long feedId, Long memberId);
 
     /**
-     * 특정 피드의 북마크 개수
-     */
-    Long countByFeedId(Long feedId);
-
-    /**
-     * 특정 회원이 북마크한 피드 목록 (페이징)
-     */
-    @Query("SELECT fb.feed FROM FeedBookmark fb WHERE fb.member.id = :memberId " +
-            "AND fb.feed.deletedAt IS NULL ORDER BY fb.createdAt DESC")
-    Page<Object> findFeedsByMemberId(@Param("memberId") Long memberId, Pageable pageable);
-
-    /**
-     * 특정 회원이 북마크한 피드 목록 (무한 스크롤)
-     */
-    @Query("SELECT fb.feed FROM FeedBookmark fb WHERE fb.member.id = :memberId " +
-            "AND fb.id < :lastBookmarkId AND fb.feed.deletedAt IS NULL " +
-            "ORDER BY fb.createdAt DESC")
-    List<Object> findFeedsByMemberIdWithCursor(
-            @Param("memberId") Long memberId,
-            @Param("lastBookmarkId") Long lastBookmarkId,
-            Pageable pageable
-    );
-
-    /**
-     * 특정 회원이 북마크한 피드 ID 목록
-     */
-    @Query("SELECT fb.feed.id FROM FeedBookmark fb WHERE fb.member.id = :memberId")
-    List<Long> findFeedIdsByMemberId(@Param("memberId") Long memberId);
-
-    /**
-     * 특정 회원의 북마크 개수
-     */
-    Long countByMemberId(Long memberId);
-
-    /**
-     * 특정 피드에 대한 특정 회원의 북마크 삭제
-     * 사용 예: 회원이 북마크 취소 버튼을 누를 때
-     * @param feedId 피드 ID
-     * @param memberId 회원 ID
+     * 특정 회원의 특정 피드 북마크 삭제
      */
     void deleteByFeedIdAndMemberId(Long feedId, Long memberId);
 
     /**
-     * 특정 피드를 북마크한 모든 회원의 북마크 삭제
-     * 사용 예: 피드가 삭제될 때, 해당 피드를 북마크한 모든 사람의 북마크도 함께 제거
-     * @param feedId 피드 ID
-     * 예시: 피드100을 회원1,2,3이 북마크 → deleteByFeedId(100) → 3개 모두 삭제
+     * 특정 회원이 북마크한 피드 목록 조회 (페이징)
      */
-    void deleteByFeedId(Long feedId);
+    @Query("SELECT fb.feed FROM FeedBookmark fb " +
+           "WHERE fb.member.id = :memberId AND fb.feed.deletedAt IS NULL " +
+           "ORDER BY fb.createdAt DESC")
+    Page<Feed> findBookmarkedFeedsByMemberId(@Param("memberId") Long memberId, Pageable pageable);
 
     /**
-     * 특정 회원이 북마크한 모든 피드의 북마크 삭제
-     * 사용 예: 회원 탈퇴 시, 해당 회원이 북마크한 모든 피드의 북마크 제거
-     * @param memberId 회원 ID
-     * 예시: 회원1이 피드100,200,300 북마크 → deleteByMemberId(1) → 3개 모두 삭제
+     * 특정 회원이 북마크한 피드 개수 조회
      */
-    void deleteByMemberId(Long memberId);
+    Long countByMemberId(Long memberId);
 }

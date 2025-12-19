@@ -25,9 +25,9 @@ public class FeedImageRequest {
     @NotNull(message = "이미지 세로 크기는 필수입니다.")
     private Integer height;
 
-    private Integer displayOrder;  // null이면 자동으로 순서
+    private Integer displayOrder;  // null이면 자동으로 순서 지정
 
-    private Long fileSize;  // 선택사항
+    private Long fileSize;  // 선택사항, 필요 시
 
-    private String originalFileName;  // 선택사항
+    private String originalFileName;  // 선택사항, 필요 시
 }

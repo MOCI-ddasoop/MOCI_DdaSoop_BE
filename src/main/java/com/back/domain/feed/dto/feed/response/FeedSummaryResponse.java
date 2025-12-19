@@ -31,11 +31,16 @@ public class FeedSummaryResponse {
     private Integer reactionCount;
     private Integer commentCount;
     private Integer bookmarkCount;
-    
-    // 작성자 정보, 멤버가 아직 없어서 주석 처리
+
+    // 작성자 정보
     private Long authorId;
+    private String authorName;
     private String authorNickname;
     private String authorProfileImage;
+    
+    // 함께하기 정보
+    private Long togetherId;
+    private String togetherTitle;
     
     private LocalDateTime createdAt;
 
@@ -53,9 +58,12 @@ public class FeedSummaryResponse {
                 .reactionCount(feed.getReactionCount())
                 .commentCount(feed.getCommentCount())
                 .bookmarkCount(feed.getBookmarkCount())
-                // .authorId(feed.getMember().getId())
-                // .authorNickname(feed.getMember().getNickname())
-                // .authorProfileImage(feed.getMember().getProfileImage())
+                .authorId(feed.getMember().getId())
+                .authorName(feed.getMember().getName())
+                .authorNickname(feed.getMember().getNickname())
+                .authorProfileImage(feed.getMember().getProfileImageUrl())
+                .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
+                .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
                 .createdAt(feed.getCreatedAt())
                 .build();
     }
