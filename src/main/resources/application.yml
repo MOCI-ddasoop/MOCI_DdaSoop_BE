@@ -72,3 +72,7 @@ jwt:
 app:
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/auth/callback}
+
+  jpa:
+    hibernate:
+      ddl-auto: create # 재시작마다 테이블 초기화 (개발용)

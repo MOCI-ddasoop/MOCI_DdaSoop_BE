@@ -51,6 +51,13 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .headers(headers -> headers // h2-console 사용을 위해 frameOptions 비활성화
+                        .frameOptions(frame -> frame.disable())
+                )
+            
+            // 모든 요청 허용
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().permitAll()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()));
