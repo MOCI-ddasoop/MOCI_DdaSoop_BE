@@ -22,20 +22,18 @@ import java.util.List;
 @Builder
 public class Member extends BaseEntity {
 
-    @NotBlank
+    // 소셜 로그인에서 정보가 없을 수 있으므로 nullable (나중에 추가 수집 가능)
     @Size(min = 1, max = 50)
-    @Column(name = "name", nullable = false, length = 50)
+    @Column(name = "name", nullable = true, length = 50)
     private String name;
 
-    @NotBlank
     @Size(min = 2, max = 12)
-    @Column(name = "nickname", nullable = false, unique = true, length = 12)
+    @Column(name = "nickname", nullable = true, unique = true, length = 12)
     private String nickname;
 
     @Email
-    @NotBlank
     @Size(max = 100)
-    @Column(name = "email", nullable = false, unique = true, length = 100)
+    @Column(name = "email", nullable = true, unique = true, length = 100)
     private String email;
 
     @NotBlank
@@ -68,7 +66,6 @@ public class Member extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // ========== 비즈니스 로직 메서드 ==========
     public void updateProfileImage(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
     }
@@ -89,38 +86,30 @@ public class Member extends BaseEntity {
         return this.role == MemberRole.ADMIN;
     }
 
-    // ========== Soft Delete 메서드 ==========
-
-    /** 회원 탈퇴 (Soft Delete) - deletedAt에 삭제 시점 기록 */
+    /** Soft Delete */
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }
 
-    /** 회원 복구 - deletedAt을 null로 설정하여 활성화 */
     public void restore() {
         this.deletedAt = null;
     }
 
-    /** 삭제 여부 확인 */
     public boolean isDeleted() {
         return this.deletedAt != null;
     }
 
-    // ========== 소셜 로그인 메서드 ==========
-
-    /** 소셜 계정 추가 및 최근 로그인 정보 업데이트 */
+    /** 소셜 계정 추가 */
     public void addSocialAccount(MemberSocialAccount socialAccount) {
         this.socialAccounts.add(socialAccount);
         socialAccount.updateLastLogin();
         this.lastLoginProvider = socialAccount.getProvider();
     }
 
-    /** 최근 로그인 방식 업데이트 */
     public void updateLastLoginProvider(SocialProvider provider) {
         this.lastLoginProvider = provider;
     }
 
-    /** 특정 소셜 로그인 제공자로 가입했는지 확인 */
     public boolean hasSocialAccount(SocialProvider provider) {
         return this.socialAccounts.stream()
             .anyMatch(account -> account.getProvider() == provider);
