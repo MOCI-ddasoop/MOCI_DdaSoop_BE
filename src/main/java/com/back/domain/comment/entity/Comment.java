@@ -1,5 +1,6 @@
 package com.back.domain.comment.entity;
 
+import com.back.domain.donation.entity.Donations;
 import com.back.domain.feed.entity.Feed;
 import com.back.domain.member.entity.Member;
 import com.back.domain.together.entity.Together;
@@ -41,10 +42,10 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "together_id")
     private Together together;             // Together 댓글인 경우
     
-    // 미래 확장: Donation 등 다른 도메인 추가 가능
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "donation_id")
-    // private Donation donation;
+    // Donations 등 다른 도메인 추가 가능
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donation_id")
+    private Donations donation;
 
     @Column(length = 1000, nullable = false)
     private String content;                // 댓글 내용 (최대 1000자)

@@ -85,6 +85,46 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      */
     List<Comment> findTop10ByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long feedId);
 
+    // ========== Together의 댓글 조회 ==========
+
+    /**
+     * 특정 Together의 최상위 댓글만 조회 (삭제된 것 제외, 최신순)
+     */
+    List<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(Long togetherId);
+
+    /**
+     * 특정 Together의 최상위 댓글 조회 (페이징)
+     */
+    Page<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNull(Long togetherId, Pageable pageable);
+
+    /**
+     * 특정 Together의 전체 댓글 개수 (대댓글 포함)
+     */
+    Long countByTogetherId(Long togetherId);
+
+    /**
+     * 특정 Together의 최상위 댓글 개수만
+     */
+    Long countByTogetherIdAndParentIsNullAndDeletedAtIsNull(Long togetherId);
+
+    /**
+     * 특정 Together의 인기 댓글 (리액션 많은 순)
+     */
+    @Query("SELECT c FROM Comment c WHERE c.together.id = :togetherId AND c.parent IS NULL " +
+            "AND c.deletedAt IS NULL ORDER BY c.reactionCount DESC, c.createdAt ASC")
+    List<Comment> findPopularCommentsByTogetherId(@Param("togetherId") Long togetherId, Pageable pageable);
+
+    /**
+     * 특정 Together의 최신 댓글 N개
+     */
+    List<Comment> findTop10ByTogetherIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long togetherId);
+
+    /**
+     * 특정 Together의 모든 댓글 삭제 (Soft Delete)
+     */
+    @Query("UPDATE Comment c SET c.deletedAt = CURRENT_TIMESTAMP WHERE c.together.id = :togetherId")
+    void softDeleteByTogetherId(@Param("togetherId") Long togetherId);
+
     // ========== 삭제 관련 ==========
 
     /**
