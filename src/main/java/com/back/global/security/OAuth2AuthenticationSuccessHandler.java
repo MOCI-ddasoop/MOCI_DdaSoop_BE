@@ -6,6 +6,7 @@ import com.back.domain.member.entity.SocialProvider;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.SocialLoginService;
 import com.back.domain.member.util.OAuth2UserInfoFactory;
+import com.back.global.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final SocialLoginService socialLoginService;
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     @Value("${app.oauth2.redirect-uri:http://localhost:3000/auth/callback}")
     private String redirectUri;
@@ -47,6 +49,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             OAuth2UserInfo userInfo = OAuth2UserInfoFactory.of(provider, oAuth2User);
             Member member = socialLoginService.findOrCreateMember(userInfo);
             String accessToken = authService.loginAndGetAccessToken(member.getId(), response);
+
+            // 최근 로그인 방식을 쿠키에 저장
+            cookieUtil.setLastLoginProviderCookie(response, provider.name());
 
             String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                     .queryParam("accessToken", accessToken)

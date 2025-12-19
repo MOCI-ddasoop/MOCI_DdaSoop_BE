@@ -60,7 +60,7 @@ public class SecurityConfig {
                     .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().permitAll()
             )
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         return http.build();
     }

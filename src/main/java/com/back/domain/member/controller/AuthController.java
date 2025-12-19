@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -117,7 +116,7 @@ public class AuthController {
 
     @Operation(
         summary = "최근 로그인 방식 조회",
-        description = "세션에 저장된 최근 로그인 방식을 조회합니다. 로그인하지 않은 상태에서도 이전 로그인 기록이 있으면 표시됩니다."
+        description = "쿠키에 저장된 최근 로그인 방식을 조회합니다. 로그인하지 않은 상태에서도 이전 로그인 기록이 있으면 표시됩니다."
     )
     @ApiResponses({
         @ApiResponse(
@@ -128,9 +127,9 @@ public class AuthController {
     })
     @GetMapping("/last-login-provider")
     public ResponseEntity<LastLoginProviderResponse> getLastLoginProvider(
-        HttpSession session
+        HttpServletRequest request
     ) {
-        String provider = (String) session.getAttribute("lastLoginProvider");
+        String provider = cookieUtil.getLastLoginProviderFromCookie(request);
 
         if (provider != null) {
             return ResponseEntity.ok(LastLoginProviderResponse.from(provider));
