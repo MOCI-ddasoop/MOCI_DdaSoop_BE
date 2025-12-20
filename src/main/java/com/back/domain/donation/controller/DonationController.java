@@ -21,7 +21,7 @@ import java.util.List;
 @RequestMapping("/api/v1/donation")
 @RequiredArgsConstructor
 public class DonationController {
-    private  final DonationService donationService;
+    private final DonationService donationService;
 
     @Operation(summary = "전체 후원 조회")
     @ApiResponse(
