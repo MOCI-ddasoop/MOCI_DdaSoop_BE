@@ -91,26 +91,40 @@ public class CommentResponse {
 
     /**
      * Entity -> DTO 변환 (현재 사용자의 리액션 정보 포함)
+     * 비효율적인 객체 재생성 방지 - 직접 빌더로 생성
      */
     public static CommentResponse from(Comment comment, boolean isReacted) {
-        CommentResponse response = from(comment);
         return CommentResponse.builder()
-                .id(response.getId())
-                .commentType(response.getCommentType())
-                .content(response.getContent())
-                .authorId(response.getAuthorId())
-                .authorName(response.getAuthorName())
-                .authorNickname(response.getAuthorNickname())
-                .authorProfileImage(response.getAuthorProfileImage())
-                .targetId(response.getTargetId())
-                .parentId(response.getParentId())
-                .isReply(response.isReply())
-                .replies(response.getReplies())
-                .replyCount(response.getReplyCount())
-                .reactionCount(response.getReactionCount())
+                .id(comment.getId())
+                .commentType(comment.getCommentType())
+                .content(comment.getContent())
+                // 작성자 정보
+                .authorId(comment.getMember().getId())
+                .authorName(comment.getMember().getName())
+                .authorNickname(comment.getMember().getNickname())
+                .authorProfileImage(comment.getMember().getProfileImageUrl())
+                // 대상 엔티티
+                .targetId(comment.getTargetEntityId())
+                // 부모 댓글
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .isReply(comment.isReply())
+                // 대댓글 (최상위 댓글인 경우만)
+                .replies(comment.isTopLevelComment() 
+                    ? comment.getReplies().stream()
+                        .filter(reply -> !reply.isDeleted())
+                        .map(CommentResponse::from)
+                        .collect(Collectors.toList())
+                    : null)
+                .replyCount(comment.isTopLevelComment() 
+                    ? (int) comment.getReplies().stream()
+                        .filter(reply -> !reply.isDeleted())
+                        .count()
+                    : null)
+                // 카운트
+                .reactionCount(comment.getReactionCount())
                 .isReacted(isReacted)
-                .createdAt(response.getCreatedAt())
-                .updatedAt(response.getUpdatedAt())
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
                 .build();
     }
 

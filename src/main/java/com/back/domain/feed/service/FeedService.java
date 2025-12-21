@@ -125,9 +125,8 @@ public class FeedService {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        // hasNext 판단을 위해 21개 조회
-        List<Feed> feeds = feedRepository
-                .findTop21ByIdLessThanAndDeletedAtIsNullOrderByIdDesc(cursorId);
+        // 동적 limit 지원 (requestedSize + 1)
+        List<Feed> feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
 
         return createInfiniteScrollResponse(feeds, requestedSize);
     }
@@ -143,8 +142,8 @@ public class FeedService {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        List<Feed> feeds = feedRepository
-                .findTop21ByMemberIdAndIdLessThanAndDeletedAtIsNullOrderByIdDesc(memberId, cursorId);
+        // 동적 limit 지원 (requestedSize + 1)
+        List<Feed> feeds = feedRepository.findMemberFeedsForInfiniteScroll(memberId, cursorId, requestedSize + 1);
 
         return createInfiniteScrollResponse(feeds, requestedSize);
     }
@@ -160,8 +159,8 @@ public class FeedService {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        List<Feed> feeds = feedRepository
-                .findTop21ByTogetherIdAndIdLessThanAndDeletedAtIsNullOrderByIdDesc(togetherId, cursorId);
+        // 동적 limit 지원 (requestedSize + 1)
+        List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(togetherId, cursorId, requestedSize + 1);
 
         return createInfiniteScrollResponse(feeds, requestedSize);
     }
@@ -305,11 +304,14 @@ public class FeedService {
      * 인기 피드 조회 (최근 7일 기준, QueryDSL)
      */
     public List<FeedSummaryResponse> getPopularFeeds(int size) {
+        // size 검증 추가 (최대 50개)
+        int validatedSize = Math.min(Math.max(size, 1), 50);
+        
         FeedSearchCondition condition = FeedSearchCondition.builder()
                 .startDate(LocalDateTime.now().minusDays(7))  // 최근 7일
                 .build();
 
-        List<Feed> feeds = feedRepository.findPopularFeedsWithCondition(condition, size);
+        List<Feed> feeds = feedRepository.findPopularFeedsWithCondition(condition, validatedSize);
 
         return feeds.stream()
                 .map(FeedSummaryResponse::from)
@@ -320,10 +322,13 @@ public class FeedService {
      * 댓글 많은 피드 Top N
      */
     public List<FeedSummaryResponse> getMostCommentedFeeds(int size) {
+        // size 검증 추가 (최대 50개)
+        int validatedSize = Math.min(Math.max(size, 1), 50);
+        
         List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByCommentCountDescCreatedAtDesc();
 
         return feeds.stream()
-                .limit(size)
+                .limit(validatedSize)
                 .map(FeedSummaryResponse::from)
                 .collect(Collectors.toList());
     }
@@ -332,10 +337,13 @@ public class FeedService {
      * 북마크 많은 피드 Top N
      */
     public List<FeedSummaryResponse> getMostBookmarkedFeeds(int size) {
+        // size 검증 추가 (최대 50개)
+        int validatedSize = Math.min(Math.max(size, 1), 50);
+        
         List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByBookmarkCountDescCreatedAtDesc();
 
         return feeds.stream()
-                .limit(size)
+                .limit(validatedSize)
                 .map(FeedSummaryResponse::from)
                 .collect(Collectors.toList());
     }

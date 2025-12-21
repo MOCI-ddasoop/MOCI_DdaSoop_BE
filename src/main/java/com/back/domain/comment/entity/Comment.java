@@ -140,7 +140,7 @@ public class Comment extends BaseEntity {
         int targetCount = 0;
         if (feed != null) targetCount++;
         if (together != null) targetCount++;
-        // if (donation != null) targetCount++;  // 미래 확장
+        if (donation != null) targetCount++;
         
         if (targetCount != 1) {
             throw new IllegalStateException(
@@ -166,10 +166,12 @@ public class Comment extends BaseEntity {
                 }
                 break;
             case DONATION:
-                // 미래 확장
-                throw new IllegalStateException(
-                    "DONATION comment type is not supported yet"
-                );
+                if (donation == null) {
+                    throw new IllegalStateException(
+                        "CommentType is DONATION but donation entity is null"
+                    );
+                }
+                break;
             default:
                 throw new IllegalStateException(
                     "Unknown comment type: " + commentType

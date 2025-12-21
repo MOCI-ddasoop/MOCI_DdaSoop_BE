@@ -3,6 +3,7 @@ package com.back.domain.comment.repository;
 import com.back.domain.comment.entity.Comment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,7 +29,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /**
      * 특정 피드의 최상위 댓글 조회 (페이징)
+     * @EntityGraph로 replies fetch join하여 N+1 방지
      */
+    @EntityGraph(attributePaths = {"replies", "member"})
     Page<Comment> findByFeedIdAndParentIsNullAndDeletedAtIsNull(Long feedId, Pageable pageable);
 
     /**
@@ -94,7 +97,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /**
      * 특정 Together의 최상위 댓글 조회 (페이징)
+     * @EntityGraph로 replies fetch join하여 N+1 방지
      */
+    @EntityGraph(attributePaths = {"replies", "member"})
     Page<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNull(Long togetherId, Pageable pageable);
 
     /**
