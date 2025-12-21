@@ -24,7 +24,7 @@ public class DonationPayments extends BaseEntity {
     private Member member;
 
     @Column(name = "amount")
-    private int amount;
+    private Long amount;
 
     @Column(name = "payment_method")
     private String paymentMethod;
