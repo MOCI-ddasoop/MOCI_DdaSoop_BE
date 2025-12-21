@@ -63,4 +63,33 @@ public interface FeedRepositoryCustom {
      * - "총 검색 결과: 123개" 표시용
      */
     Long countByCondition(FeedSearchCondition condition);
+
+    /**
+     * 무한 스크롤용 피드 조회 (동적 limit 지원)
+     * 
+     * @param cursorId 마지막 피드 ID (이보다 작은 ID 조회)
+     * @param limit 조회할 개수 (requestedSize + 1)
+     * @return 피드 리스트
+     */
+    List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit);
+
+    /**
+     * 특정 회원의 무한 스크롤용 피드 조회 (동적 limit 지원)
+     * 
+     * @param memberId 회원 ID
+     * @param cursorId 마지막 피드 ID
+     * @param limit 조회할 개수
+     * @return 피드 리스트
+     */
+    List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit);
+
+    /**
+     * 특정 Together의 무한 스크롤용 피드 조회 (동적 limit 지원)
+     * 
+     * @param togetherId Together ID
+     * @param cursorId 마지막 피드 ID
+     * @param limit 조회할 개수
+     * @return 피드 리스트
+     */
+    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit);
 }

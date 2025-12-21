@@ -22,6 +22,11 @@ public interface CommentReactionRepository extends JpaRepository<CommentReaction
     boolean existsByCommentIdAndMemberId(Long commentId, Long memberId);
 
     /**
+     * 특정 댓글의 특정 회원 리액션 삭제
+     */
+    void deleteByCommentIdAndMemberId(Long commentId, Long memberId);
+
+    /**
      * 특정 댓글의 리액션 개수
      */
     Long countByCommentId(Long commentId);
@@ -46,6 +51,7 @@ public interface CommentReactionRepository extends JpaRepository<CommentReaction
 
     /**
      * 특정 회원의 모든 리액션 삭제
+     *
      */
     void deleteByMemberId(Long memberId);
 

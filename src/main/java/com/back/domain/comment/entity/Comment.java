@@ -1,5 +1,6 @@
 package com.back.domain.comment.entity;
 
+import com.back.domain.donation.entity.Donations;
 import com.back.domain.feed.entity.Feed;
 import com.back.domain.member.entity.Member;
 import com.back.domain.together.entity.Together;
@@ -41,10 +42,10 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "together_id")
     private Together together;             // Together 댓글인 경우
     
-    // 미래 확장: Donation 등 다른 도메인 추가 가능
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "donation_id")
-    // private Donation donation;
+    // Donations 등 다른 도메인 추가 가능
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donation_id")
+    private Donations donation;
 
     @Column(length = 1000, nullable = false)
     private String content;                // 댓글 내용 (최대 1000자)
@@ -139,7 +140,7 @@ public class Comment extends BaseEntity {
         int targetCount = 0;
         if (feed != null) targetCount++;
         if (together != null) targetCount++;
-        // if (donation != null) targetCount++;  // 미래 확장
+        if (donation != null) targetCount++;
         
         if (targetCount != 1) {
             throw new IllegalStateException(
@@ -165,10 +166,12 @@ public class Comment extends BaseEntity {
                 }
                 break;
             case DONATION:
-                // 미래 확장
-                throw new IllegalStateException(
-                    "DONATION comment type is not supported yet"
-                );
+                if (donation == null) {
+                    throw new IllegalStateException(
+                        "CommentType is DONATION but donation entity is null"
+                    );
+                }
+                break;
             default:
                 throw new IllegalStateException(
                     "Unknown comment type: " + commentType

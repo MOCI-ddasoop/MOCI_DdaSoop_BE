@@ -31,20 +31,33 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         // 1. 동적 조건 생성
         BooleanBuilder builder = createBaseCondition(condition);
 
-        // 2. 쿼리 실행 (Content 조회 + Fetch Join, N+1 문제 해결)
-        List<Feed> content = queryFactory
-                .selectFrom(feed)
-                .distinct()  // 중복 제거 (컬렉션 fetch join 시 필요)
-                .leftJoin(feed.member).fetchJoin()        // Member Fetch Join (N+1 방지)
-                .leftJoin(feed.images).fetchJoin()        // FeedImage Fetch Join (N+1 방지)
-                .leftJoin(feed.together).fetchJoin()      // Together Fetch Join (N+1 방지)
+        // 2. Feed ID만 먼저 조회 (동적 조건 적용, 중복 없음)
+        List<Long> feedIds = queryFactory
+                .select(feed.id)
+                .from(feed)
                 .where(builder)
                 .orderBy(getOrderSpecifier(condition.getSortBy()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // 3. 전체 개수 조회 (Total Count)
+        // Feed가 없으면 빈 페이지 반환
+        if (feedIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0L);
+        }
+
+        // 3. ID로 Feed + 연관 엔티티 Fetch Join (조건 고정, N+1 방지)
+        List<Feed> content = queryFactory
+                .selectFrom(feed)
+                .distinct()  // IN 쿼리에서는 중복 거의 없지만 안전을 위해 유지
+                .leftJoin(feed.member).fetchJoin()        // Member Fetch Join (N+1 방지)
+                .leftJoin(feed.images).fetchJoin()        // FeedImage Fetch Join (N+1 방지)
+                .leftJoin(feed.together).fetchJoin()      // Together Fetch Join (N+1 방지)
+                .where(feed.id.in(feedIds))               // ID IN 쿼리 (중복 최소화)
+                .orderBy(getOrderSpecifier(condition.getSortBy()))
+                .fetch();
+
+        // 4. 전체 개수 조회 (Total Count)
         Long total = queryFactory
                 .select(feed.count())
                 .from(feed)
@@ -102,6 +115,53 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 .from(feed)
                 .where(builder)
                 .fetchOne();
+    }
+
+    @Override
+    public List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(
+                    feed.id.lt(cursorId)
+                    .and(feed.deletedAt.isNull())
+                )
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(
+                    feed.member.id.eq(memberId)
+                    .and(feed.id.lt(cursorId))
+                    .and(feed.deletedAt.isNull())
+                )
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(
+                    feed.together.id.eq(togetherId)
+                    .and(feed.id.lt(cursorId))
+                    .and(feed.deletedAt.isNull())
+                )
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
     }
 
     // ========== Private 헬퍼 메서드 ==========
