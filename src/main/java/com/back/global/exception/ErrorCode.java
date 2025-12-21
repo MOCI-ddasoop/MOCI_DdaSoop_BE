@@ -54,7 +54,14 @@ public enum ErrorCode {
     MEMBER_ALREADY_DELETED("MEMBER002", "이미 탈퇴한 회원입니다.", HttpStatus.BAD_REQUEST),
     MEMBER_FORBIDDEN("MEMBER003", "회원 정보에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
     MEMBER_EMAIL_DUPLICATE("MEMBER004", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
-    MEMBER_NICKNAME_DUPLICATE("MEMBER005", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT);
+    MEMBER_NICKNAME_DUPLICATE("MEMBER005", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT),
+
+    // ========== 인증 (AUTH) ==========
+    AUTH_TOKEN_EXPIRED("AUTH001", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    AUTH_TOKEN_INVALID("AUTH002", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    AUTH_REFRESH_TOKEN_NOT_FOUND("AUTH003", "Refresh Token을 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED),
+    AUTH_REFRESH_TOKEN_EXPIRED("AUTH004", "Refresh Token이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    AUTH_REFRESH_TOKEN_REVOKED("AUTH005", "Refresh Token이 무효화되었습니다.", HttpStatus.UNAUTHORIZED);
 
     private final String code;
     private final String message;

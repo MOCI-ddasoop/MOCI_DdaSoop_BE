@@ -1,31 +1,34 @@
 package com.back.domain.together.controller;
 
-import com.back.domain.together.dto.request.TogetherRequest;
 import com.back.domain.together.dto.response.TogetherResponse;
 import com.back.domain.together.entity.TogetherCategory;
 import com.back.domain.together.entity.TogetherMode;
 import com.back.domain.together.entity.TogetherStatus;
 import com.back.domain.together.service.TogetherService;
-import com.back.global.rsData.RsData;
+import com.back.global.jwt.JwtTokenProvider;
+import com.back.global.security.JwtAuthenticationFilter;
+import com.back.global.security.OAuth2AuthenticationSuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-@WebMvcTest(TogetherController.class)
+@WebMvcTest(controllers = TogetherController.class, excludeAutoConfiguration = {
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
+})
+@ActiveProfiles("test")
 public class TogetherControllerTest {
 
     @Autowired
@@ -38,7 +41,6 @@ public class TogetherControllerTest {
     private TogetherService togetherService;
 
     @Test
-    @WithMockUser(username = "testUser", roles = "USER")
     @DisplayName("1. 함께하기 게시글 등록")
     void createTogether_success() throws Exception {
 
@@ -70,7 +72,6 @@ public class TogetherControllerTest {
 
         mockMvc.perform(
                         post("/api/v1/together")
-                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(requestJson)
                 )

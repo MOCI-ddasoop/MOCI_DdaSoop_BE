@@ -69,6 +69,9 @@ public class MemberService {
     }
 
     public boolean checkEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
         return memberRepository.existsByEmailAndDeletedAtIsNull(email);
     }
 
@@ -76,13 +79,15 @@ public class MemberService {
     public void updateMember(Long memberId, MemberUpdateRequest request) {
         Member member = getMember(memberId);
 
-        if (request.getEmail() != null && !member.getEmail().equals(request.getEmail())) {
-            if (checkEmail(request.getEmail())) {
-                throw new IllegalArgumentException(
-                    ErrorCode.MEMBER_EMAIL_DUPLICATE.getMessage()
-                );
+        if (request.getEmail() != null) {
+            if (member.getEmail() == null || !member.getEmail().equals(request.getEmail())) {
+                if (checkEmail(request.getEmail())) {
+                    throw new IllegalArgumentException(
+                        ErrorCode.MEMBER_EMAIL_DUPLICATE.getMessage()
+                    );
+                }
+                member.updateEmail(request.getEmail());
             }
-            member.updateEmail(request.getEmail());
         }
 
         if (request.getNickname() != null && !member.getNickname().equals(request.getNickname())) {
