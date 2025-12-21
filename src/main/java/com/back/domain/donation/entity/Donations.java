@@ -26,7 +26,7 @@ public class Donations extends BaseEntity {
     private int goalAmount;
 
     @Column(name = "current_amount")
-    private int currentAmount;
+    private int currentAmount = 0;
 
     @Column(name = "start_date")
     private LocalDateTime startDate;
