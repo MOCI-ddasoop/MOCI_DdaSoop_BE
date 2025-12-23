@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,6 +55,10 @@ public class FeedService {
                 .content(request.getContent())
                 .visibility(request.getVisibility())
                 .tags(validatedTags)
+                .images(new ArrayList<>())
+                .bookmarkCount(0)
+                .commentCount(0)
+                .reactionCount(0)
                 .member(memberRepository.findById(currentMemberId).orElseThrow())  // Member 연결 후
                 .build();
 
