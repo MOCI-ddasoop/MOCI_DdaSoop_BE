@@ -54,6 +54,11 @@ public class AuthController {
             @RequestParam Long memberId,
             HttpServletResponse response
     ) {
+        // memberId 유효성 검증
+        if (memberId == null || memberId <= 0) {
+            throw new IllegalArgumentException(com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        }
+
         LoginResponse loginResponse = authService.login(memberId, response);
         
         // Access Token은 헤더로 전달 (클라이언트가 Authorization 헤더에서 읽어야 함)

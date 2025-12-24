@@ -351,7 +351,7 @@ public class MemberControllerTest {
 
         Mockito.doThrow(new IllegalArgumentException("회원을 찾을 수 없습니다."))
                 .when(memberService)
-                .withdrawMember(Mockito.eq(1L), Mockito.anyString());
+                .withdrawMember(Mockito.eq(memberId), Mockito.anyString());
 
         // when & then
         mockMvc.perform(
