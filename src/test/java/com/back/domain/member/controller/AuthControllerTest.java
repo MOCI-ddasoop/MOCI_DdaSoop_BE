@@ -2,6 +2,7 @@ package com.back.domain.member.controller;
 
 import com.back.domain.member.dto.response.LoginResponse;
 import com.back.domain.member.service.AuthService;
+import com.back.domain.member.service.MemberService;
 import com.back.global.exception.GlobalExceptionHandler;
 import com.back.global.util.CookieUtil;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,10 @@ public class AuthControllerTest {
     @SuppressWarnings("removal")
     @MockBean
     private AuthService authService;
+
+    @SuppressWarnings("removal")
+    @MockBean
+    private MemberService memberService;
 
     @SuppressWarnings("removal")
     @MockBean
