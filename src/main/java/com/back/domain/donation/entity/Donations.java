@@ -40,4 +40,8 @@ public class Donations extends BaseEntity {
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "organizer_id")
 //    private Member member;
+
+    public void increaseAmount(int amount) {
+        this.currentAmount += amount;
+    }
 }
