@@ -24,7 +24,7 @@ public class Donations extends BaseEntity {
     private String description;
 
     @Column(name = "goal_amount")
-    private int goalAmount;
+    private Long goalAmount;
 
     @Column(name = "current_amount")
     private Long currentAmount = 0L;

@@ -73,7 +73,7 @@ public class DonationController {
     )
     @PostMapping("/toss/{donationId}/pay")
     public ResponseEntity<RsData<DonationPaymentResponse>> tossPayment(
-            @Valid @PathVariable Long donationId, @RequestBody DonationTossRequest request
+            @PathVariable Long donationId, @Valid @RequestBody DonationTossRequest request
     ) {
         DonationPaymentResponse response = donationService.donationTossPayment(donationId, request.getMemberId(), request);
         return ResponseEntity.ok(RsData.success("TOSS 결제 성공", response));
