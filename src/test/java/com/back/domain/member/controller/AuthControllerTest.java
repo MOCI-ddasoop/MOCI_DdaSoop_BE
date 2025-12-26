@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,16 +31,13 @@ public class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @SuppressWarnings("removal")
-    @MockBean
+    @MockitoBean
     private AuthService authService;
 
-    @SuppressWarnings("removal")
-    @MockBean
+    @MockitoBean
     private MemberService memberService;
 
-    @SuppressWarnings("removal")
-    @MockBean
+    @MockitoBean
     private CookieUtil cookieUtil;
 
     @Test
