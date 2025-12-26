@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -65,9 +66,14 @@ public class DonationController {
     }
 
     @Operation(summary = "TOSS 결제")
+    @ApiResponse(
+            responseCode = "200",
+            description = "TOSS 결제 성공",
+            content = @Content(schema = @Schema(implementation = DonationPaymentResponse.class))
+    )
     @PostMapping("/toss/{donationId}/pay")
     public ResponseEntity<RsData<DonationPaymentResponse>> tossPayment(
-            @PathVariable Long donationId, @RequestBody DonationTossRequest request
+            @Valid @PathVariable Long donationId, @RequestBody DonationTossRequest request
     ) {
         DonationPaymentResponse response = donationService.donationTossPayment(donationId, request.getMemberId(), request);
         return ResponseEntity.ok(RsData.success("TOSS 결제 성공", response));
