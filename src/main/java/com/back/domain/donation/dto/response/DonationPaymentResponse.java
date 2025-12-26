@@ -25,7 +25,7 @@ public class DonationPaymentResponse {
                 .donationId(payment.getDonations().getId())
                 .amount(payment.getAmount())
                 .paymentMethod(payment.getPaymentMethod())
-//                .status(payment.getStatus())
+//                .status(payment.getStatus()) //TODO: 최소한의 조건만 사용
 //                .approvedAt(payment.getApprovedAt())
                 .build();
     }

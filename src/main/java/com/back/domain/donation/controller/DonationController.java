@@ -64,11 +64,12 @@ public class DonationController {
         return ResponseEntity.ok(RsData.success("상세보기별 후원 현황 조회 성공", donorList));
     }
 
-    @Operation(summary = "TOSS 결제 ")
+    @Operation(summary = "TOSS 결제")
     @PostMapping("/toss/{donationId}/pay")
-    public DonationPaymentResponse tossPayment(
+    public ResponseEntity<RsData<DonationPaymentResponse>> tossPayment(
             @PathVariable Long donationId, @RequestBody DonationTossRequest request
-            ) {
-        return donationService.donationTossPayment(donationId, request.getMemberId(), request);
+    ) {
+        DonationPaymentResponse response = donationService.donationTossPayment(donationId, request.getMemberId(), request);
+        return ResponseEntity.ok(RsData.success("TOSS 결제 성공", response));
     }
 }
