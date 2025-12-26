@@ -16,17 +16,16 @@ import org.mockito.Mockito;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = TogetherController.class, excludeAutoConfiguration = {
-    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
-    org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
 })
 @ActiveProfiles("test")
 public class TogetherControllerTest {
@@ -37,7 +36,8 @@ public class TogetherControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @SuppressWarnings("removal")
+    @MockBean
     private TogetherService togetherService;
 
     @Test

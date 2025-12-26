@@ -12,22 +12,29 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = MemberController.class, excludeAutoConfiguration = {
     org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
 })
-@Import(GlobalExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({GlobalExceptionHandler.class, TestSecurityConfig.class})
 @ActiveProfiles("test")
 public class MemberControllerTest {
 
@@ -61,6 +68,12 @@ public class MemberControllerTest {
         Mockito.when(memberService.getMemberInfo(memberId))
                 .thenReturn(response);
 
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         // when & then
         mockMvc.perform(
                         get("/api/members/me")
@@ -83,6 +96,12 @@ public class MemberControllerTest {
 
         Mockito.when(memberService.getMemberInfo(memberId))
                 .thenThrow(new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
         // when & then
         mockMvc.perform(
@@ -247,6 +266,12 @@ public class MemberControllerTest {
                 .when(memberService)
                 .updateMember(memberId, request);
 
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         // when & then
         mockMvc.perform(
                         put("/api/members/me")
@@ -264,6 +289,13 @@ public class MemberControllerTest {
                 .email("invalid-email")
                 .nickname("newNickname")
                 .build();
+
+        // SecurityContext 설정
+        Long memberId = 1L;
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
         // when & then
         mockMvc.perform(
@@ -288,6 +320,12 @@ public class MemberControllerTest {
                 .when(memberService)
                 .updateMember(Mockito.eq(1L), Mockito.any(MemberUpdateRequest.class));
 
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         // when & then
         mockMvc.perform(
                         put("/api/members/me")
@@ -311,6 +349,12 @@ public class MemberControllerTest {
                 .when(memberService)
                 .withdrawMember(memberId, request.getReason());
 
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         // when & then
         mockMvc.perform(
                         delete("/api/members/me")
@@ -331,6 +375,12 @@ public class MemberControllerTest {
                 .when(memberService)
                 .withdrawMember(memberId, null);
 
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         // when & then
         mockMvc.perform(
                         delete("/api/members/me")
@@ -344,7 +394,7 @@ public class MemberControllerTest {
     @DisplayName("15. 회원 탈퇴 실패 - 회원을 찾을 수 없음")
     void withdrawMember_fail_memberNotFound() throws Exception {
         // given
-        Long memberId = 999L;
+        Long memberId = 1L;  // MemberController에서 하드코딩된 값과 일치해야 함
         MemberWithdrawRequest request = MemberWithdrawRequest.builder()
                 .reason("탈퇴 사유")
                 .build();
@@ -352,6 +402,12 @@ public class MemberControllerTest {
         Mockito.doThrow(new IllegalArgumentException("회원을 찾을 수 없습니다."))
                 .when(memberService)
                 .withdrawMember(Mockito.eq(memberId), Mockito.anyString());
+
+        // SecurityContext 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(memberId, null, null);
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
         // when & then
         mockMvc.perform(
