@@ -1,5 +1,6 @@
 package com.back.domain.donation.entity;
 
+import com.back.domain.member.entity.Member;
 import com.back.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,11 +38,11 @@ public class Donations extends BaseEntity {
     @Column(name = "status")
     private String status;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "organizer_id")
-//    private Member member;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizer_id")
+    private Member member;
 
-    public void increaseAmount(int amount) {
+    public void increaseAmount(Long amount) {
         this.currentAmount += amount;
     }
 }
