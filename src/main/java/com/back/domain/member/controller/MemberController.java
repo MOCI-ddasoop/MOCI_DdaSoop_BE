@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Member", description = "회원 API")
@@ -44,11 +45,9 @@ public class MemberController {
     })
     @GetMapping("/me")
     public ResponseEntity<MemberInfoResponse> getMyInfo(
-        // @AuthenticationPrincipal CustomUserDetails userDetails
+        @AuthenticationPrincipal Long memberId
     ) {
-        Long currentMemberId = 1L;  // TODO: 인증 연결 후 userDetails.getMemberId() 사용
-
-        MemberInfoResponse response = memberService.getMemberInfo(currentMemberId);
+        MemberInfoResponse response = memberService.getMemberInfo(memberId);
         return ResponseEntity.ok(response);
     }
 
@@ -112,12 +111,10 @@ public class MemberController {
     })
     @PutMapping("/me")
     public ResponseEntity<Void> updateMember(
+        @AuthenticationPrincipal Long memberId,
         @Valid @RequestBody MemberUpdateRequest request
-        // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // TODO: 인증 연결 후 userDetails.getMemberId() 사용
-
-        memberService.updateMember(currentMemberId, request);
+        memberService.updateMember(memberId, request);
         return ResponseEntity.ok().build();
     }
 
@@ -135,13 +132,11 @@ public class MemberController {
     })
     @DeleteMapping("/me")
     public ResponseEntity<MemberWithdrawResponse> withdrawMember(
+        @AuthenticationPrincipal Long memberId,
         @RequestBody(required = false) MemberWithdrawRequest request
-        // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // TODO: 인증 연결 후 userDetails.getMemberId() 사용
         String reason = request != null ? request.getReason() : null;
-
-        memberService.withdrawMember(currentMemberId, reason);
+        memberService.withdrawMember(memberId, reason);
         return ResponseEntity.ok(MemberWithdrawResponse.success());
     }
 }

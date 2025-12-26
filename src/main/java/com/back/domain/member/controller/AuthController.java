@@ -1,9 +1,12 @@
 package com.back.domain.member.controller;
 
+import com.back.domain.member.dto.request.AdditionalInfoRequest;
 import com.back.domain.member.dto.response.LastLoginProviderResponse;
 import com.back.domain.member.dto.response.LoginResponse;
 import com.back.domain.member.service.AuthService;
+import com.back.domain.member.service.MemberService;
 import com.back.global.util.CookieUtil;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,6 +33,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final MemberService memberService;
     private final CookieUtil cookieUtil;
 
     @Operation(
@@ -50,6 +54,11 @@ public class AuthController {
             @RequestParam Long memberId,
             HttpServletResponse response
     ) {
+        // memberId 유효성 검증
+        if (memberId == null || memberId <= 0) {
+            throw new IllegalArgumentException(com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage());
+        }
+
         LoginResponse loginResponse = authService.login(memberId, response);
         
         // Access Token은 헤더로 전달 (클라이언트가 Authorization 헤더에서 읽어야 함)
@@ -136,6 +145,34 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(LastLoginProviderResponse.empty());
+    }
+
+    @Operation(
+        summary = "추가 정보 입력 완료",
+        description = "소셜 로그인 후 필수 정보(닉네임, 이메일)를 입력하여 회원가입을 완료합니다."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "회원가입 완료",
+            content = @Content(schema = @Schema(implementation = LoginResponse.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (유효성 검증 실패, 중복된 닉네임/이메일)"),
+        @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @PostMapping("/complete-registration")
+    public ResponseEntity<LoginResponse> completeRegistration(
+            @AuthenticationPrincipal Long memberId,
+            @Valid @RequestBody AdditionalInfoRequest request,
+            HttpServletResponse response
+    ) {
+        // 추가 정보 입력 완료 처리
+        memberService.completeAdditionalInfo(memberId, request.getNickname(), request.getEmail());
+
+        // 로그인 처리 (JWT 토큰 발급)
+        LoginResponse loginResponse = authService.login(memberId, response);
+
+        return ResponseEntity.ok(loginResponse);
     }
 }
 

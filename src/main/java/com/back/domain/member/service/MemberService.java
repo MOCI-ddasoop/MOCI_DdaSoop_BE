@@ -121,6 +121,48 @@ public class MemberService {
         memberRepository.save(member);
         log.info("회원 탈퇴 완료 - ID: {}, 사유: {}", memberId, reason);
     }
+
+    /** 추가 정보 입력 완료 (닉네임, 이메일 필수 입력) */
+    @Transactional
+    public void completeAdditionalInfo(Long memberId, String nickname, String email) {
+        Member member = getMember(memberId);
+
+        // 이미 추가 정보가 입력된 경우
+        if (!member.isAdditionalInfoRequired()) {
+            log.info("이미 추가 정보가 입력된 회원 - ID: {}", memberId);
+            return;
+        }
+
+        // 닉네임 업데이트 및 중복 체크
+        if (nickname != null && !nickname.isBlank()) {
+            // 현재 닉네임과 다르거나 null인 경우에만 체크
+            if (member.getNickname() == null || !member.getNickname().equals(nickname)) {
+                if (checkNickname(nickname)) {
+                    throw new IllegalArgumentException(
+                        ErrorCode.MEMBER_NICKNAME_DUPLICATE.getMessage()
+                    );
+                }
+                member.updateNickname(nickname);
+            }
+        }
+
+        // 이메일 업데이트 및 중복 체크
+        if (email != null && !email.isBlank()) {
+            // 현재 이메일과 다르거나 null인 경우에만 체크
+            if (member.getEmail() == null || !member.getEmail().equals(email)) {
+                if (checkEmail(email)) {
+                    throw new IllegalArgumentException(
+                        ErrorCode.MEMBER_EMAIL_DUPLICATE.getMessage()
+                    );
+                }
+                member.updateEmail(email);
+            }
+        }
+
+        memberRepository.save(member);
+        log.info("추가 정보 입력 완료 - ID: {}, Nickname: {}, Email: {}", 
+                memberId, nickname, email);
+    }
 }
 
 

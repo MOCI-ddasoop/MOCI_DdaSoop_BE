@@ -114,4 +114,10 @@ public class Member extends BaseEntity {
         return this.socialAccounts.stream()
             .anyMatch(account -> account.getProvider() == provider);
     }
+
+    /** 추가 정보 입력 필요 여부 확인 (닉네임, 이메일 필수) */
+    public boolean isAdditionalInfoRequired() {
+        return nickname == null || nickname.isBlank() || 
+               email == null || email.isBlank();
+    }
 }
