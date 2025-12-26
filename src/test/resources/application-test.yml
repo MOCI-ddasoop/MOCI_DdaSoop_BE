@@ -60,6 +60,6 @@ app:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/auth/callback}
 
 payment:
-  secret-key: ${TOSS_SECRET_KEY:}
-  client-key: ${TOSS_CLIENT_KEY:}
+  secret-key: ${TOSS_SECRET_KEY:test-secret-key}
+  client-key: ${TOSS_CLIENT_KEY:test-client-key}
 
