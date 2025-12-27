@@ -265,7 +265,7 @@ public class ReportService {
             case TOGETHER -> {
                 Together together = togetherRepository.findById(targetId)
                         .orElseThrow(() -> new IllegalArgumentException("신고 대상 모임을 찾을 수 없습니다."));
-                yield together.getHost();
+                yield together.getMember();
             }
         };
     }
@@ -326,9 +326,9 @@ public class ReportService {
             case TOGETHER -> {
                 Together together = togetherRepository.findById(targetId)
                         .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."));
-                // Together에 delete() 메서드가 있다고 가정
+                // TODO: Together 엔티티에 delete() 메서드 추가 필요
                 // together.delete();
-                log.info("모임 삭제 조치 완료 - Together ID: {}", targetId);
+                log.warn("모임 삭제 조치 - Together ID: {} (delete 메서드 미구현)", targetId);
             }
         }
     }
