@@ -92,18 +92,19 @@ public class SocialLoginService {
             name = generateDefaultName(userInfo.getProvider());
         }
 
-        // 닉네임 생성 (소셜 로그인에서 받은 닉네임 사용, 없으면 이름 기반으로 생성, 중복 체크 포함)
-        String nickname = generateUniqueNickname(
-                userInfo.getNickname() != null && !userInfo.getNickname().isBlank()
-                        ? userInfo.getNickname()
-                        : name
-        );
+        // 닉네임: 소셜 로그인에서 받은 값은 무시하고 항상 null로 설정
+        // (추가 정보 입력 페이지에서 사용자가 직접 입력하고 중복 검사를 받도록 강제)
+        String nickname = null;
 
-        // 새 회원 생성 (null 값 허용, 나중에 추가 수집 가능)
+        // 이메일: 소셜 로그인에서 받은 값은 무시하고 항상 null로 설정
+        // (추가 정보 입력 페이지에서 사용자가 직접 입력하고 중복 검사를 받도록 강제)
+        String email = null;
+
+        // 새 회원 생성 (nickname, email이 null일 수 있음 - 추가 정보 입력 페이지에서 입력받음)
         Member member = Member.builder()
                 .name(name)
-                .nickname(nickname)
-                .email(userInfo.getEmail())
+                .nickname(nickname)  // null 가능
+                .email(email)        // null 가능
                 .memberCode(memberCode)
                 .profileImageUrl(userInfo.getProfileImageUrl())
                 .role(MemberRole.USER)
