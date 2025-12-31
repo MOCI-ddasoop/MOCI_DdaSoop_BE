@@ -14,8 +14,8 @@ public class DonationResponse {
 
     private String title;
     private String description;
-    private int goalAmount;
-    private int currentAmount;
+    private Long goalAmount;
+    private Long currentAmount;
     private String startDate;
     private String endDate;
     private String status;
