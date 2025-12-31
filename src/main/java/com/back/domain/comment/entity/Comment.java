@@ -60,6 +60,7 @@ public class Comment extends BaseEntity {
 
     // ========== 카운트 필드 ==========
     @Column(nullable = false)
+    @lombok.Builder.Default
     private Integer reactionCount = 0;     // 댓글 좋아요 수
 
     // ========== Soft Delete ==========
