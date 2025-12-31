@@ -22,7 +22,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     /**
      * 중복 신고 방지 - 이미 신고했는지 확인
      */
-    boolean existsByReporterIdAndTargetTypeAndTargetId(
+    boolean existsByReporter_IdAndTargetTypeAndTargetId(
         Long reporterId,
         ReportTargetType targetType,
         Long targetId
@@ -41,13 +41,13 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * - 회원 제재 판단
      * - 신고 이력 조회
      */
-    Long countByReportedMemberId(Long reportedMemberId);
+    Long countByReportedMember_Id(Long reportedMemberId);
 
     /**
      * 특정 회원이 한 신고 횟수
      * - 악의적 신고 방지 (하루 10회 이상 신고 제한)
      */
-    Long countByReporterId(Long reporterId);
+    Long countByReporter_Id(Long reporterId);
 
     // ========== 신고 목록 조회 ==========
 
@@ -80,7 +80,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * 특정 회원이 받은 신고 목록 (관리자용)
      * - 회원 관리: "홍길동님이 받은 신고 내역"
      */
-    Page<Report> findByReportedMemberIdOrderByCreatedAtDesc(
+    Page<Report> findByReportedMember_IdOrderByCreatedAtDesc(
         Long reportedMemberId,
         Pageable pageable
     );
@@ -89,7 +89,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * 특정 회원이 한 신고 목록
      * - 마이페이지: "내가 신고한 내역"
      */
-    Page<Report> findByReporterIdOrderByCreatedAtDesc(
+    Page<Report> findByReporter_IdOrderByCreatedAtDesc(
         Long reporterId,
         Pageable pageable
     );
@@ -128,9 +128,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     /**
      * 신고를 많이 받은 회원 조회 (관리자용)
      */
-    @Query("SELECT r.reportedMemberId FROM Report r " +
-           "WHERE r.reportedMemberId IS NOT NULL " +
-           "GROUP BY r.reportedMemberId " +
+    @Query("SELECT r.reportedMember.id FROM Report r " +
+           "WHERE r.reportedMember IS NOT NULL " +
+           "GROUP BY r.reportedMember.id " +
            "HAVING COUNT(r) >= :minCount " +
            "ORDER BY COUNT(r) DESC")
     List<Long> findFrequentlyReportedMembers(
