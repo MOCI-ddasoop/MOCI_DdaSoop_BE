@@ -39,9 +39,12 @@ public class OAuth2UserInfoFactory {
     /** Kakao 사용자 정보 생성 */
     @SuppressWarnings("unchecked")
     private static OAuth2UserInfo createKakaoUserInfo(Map<String, Object> attributes) {
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        Map<String, Object> profile = kakaoAccount != null 
-                ? (Map<String, Object>) kakaoAccount.get("profile") 
+        Map<String, Object> kakaoAccount = attributes.get("kakao_account") != null
+                ? (Map<String, Object>) attributes.get("kakao_account")
+                : null;
+        
+        Map<String, Object> profile = kakaoAccount != null && kakaoAccount.get("profile") != null
+                ? (Map<String, Object>) kakaoAccount.get("profile")
                 : null;
 
         String providerId = String.valueOf(attributes.get("id"));

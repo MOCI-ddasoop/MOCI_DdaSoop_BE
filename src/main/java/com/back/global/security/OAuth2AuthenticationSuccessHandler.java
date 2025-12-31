@@ -53,13 +53,27 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // 최근 로그인 방식을 쿠키에 저장
             cookieUtil.setLastLoginProviderCookie(response, provider.name());
 
-            String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-                    .queryParam("accessToken", accessToken)
-                    .queryParam("provider", provider.name())
-                    .build()
-                    .toUriString();
+            // 추가 정보 입력 필요 여부 확인
+            String targetUrl;
+            if (member.isAdditionalInfoRequired()) {
+                // 추가 정보 입력이 필요한 경우 (닉네임 또는 이메일이 없음)
+                targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/login-additional")
+                        .queryParam("accessToken", accessToken)
+                        .queryParam("memberId", member.getId())
+                        .queryParam("provider", provider.name())
+                        .build()
+                        .toUriString();
+                log.info("소셜 로그인 성공 (추가 정보 입력 필요) - Provider: {}, MemberId: {}", provider, member.getId());
+            } else {
+                // 추가 정보 입력이 완료된 경우 (기존 회원 또는 정보가 모두 있는 신규 회원)
+                targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000")
+                        .queryParam("accessToken", accessToken)
+                        .queryParam("provider", provider.name())
+                        .build()
+                        .toUriString();
+                log.info("소셜 로그인 성공 - Provider: {}, MemberId: {}", provider, member.getId());
+            }
 
-            log.info("소셜 로그인 성공 - Provider: {}, MemberId: {}", provider, member.getId());
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
         } catch (Exception e) {
