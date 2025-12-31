@@ -54,7 +54,7 @@ public class ReportService {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.MEMBER_NOT_FOUND.getMessage()));
 
         // 2. 중복 신고 확인
-        boolean alreadyReported = reportRepository.existsByReporterIdAndTargetTypeAndTargetId(
+        boolean alreadyReported = reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(
                 reporterId, targetType, targetId
         );
         if (alreadyReported) {
@@ -140,14 +140,14 @@ public class ReportService {
      * 특정 회원이 한 신고 목록 조회 (마이페이지용)
      */
     public Page<Report> getMyReports(Long reporterId, Pageable pageable) {
-        return reportRepository.findByReporterIdOrderByCreatedAtDesc(reporterId, pageable);
+        return reportRepository.findByReporter_IdOrderByCreatedAtDesc(reporterId, pageable);
     }
 
     /**
      * 특정 회원이 받은 신고 목록 조회 (관리자용)
      */
     public Page<Report> getReportsReceivedByMember(Long reportedMemberId, Pageable pageable) {
-        return reportRepository.findByReportedMemberIdOrderByCreatedAtDesc(
+        return reportRepository.findByReportedMember_IdOrderByCreatedAtDesc(
                 reportedMemberId, pageable
         );
     }
@@ -224,7 +224,7 @@ public class ReportService {
      * 특정 회원이 받은 신고 횟수
      */
     public Long getReportCountByMember(Long memberId) {
-        return reportRepository.countByReportedMemberId(memberId);
+        return reportRepository.countByReportedMember_Id(memberId);
     }
 
     /**
