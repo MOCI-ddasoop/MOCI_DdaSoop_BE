@@ -155,6 +155,16 @@ public class Feed extends BaseEntity {
         return images.get(0).getImageUrl();
     }
 
+    /**
+     * 첫 번째 이미지 객체 반환 (썸네일 크기 정보 포함)
+     */
+    public FeedImage getFirstImage() {
+        if (images.isEmpty()) {
+            return null;
+        }
+        return images.get(0);
+    }
+
     // 태그 추가/삭제
     public void addTag(String tag) {
         if (!this.tags.contains(tag)) {
