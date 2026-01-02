@@ -24,6 +24,8 @@ public class FeedSummaryResponse {
     private FeedType feedType;
     private String content;              // 전체 내용
     private String thumbnailUrl;         // 첫 번째 이미지 (썸네일)
+    private Integer thumbnailWidth;      // 썸네일 가로 크기 (px)
+    private Integer thumbnailHeight;     // 썸네일 세로 크기 (px)
     private Integer imageCount;          // 전체 이미지 개수
     private List<String> tags;           // 태그 목록
     
@@ -48,11 +50,24 @@ public class FeedSummaryResponse {
      * Entity -> DTO 변환
      */
     public static FeedSummaryResponse from(Feed feed) {
+        // 첫 번째 이미지 정보 추출
+        String thumbnailUrl = null;
+        Integer thumbnailWidth = null;
+        Integer thumbnailHeight = null;
+        
+        if (feed.getFirstImage() != null) {
+            thumbnailUrl = feed.getFirstImage().getImageUrl();
+            thumbnailWidth = feed.getFirstImage().getWidth();
+            thumbnailHeight = feed.getFirstImage().getHeight();
+        }
+        
         return FeedSummaryResponse.builder()
                 .id(feed.getId())
                 .feedType(feed.getFeedType())
                 .content(feed.getContent())
-                .thumbnailUrl(feed.getFirstImageUrl())
+                .thumbnailUrl(thumbnailUrl)
+                .thumbnailWidth(thumbnailWidth)
+                .thumbnailHeight(thumbnailHeight)
                 .imageCount(feed.getImageCount())
                 .tags(feed.getTags())
                 .reactionCount(feed.getReactionCount())
