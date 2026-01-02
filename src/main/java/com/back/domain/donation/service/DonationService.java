@@ -58,10 +58,10 @@ public class DonationService {
     ) {
         // 후원 대상 조회
         Donations donation = donationRepository.findById(donationId)
-                .orElseThrow(() -> new IllegalArgumentException("후원 대상 없음"));
+                .orElseThrow(() -> new IllegalArgumentException("후원페이지(donationId)를 찾을 수 없습니다."));
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+                .orElseThrow(() -> new IllegalArgumentException("회원(memberId)을 찾을 수 없습니다."));
 
         // 토스 결제 승인
         DonationTossResponse tossResponse =
@@ -84,14 +84,14 @@ public class DonationService {
                 .member(member)
                 .amount(tossResponse.getTotalAmount())
                 .paymentMethod("TOSS")
-//                .approvedAt(tossResponse.getApprovedAt())
+//                .approvedAt(tossResponse.getApprovedAt()) //TODO: 일단 최소한으로 조건 사용
 //                .tossPayments(tossPayments)
                 .build();
 
         donationPaymentsRepository.save(payment);
 
         if (TossPaymentStatus.DONE.name().equals(tossResponse.getStatus())) {
-            donation.increaseAmount(tossResponse.getTotalAmount().intValue());
+            donation.increaseAmount(tossResponse.getTotalAmount());
         }
 
         // 프론트로 응답
