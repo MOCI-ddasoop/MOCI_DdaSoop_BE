@@ -3,7 +3,11 @@ package com.back.domain.donation.controller;
 import com.back.domain.donation.dto.request.DonationTossRequest;
 import com.back.domain.donation.dto.response.DonationResponse;
 import com.back.domain.donation.dto.response.DonationPaymentResponse;
+import com.back.domain.donation.dto.response.DonationTossResponse;
 import com.back.domain.donation.dto.response.DonorListResponse;
+import com.back.domain.donation.entity.DonationPayments;
+import com.back.domain.donation.entity.Donations;
+import com.back.domain.donation.entity.TossPaymentStatus;
 import com.back.domain.donation.service.DonationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -28,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = DonationController.class,
         excludeAutoConfiguration = {
                 org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
+//                org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
         }
 )
 @ActiveProfiles("test")
@@ -117,16 +121,17 @@ class DonationControllerTest {
     @DisplayName("4. 토스 결제 승인 성공")
     void tossPayment_success() throws Exception {
 
-        DonationTossRequest request = DonationTossRequest.builder()
-                .paymentKey("test_payment_key")
-                .orderId("order-test-001")
-                .amount(1000L)
-                .memberId(1L)
-                .build();
+        String requestJson = """
+                {
+                  \"paymentKey\": \"test_payment_key\",
+                  \"orderId\": \"order-test-001\",
+                  \"amount\": 1000,
+                  \"memberId\": 1
+                }
+                """;
 
         DonationPaymentResponse response = DonationPaymentResponse.builder()
                 .donationId(1L)
-                .orderId("order-test-001")
                 .amount(1000L)
                 .status("DONE")
                 .build();
@@ -142,7 +147,7 @@ class DonationControllerTest {
         mockMvc.perform(
                         post("/api/v1/donation/toss/{donationId}/pay", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(requestJson)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.amount").value(1000L))
