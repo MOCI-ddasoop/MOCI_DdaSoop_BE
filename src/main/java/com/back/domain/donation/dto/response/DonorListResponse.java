@@ -14,7 +14,6 @@ public class DonorListResponse {
     private String paymentMethod;
     private LocalDateTime createdAt;
 
-    // 🔥 JPQL용 생성자 (필수)
     public DonorListResponse(
             Long donationPaymentId,
             Long memberId,
