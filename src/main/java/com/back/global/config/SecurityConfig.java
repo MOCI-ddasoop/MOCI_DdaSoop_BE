@@ -2,6 +2,8 @@ package com.back.global.config;
 
 import com.back.global.security.JwtAuthenticationFilter;
 import com.back.global.security.OAuth2AuthenticationSuccessHandler;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +27,12 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@SecurityScheme(
+    name = "Bearer Authentication",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    scheme = "bearer"
+)
 public class SecurityConfig {
 
     @Autowired(required = false)

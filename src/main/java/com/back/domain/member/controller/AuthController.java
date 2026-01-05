@@ -3,8 +3,11 @@ package com.back.domain.member.controller;
 import com.back.domain.member.dto.request.AdditionalInfoRequest;
 import com.back.domain.member.dto.response.LastLoginProviderResponse;
 import com.back.domain.member.dto.response.LoginResponse;
+import com.back.domain.member.entity.Member;
+import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.MemberService;
+import com.back.global.exception.ErrorCode;
 import com.back.global.util.CookieUtil;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,9 +25,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Tag(name = "Auth", description = "인증 API")
 @Slf4j
 @RestController
@@ -35,6 +35,7 @@ public class AuthController {
     private final AuthService authService;
     private final MemberService memberService;
     private final CookieUtil cookieUtil;
+    private final MemberRepository memberRepository;
 
     @Operation(
         summary = "로그인",
@@ -59,13 +60,17 @@ public class AuthController {
             throw new IllegalArgumentException(com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage());
         }
 
-        LoginResponse loginResponse = authService.login(memberId, response);
+        String accessToken = authService.login(memberId, response);
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage()
+                ));
+        LoginResponse loginResponse = LoginResponse.from(member);
         
-        // Access Token은 헤더로 전달 (클라이언트가 Authorization 헤더에서 읽어야 함)
-        // 실제로는 클라이언트가 소셜 로그인 후 받은 정보로 토큰을 발급받으므로
-        // 여기서는 예시로만 구현 (실제로는 소셜 로그인 콜백에서 처리)
-        
-        return ResponseEntity.ok(loginResponse);
+        // Access Token은 헤더로 전달 (보편적 구조: AT는 Header, RT는 Cookie)
+        return ResponseEntity.ok()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(loginResponse);
     }
 
     @Operation(
@@ -87,18 +92,18 @@ public class AuthController {
     @Operation(
         summary = "Access Token 갱신",
         description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. " +
-                "Refresh Token은 쿠키에서 자동으로 읽어옵니다."
+                "Refresh Token은 쿠키에서 자동으로 읽어옵니다. " +
+                "Access Token은 Authorization 헤더로 반환됩니다."
     )
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
-            description = "토큰 갱신 성공",
-            content = @Content(schema = @Schema(implementation = Map.class))
+            description = "토큰 갱신 성공 (Access Token은 Authorization 헤더에 포함됨)"
         ),
         @ApiResponse(responseCode = "401", description = "유효하지 않은 Refresh Token")
     })
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String, String>> refreshAccessToken(
+    public ResponseEntity<Void> refreshAccessToken(
             HttpServletRequest request,
             HttpServletResponse response
     ) {
@@ -114,13 +119,10 @@ public class AuthController {
         // 새로운 Access Token 발급
         String newAccessToken = authService.refreshAccessToken(refreshToken);
 
-        // 응답에 Access Token 포함
-        Map<String, String> responseBody = new HashMap<>();
-        responseBody.put("accessToken", newAccessToken);
-
+        // Access Token은 헤더로만 전달 (보편적 구조: AT는 Header, RT는 Cookie)
         return ResponseEntity.ok()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + newAccessToken)
-                .body(responseBody);
+                .build();
     }
 
     @Operation(
@@ -149,7 +151,8 @@ public class AuthController {
 
     @Operation(
         summary = "추가 정보 입력 완료",
-        description = "소셜 로그인 후 필수 정보(닉네임, 이메일)를 입력하여 회원가입을 완료합니다."
+        description = "소셜 로그인 후 필수 정보(닉네임, 이메일)를 입력하여 회원가입을 완료합니다. " +
+                "회원 상태가 확정된 후에만 JWT 토큰이 발급됩니다."
     )
     @ApiResponses({
         @ApiResponse(
@@ -162,17 +165,47 @@ public class AuthController {
     })
     @PostMapping("/complete-registration")
     public ResponseEntity<LoginResponse> completeRegistration(
-            @AuthenticationPrincipal Long memberId,
             @Valid @RequestBody AdditionalInfoRequest request,
             HttpServletResponse response
     ) {
+        // memberId 유효성 검증
+        Long memberId = request.getMemberId();
+        if (memberId == null || memberId <= 0) {
+            log.error("memberId가 유효하지 않습니다. MemberId: {}", memberId);
+            throw new IllegalArgumentException(
+                com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage()
+            );
+        }
+        
+        log.info("추가 정보 입력 요청 - MemberId: {}, Nickname: {}, Email: {}", 
+                memberId, request.getNickname(), request.getEmail());
+        
         // 추가 정보 입력 완료 처리
         memberService.completeAdditionalInfo(memberId, request.getNickname(), request.getEmail());
 
-        // 로그인 처리 (JWT 토큰 발급)
-        LoginResponse loginResponse = authService.login(memberId, response);
+        // 추가 정보 입력 완료 후 회원 조회
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        ErrorCode.MEMBER_NOT_FOUND.getMessage()
+                ));
 
-        return ResponseEntity.ok(loginResponse);
+        // 추가 정보가 실제로 입력되었는지 확인 (null이나 blank 값이 들어온 경우 방지)
+        if (member.isAdditionalInfoRequired()) {
+            log.error("추가 정보 입력이 완료되지 않았습니다. MemberId: {}, Nickname: {}, Email: {}", 
+                    memberId, member.getNickname(), member.getEmail());
+            throw new IllegalArgumentException(
+                com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage()
+            );
+        }
+
+        // 로그인 처리 (JWT 토큰 발급) - 회원 상태 확정 시에만 JWT 발급
+        String accessToken = authService.login(memberId, response);
+        LoginResponse loginResponse = LoginResponse.from(member);
+
+        // Access Token은 헤더로 전달 (보편적 구조: AT는 Header, RT는 Cookie)
+        return ResponseEntity.ok()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(loginResponse);
     }
 }
 

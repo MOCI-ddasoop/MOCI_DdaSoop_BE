@@ -48,7 +48,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
             OAuth2UserInfo userInfo = OAuth2UserInfoFactory.of(provider, oAuth2User);
             Member member = socialLoginService.findOrCreateMember(userInfo);
-            String accessToken = authService.loginAndGetAccessToken(member.getId(), response);
 
             // 최근 로그인 방식을 쿠키에 저장
             cookieUtil.setLastLoginProviderCookie(response, provider.name());
@@ -56,18 +55,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // 추가 정보 입력 필요 여부 확인
             String targetUrl;
             if (member.isAdditionalInfoRequired()) {
-                // 추가 정보 입력이 필요한 경우 (닉네임 또는 이메일이 없음)
+                // 추가 정보 입력이 필요한 경우: JWT 발급하지 않음 (회원 상태 미확정)
+                // OAuth 인증만 완료하고, JWT는 추가 정보 입력 완료 후에만 발급
                 targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/login-additional")
-                        .queryParam("accessToken", accessToken)
                         .queryParam("memberId", member.getId())
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
                 log.info("소셜 로그인 성공 (추가 정보 입력 필요) - Provider: {}, MemberId: {}", provider, member.getId());
             } else {
-                // 추가 정보 입력이 완료된 경우 (기존 회원 또는 정보가 모두 있는 신규 회원)
+                // 추가 정보 입력이 완료된 경우: JWT 발급 (회원 상태 확정)
+                authService.login(member.getId(), response);
                 targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000")
-                        .queryParam("accessToken", accessToken)
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
