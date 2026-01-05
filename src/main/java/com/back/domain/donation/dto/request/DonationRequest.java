@@ -1,6 +1,7 @@
 package com.back.domain.donation.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,17 +22,17 @@ public class DonationRequest {
     private String description;
 
     @NotBlank
-    private int goalAmount;
+    private Long goalAmount;
 
     @NotBlank
-    private int currentAmount;
+    private Long currentAmount;
 
-    @NotBlank
+    @NotNull
     private LocalDate startDate;
 
-    @NotBlank
+    @NotNull
     private LocalDate endDate;
 
-    @NotBlank
+    @NotNull
     private String status;
 }
