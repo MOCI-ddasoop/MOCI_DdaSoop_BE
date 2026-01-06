@@ -1,6 +1,5 @@
 package com.back.domain.member.service;
 
-import com.back.domain.member.dto.response.LoginResponse;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.RefreshToken;
 import com.back.domain.member.repository.MemberRepository;
@@ -32,9 +31,9 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final CookieUtil cookieUtil;
 
-    /** 로그인 처리 (JWT 토큰 발급) */
+    /** 로그인 처리 (JWT 토큰 발급) - Access Token 반환 (컨트롤러에서 헤더 설정용) */
     @Transactional
-    public LoginResponse login(Long memberId, HttpServletResponse response) {
+    public String login(Long memberId, HttpServletResponse response) {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         ErrorCode.MEMBER_NOT_FOUND.getMessage()
@@ -42,7 +41,7 @@ public class AuthService {
 
         refreshTokenRepository.findByMemberId(memberId).ifPresent(RefreshToken::revoke);
 
-        jwtTokenProvider.createAccessToken(member.getId(), member.getEmail(), member.getRole().name());
+        String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
         String tokenHash = TokenHashUtil.hash(refreshToken);
         LocalDateTime expiresAt = calculateExpiresAt(refreshToken);
@@ -55,41 +54,13 @@ public class AuthService {
                 .build());
 
         cookieUtil.setRefreshTokenCookie(response, refreshToken);
+        
         log.info("로그인 성공 - Member ID: {}, Email: {}", 
-                member.getId(), member.getEmail() != null ? member.getEmail() : "(없음)");
-
-        return LoginResponse.from(member);
-    }
-
-    /** 소셜 로그인용 Access Token 발급 */
-    @Transactional
-    public String loginAndGetAccessToken(Long memberId, HttpServletResponse response) {
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        ErrorCode.MEMBER_NOT_FOUND.getMessage()
-                ));
-
-        refreshTokenRepository.findByMemberId(memberId).ifPresent(RefreshToken::revoke);
-
-        String accessToken = jwtTokenProvider.createAccessToken(
-                member.getId(), member.getEmail(), member.getRole().name());
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
-        String tokenHash = TokenHashUtil.hash(refreshToken);
-        LocalDateTime expiresAt = calculateExpiresAt(refreshToken);
-
-        refreshTokenRepository.save(RefreshToken.builder()
-                .member(member)
-                .tokenHash(tokenHash)
-                .expiresAt(expiresAt)
-                .revoked(false)
-                .build());
-
-        cookieUtil.setRefreshTokenCookie(response, refreshToken);
-        log.info("소셜 로그인 토큰 발급 - Member ID: {}, Email: {}", 
                 member.getId(), member.getEmail() != null ? member.getEmail() : "(없음)");
 
         return accessToken;
     }
+
 
     /** 로그아웃 처리 */
     @Transactional
@@ -129,7 +100,7 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.MEMBER_NOT_FOUND.getMessage()));
 
         String newAccessToken = jwtTokenProvider.createAccessToken(
-                member.getId(), member.getEmail(), member.getRole().name());
+                member.getId(), member.getRole().name());
 
         log.info("Access Token 갱신 성공 - Member ID: {}", memberId);
 

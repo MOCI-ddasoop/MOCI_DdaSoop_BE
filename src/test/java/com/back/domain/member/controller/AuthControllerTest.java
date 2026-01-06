@@ -1,6 +1,9 @@
 package com.back.domain.member.controller;
 
-import com.back.domain.member.dto.response.LoginResponse;
+import com.back.domain.member.entity.Member;
+import com.back.domain.member.entity.MemberRole;
+import com.back.domain.member.entity.SocialProvider;
+import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.MemberService;
 import com.back.global.exception.GlobalExceptionHandler;
@@ -17,6 +20,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Field;
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -40,22 +45,39 @@ public class AuthControllerTest {
     @MockitoBean
     private CookieUtil cookieUtil;
 
+    @MockitoBean
+    private MemberRepository memberRepository;
+
     @Test
     @DisplayName("1. 로그인 성공")
     void login_success() throws Exception {
         // given
         Long memberId = 1L;
-        LoginResponse loginResponse = LoginResponse.builder()
-                .memberId(1L)
+        String accessToken = "test-access-token";
+        
+        Member member = Member.builder()
                 .name("홍길동")
                 .nickname("hong123")
                 .email("hong@example.com")
                 .profileImageUrl("https://example.com/profile.jpg")
-                .lastLoginProvider("KAKAO")
+                .lastLoginProvider(SocialProvider.KAKAO)
+                .role(MemberRole.USER)
+                .memberCode("TEST1234")
                 .build();
+        
+        // 리플렉션을 사용하여 id 설정
+        try {
+            Field idField = member.getClass().getSuperclass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(member, memberId);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set member id", e);
+        }
 
         Mockito.when(authService.login(Mockito.eq(memberId), Mockito.any(HttpServletResponse.class)))
-                .thenReturn(loginResponse);
+                .thenReturn(accessToken);
+        Mockito.when(memberRepository.findByIdAndDeletedAtIsNull(memberId))
+                .thenReturn(Optional.of(member));
 
         // when & then
         mockMvc.perform(
@@ -64,6 +86,7 @@ public class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
+                .andExpect(header().string("Authorization", "Bearer " + accessToken))
                 .andExpect(jsonPath("$.memberId").value(1L))
                 .andExpect(jsonPath("$.name").value("홍길동"))
                 .andExpect(jsonPath("$.nickname").value("hong123"))
@@ -79,6 +102,8 @@ public class AuthControllerTest {
 
         Mockito.when(authService.login(Mockito.eq(memberId), Mockito.any(HttpServletResponse.class)))
                 .thenThrow(new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        Mockito.when(memberRepository.findByIdAndDeletedAtIsNull(memberId))
+                .thenReturn(Optional.empty());
 
         // when & then
         mockMvc.perform(
@@ -113,8 +138,7 @@ public class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
-                .andExpect(header().string("Authorization", "Bearer " + newAccessToken))
-                .andExpect(jsonPath("$.accessToken").value(newAccessToken));
+                .andExpect(header().string("Authorization", "Bearer " + newAccessToken));
     }
 
     @Test

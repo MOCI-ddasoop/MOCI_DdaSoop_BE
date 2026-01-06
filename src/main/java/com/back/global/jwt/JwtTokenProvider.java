@@ -24,7 +24,6 @@ public class JwtTokenProvider {
     private final long refreshTokenValidityInMilliseconds;
 
     private static final String MEMBER_ID_CLAIM = "memberId";
-    private static final String EMAIL_CLAIM = "email";
     private static final String ROLE_CLAIM = "role";
 
     public JwtTokenProvider(
@@ -38,13 +37,12 @@ public class JwtTokenProvider {
     }
 
     /** Access Token 생성 */
-    public String createAccessToken(Long memberId, String email, String role) {
+    public String createAccessToken(Long memberId, String role) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenValidityInMilliseconds);
 
         return Jwts.builder()
                 .claim(MEMBER_ID_CLAIM, memberId)
-                .claim(EMAIL_CLAIM, email)
                 .claim(ROLE_CLAIM, role)
                 .issuedAt(now)
                 .expiration(validity)
@@ -106,12 +104,6 @@ public class JwtTokenProvider {
         return payload.get(MEMBER_ID_CLAIM, Long.class);
     }
 
-    /** 토큰에서 이메일 추출 */
-    public String getEmail(String token) {
-        Claims payload = getPayload(token);
-        return payload.get(EMAIL_CLAIM, String.class);
-    }
-
     /** 토큰에서 역할 추출 */
     public String getRole(String token) {
         Claims payload = getPayload(token);
@@ -138,7 +130,6 @@ public class JwtTokenProvider {
         Claims payload = getPayload(token);
         return JwtTokenInfo.builder()
                 .memberId(payload.get(MEMBER_ID_CLAIM, Long.class))
-                .email(payload.get(EMAIL_CLAIM, String.class))
                 .role(payload.get(ROLE_CLAIM, String.class))
                 .build();
     }
