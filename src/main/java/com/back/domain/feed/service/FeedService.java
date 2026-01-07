@@ -370,6 +370,79 @@ public class FeedService {
         return feedBookmarkRepository.countByMemberId(memberId);
     }
 
+    // ========== 공지 피드 관련 ==========
+
+    /**
+     * 특정 Together의 공지 피드 목록 조회
+     * 상단 고정된 것 우선, 최신순 정렬
+     * 
+     * @param togetherId Together ID
+     * @return 공지 피드 목록
+     */
+    public List<FeedSummaryResponse> getTogetherNoticeFeeds(Long togetherId) {
+        List<Feed> feeds = feedRepository.findByTogether_IdAndFeedTypeAndDeletedAtIsNullOrderByIsPinnedDescCreatedAtDesc(
+                togetherId,
+                com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE
+        );
+
+        return feeds.stream()
+                .map(FeedSummaryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 Together의 상단 고정된 공지 피드만 조회
+     * 
+     * @param togetherId Together ID
+     * @return 상단 고정된 공지 피드 목록
+     */
+    public List<FeedSummaryResponse> getPinnedNoticeFeeds(Long togetherId) {
+        List<Feed> feeds = feedRepository.findByTogether_IdAndFeedTypeAndIsPinnedTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+                togetherId,
+                com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE
+        );
+
+        return feeds.stream()
+                .map(FeedSummaryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 공지 피드 상단 고정 토글
+     * TODO: Together 모임장 권한 체크 필요 (Together 도메인 구현 후)
+     * 
+     * @param feedId 피드 ID
+     * @param currentMemberId 현재 사용자 ID
+     * @return 고정 여부 (true: 고정됨, false: 고정 해제됨)
+     */
+    @Transactional
+    public boolean togglePinNotice(Long feedId, Long currentMemberId) {
+        Feed feed = feedRepository.findByIdAndDeletedAtIsNull(feedId)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
+
+        // 공지 피드만 고정 가능
+        if (!feed.isTogetherNoticeFeed()) {
+            throw new IllegalArgumentException("공지 피드만 상단에 고정할 수 있습니다.");
+        }
+
+        // TODO: Together 모임장 권한 체크
+        // Together together = feed.getTogether();
+        // if (!together.getMember().getId().equals(currentMemberId)) {
+        //     throw new IllegalArgumentException("방장만 공지를 고정할 수 있습니다.");
+        // }
+
+        // 고정 토글
+        if (feed.getIsPinned()) {
+            feed.unpin();
+            log.info("공지 피드 고정 해제 - Feed ID: {}", feedId);
+            return false;
+        } else {
+            feed.pin();
+            log.info("공지 피드 고정 - Feed ID: {}", feedId);
+            return true;
+        }
+    }
+
     // ========== Private 헬퍼 메서드 ==========
 
     /**

@@ -44,6 +44,9 @@ public class FeedSummaryResponse {
     private Long togetherId;
     private String togetherTitle;
     
+    // 공지 피드 관련
+    private Boolean isPinned;
+    
     private LocalDateTime createdAt;
 
     /**
@@ -79,6 +82,7 @@ public class FeedSummaryResponse {
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
+                .isPinned(feed.getIsPinned())
                 .createdAt(feed.getCreatedAt())
                 .build();
     }
