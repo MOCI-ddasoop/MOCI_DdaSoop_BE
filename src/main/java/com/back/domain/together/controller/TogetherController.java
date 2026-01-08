@@ -1,5 +1,6 @@
 package com.back.domain.together.controller;
 
+import com.back.domain.together.dto.TogetherDto;
 import com.back.domain.together.dto.request.TogetherRequest;
 import com.back.domain.together.dto.response.TogetherResponse;
 import com.back.domain.together.service.TogetherService;
@@ -33,23 +34,11 @@ public class TogetherController {
     )
     @GetMapping("/list")
     @Transactional
-    public ResponseEntity<RsData<List<TogetherResponse>>> getAllTogether() {
-        List<TogetherResponse> togetherList = togetherService.getAllTogether();
+    public ResponseEntity<RsData<List<TogetherDto.ListResponse>>> getAllTogether() {
+        List<TogetherDto.ListResponse> togetherList = togetherService.getAllTogether();
         return ResponseEntity.ok().body(RsData.success("전체 함께하기 조회 성공", togetherList));
     }
 
-//    @Operation(summary = "ID별 함께하기 조회")
-//    @Description("마이페이지용 ID별 함께하기 조회, 날짜,제목,카테고리, 온/오프, 모집중")
-//    @ApiResponse(
-//            responseCode = "200",
-//            description = "ID별 함께하기 조회 성공",
-//            content = @Content(schema = @Schema(implementation = TogetherResponse.class))
-//    )
-//    @GetMapping("/{memberId}") // 마이페이지속이라 아직 미정
-//    public ResponseEntity<RsData<TogetherResponse>> getTogetherByMemberId(@PathVariable Long memberId) {
-//        return ResponseEntity.ok().body(RsData.success("ID별 함께하기 조회 성공", togetherService.getTogetherByMemberId(memberId)));
-//    }
-//
     @Operation(summary = "함께하기 상세 조회")
     @ApiResponse(
             responseCode = "200",
@@ -57,11 +46,25 @@ public class TogetherController {
             content = @Content(schema = @Schema(implementation = TogetherResponse.class))
     )
     @GetMapping("/list/{id}")
-    public ResponseEntity<RsData<TogetherResponse>> getTogether(
+    public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogether(
             @PathVariable Long id
     ) {
-        TogetherResponse response = togetherService.getTogether(id);
+        TogetherDto.DetailResponse response = togetherService.getTogether(id);
         return ResponseEntity.ok().body(RsData.success("함께하기 상세 조회 성공", response));
+    }
+
+    @Operation(summary = "ID별 함께하기 조회")
+    @Description("마이페이지용 ID별 함께하기 조회, 날짜,제목,카테고리, 온/오프, 모집중")
+    @ApiResponse(
+            responseCode = "200",
+            description = "ID별 함께하기 조회 성공",
+            content = @Content(schema = @Schema(implementation = TogetherResponse.class))
+    )
+    @GetMapping("/{memberId}") // 마이페이지속이라 아직 미정
+    public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogetherByMemberId(
+            @PathVariable Long memberId
+    ) {
+        return ResponseEntity.ok().body(RsData.success("ID별 함께하기 조회 성공", togetherService.getTogetherByMemberId(memberId)));
     }
 
 

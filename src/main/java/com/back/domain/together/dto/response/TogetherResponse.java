@@ -19,7 +19,7 @@ public class TogetherResponse {
     private String description;
     private TogetherCategory category;
     private TogetherMode mode;
-    private Integer capacity;
+    private Long capacity;
     private TogetherStatus status;
     private Long organizerId;
 

@@ -32,7 +32,7 @@ public class TogetherRequest {
     private TogetherMode mode;
 
     @NotNull
-    private Integer capacity;
+    private Long capacity;
 
     @NotNull
     private LocalDate startDate;

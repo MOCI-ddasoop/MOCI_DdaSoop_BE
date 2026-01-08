@@ -2,6 +2,7 @@ package com.back.domain.together.service;
 
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.together.dto.TogetherDto;
 import com.back.domain.together.dto.request.TogetherRequest;
 import com.back.domain.together.dto.response.TogetherResponse;
 import com.back.domain.together.entity.Together;
@@ -18,16 +19,22 @@ public class TogetherService {
     private final TogetherRepository togetherRepository;
     private final MemberRepository memberRepository;
 
-    public List<TogetherResponse> getAllTogether() {
+    public List<TogetherDto.ListResponse> getAllTogether() {
         return togetherRepository.findAll().stream()
-                .map(TogetherResponse::from)
+                .map(TogetherDto.ListResponse::from)
                 .toList();
     }
 
-    public TogetherResponse getTogether(Long id) {
+    public TogetherDto.DetailResponse getTogether(Long id) {
         Together together = togetherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(id+"번 함께하기 없음"));
-        return TogetherResponse.from(together);
+        return TogetherDto.DetailResponse.from(together);
+    }
+
+    public TogetherDto.DetailResponse getTogetherByMemberId(Long memberId) {
+        Together together = togetherRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원번호:"+memberId+"번 함께하기 없음"));
+        return TogetherDto.DetailResponse.from(together);
     }
 
     public TogetherResponse create(TogetherRequest request, Long organizerId) {
