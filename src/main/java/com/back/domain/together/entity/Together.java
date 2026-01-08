@@ -32,7 +32,7 @@ public class Together extends BaseEntity {
     private TogetherMode mode;
 
     @Column(name = "capacity")
-    private int capacity;
+    private Long capacity;
 
     @Column(name = "start_date")
     private LocalDate startDate;
