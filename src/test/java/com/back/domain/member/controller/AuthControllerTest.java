@@ -7,6 +7,7 @@ import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.MemberService;
 import com.back.global.exception.GlobalExceptionHandler;
+import com.back.global.jwt.JwtTokenProvider;
 import com.back.global.util.CookieUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ public class AuthControllerTest {
 
     @MockitoBean
     private MemberRepository memberRepository;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("1. 로그인 성공")

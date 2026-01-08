@@ -25,6 +25,8 @@ public class JwtTokenProvider {
 
     private static final String MEMBER_ID_CLAIM = "memberId";
     private static final String ROLE_CLAIM = "role";
+    private static final String TEMPORARY_TOKEN_TYPE = "temporary";
+    private final long temporaryTokenValidityInMilliseconds = 30 * 60 * 1000; // 30 minutes
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
@@ -132,6 +134,44 @@ public class JwtTokenProvider {
                 .memberId(payload.get(MEMBER_ID_CLAIM, Long.class))
                 .role(payload.get(ROLE_CLAIM, String.class))
                 .build();
+    }
+
+    /** 임시 토큰 생성 (추가 정보 입력용, 30분 유효) */
+    public String createTemporaryToken(Long memberId) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + temporaryTokenValidityInMilliseconds);
+
+        return Jwts.builder()
+                .claim(MEMBER_ID_CLAIM, memberId)
+                .claim("type", TEMPORARY_TOKEN_TYPE)
+                .issuedAt(now)
+                .expiration(validity)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /** 임시 토큰 검증 및 회원 ID 추출 */
+    public Long validateAndGetMemberIdFromTemporaryToken(String token) {
+        // 토큰 유효성 검증
+        if (!validate(token)) {
+            throw new IllegalArgumentException("유효하지 않은 임시 토큰입니다.");
+        }
+
+        Claims payload = getPayload(token);
+        
+        // 토큰 타입 확인
+        String tokenType = payload.get("type", String.class);
+        if (!TEMPORARY_TOKEN_TYPE.equals(tokenType)) {
+            throw new IllegalArgumentException("유효하지 않은 임시 토큰 타입입니다.");
+        }
+
+        // memberId 추출
+        Long memberId = payload.get(MEMBER_ID_CLAIM, Long.class);
+        if (memberId == null) {
+            throw new IllegalArgumentException("임시 토큰에서 회원 ID를 찾을 수 없습니다.");
+        }
+
+        return memberId;
     }
 }
 
