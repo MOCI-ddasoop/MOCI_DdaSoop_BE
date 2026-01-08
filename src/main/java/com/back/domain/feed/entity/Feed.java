@@ -67,6 +67,7 @@ public class Feed extends BaseEntity {
 
     // ========== 공지 피드 관련 ==========
     @Column(nullable = false)
+    @lombok.Builder.Default
     private Boolean isPinned = false;      // 상단 고정 여부 (공지 피드용)
 
     // ========== Soft Delete ==========
