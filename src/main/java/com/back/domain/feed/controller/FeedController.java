@@ -436,4 +436,77 @@ public class FeedController {
 
         return ResponseEntity.ok(count);
     }
+
+    // ========== 공지 피드 관련 API ==========
+
+    @Operation(
+            summary = "특정 Together의 공지 피드 목록 조회",
+            description = "특정 함께하기 모임의 공지 피드를 조회합니다. 상단 고정된 공지가 먼저 표시되고, 최신순으로 정렬됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/together/{togetherId}/notices")
+    public ResponseEntity<List<FeedSummaryResponse>> getTogetherNoticeFeeds(
+            @Parameter(description = "함께하기 ID", required = true, example = "1")
+            @PathVariable Long togetherId
+    ) {
+        List<FeedSummaryResponse> response = feedService.getTogetherNoticeFeeds(togetherId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 Together의 상단 고정된 공지 피드만 조회",
+            description = "특정 함께하기 모임의 상단에 고정된 공지 피드만 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/together/{togetherId}/notices/pinned")
+    public ResponseEntity<List<FeedSummaryResponse>> getPinnedNoticeFeeds(
+            @Parameter(description = "함께하기 ID", required = true, example = "1")
+            @PathVariable Long togetherId
+    ) {
+        List<FeedSummaryResponse> response = feedService.getPinnedNoticeFeeds(togetherId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "공지 피드 상단 고정 토글",
+            description = "공지 피드의 상단 고정 상태를 토글합니다. 고정되어 있으면 해제하고, 해제되어 있으면 고정합니다. (방장만 가능)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토글 성공 (true: 고정됨, false: 고정 해제됨)",
+                    content = @Content(schema = @Schema(implementation = Boolean.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "공지 피드가 아님"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (방장이 아님)"),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @PutMapping("/{feedId}/pin")
+    public ResponseEntity<Boolean> togglePinNotice(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+            // @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long currentMemberId = 1L;  // 임시
+
+        boolean isPinned = feedService.togglePinNotice(feedId, currentMemberId);
+
+        log.info("공지 피드 고정 토글 API 호출 - 피드 ID: {}, 고정 여부: {}", feedId, isPinned);
+
+        return ResponseEntity.ok(isPinned);
+    }
 }

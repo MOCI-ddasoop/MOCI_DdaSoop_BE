@@ -65,6 +65,11 @@ public class Feed extends BaseEntity {
     @Column(nullable = false)
     private Integer bookmarkCount = 0;     // 북마크(스크랩) 수
 
+    // ========== 공지 피드 관련 ==========
+    @Column(nullable = false)
+    @lombok.Builder.Default
+    private Boolean isPinned = false;      // 상단 고정 여부 (공지 피드용)
+
     // ========== Soft Delete ==========
     @Column
     private LocalDateTime deletedAt;       // 삭제 시점 (null이면 삭제되지 않음)
@@ -120,6 +125,21 @@ public class Feed extends BaseEntity {
     // 함께하기 인증 피드 여부 확인
     public boolean isTogetherVerificationFeed() {
         return this.feedType == FeedType.TOGETHER_VERIFICATION;
+    }
+
+    // 함께하기 공지 피드 여부 확인
+    public boolean isTogetherNoticeFeed() {
+        return this.feedType == FeedType.TOGETHER_NOTICE;
+    }
+
+    // 상단 고정 설정
+    public void pin() {
+        this.isPinned = true;
+    }
+
+    // 상단 고정 해제
+    public void unpin() {
+        this.isPinned = false;
     }
 
     // 이미지 추가/삭제

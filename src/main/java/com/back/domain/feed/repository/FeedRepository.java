@@ -36,6 +36,30 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
      */
     List<Feed> findTop20ByDeletedAtIsNullOrderByBookmarkCountDescCreatedAtDesc();
     
+    // ========== 공지 피드 조회 ==========
+    
+    /**
+     * 특정 Together의 공지 피드 목록 조회 (상단 고정된 것 우선, 최신순)
+     * 
+     * @param togetherId Together ID
+     * @return 공지 피드 목록
+     */
+    List<Feed> findByTogether_IdAndFeedTypeAndDeletedAtIsNullOrderByIsPinnedDescCreatedAtDesc(
+            Long togetherId,
+            com.back.domain.feed.entity.FeedType feedType
+    );
+    
+    /**
+     * 특정 Together의 상단 고정된 공지 피드만 조회
+     * 
+     * @param togetherId Together ID
+     * @return 상단 고정된 공지 피드 목록
+     */
+    List<Feed> findByTogether_IdAndFeedTypeAndIsPinnedTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Long togetherId,
+            com.back.domain.feed.entity.FeedType feedType
+    );
+    
     // ========== 통계 ==========
     
     /**

@@ -33,12 +33,18 @@ public class FeedResponse {
     private Integer commentCount;
     private Integer bookmarkCount;
     
-    // 작성자 정보 (Member 엔티티 연결 후 추가 - 수정 가능성 많음.)
-    // private MemberSummaryResponse author;
+    // 작성자 정보
+    private Long authorId;
+    private String authorName;
+    private String authorNickname;
+    private String authorProfileImage;
     
-    // 함께하기 정보 (Together 엔티티 연결 후 추가)
+    // 함께하기 정보
     private Long togetherId;
-    // private TogetherSummaryResponse together;
+    private String togetherTitle;
+    
+    // 공지 피드 관련
+    private Boolean isPinned;
     
     // 현재 사용자의 리액션/북마크 여부
     private Boolean isReacted;        // 현재 사용자가 좋아요 눌렀는지
@@ -63,10 +69,15 @@ public class FeedResponse {
                 .reactionCount(feed.getReactionCount())
                 .commentCount(feed.getCommentCount())
                 .bookmarkCount(feed.getBookmarkCount())
-                // .author(MemberSummaryResponse.from(feed.getMember()))
-                .togetherId(null)  // feed.getTogether() != null ? feed.getTogether().getId() : null
-                .isReacted(false)  // Service에서 설정 필요
-                .isBookmarked(false)  // Service에서 설정 필요
+                .authorId(feed.getMember().getId())
+                .authorName(feed.getMember().getName())
+                .authorNickname(feed.getMember().getNickname())
+                .authorProfileImage(feed.getMember().getProfileImageUrl())
+                .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
+                .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
+                .isPinned(feed.getIsPinned())
+                .isReacted(false)
+                .isBookmarked(false)
                 .createdAt(feed.getCreatedAt())
                 .updatedAt(feed.getUpdatedAt())
                 .build();
@@ -87,7 +98,13 @@ public class FeedResponse {
                 .reactionCount(response.getReactionCount())
                 .commentCount(response.getCommentCount())
                 .bookmarkCount(response.getBookmarkCount())
+                .authorId(response.getAuthorId())
+                .authorName(response.getAuthorName())
+                .authorNickname(response.getAuthorNickname())
+                .authorProfileImage(response.getAuthorProfileImage())
                 .togetherId(response.getTogetherId())
+                .togetherTitle(response.getTogetherTitle())
+                .isPinned(response.getIsPinned())
                 .isReacted(isReacted)
                 .isBookmarked(isBookmarked)
                 .createdAt(response.getCreatedAt())
