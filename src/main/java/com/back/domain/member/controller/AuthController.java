@@ -8,6 +8,7 @@ import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.MemberService;
 import com.back.global.exception.ErrorCode;
+import com.back.global.jwt.JwtTokenProvider;
 import com.back.global.util.CookieUtil;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,7 @@ public class AuthController {
     private final MemberService memberService;
     private final CookieUtil cookieUtil;
     private final MemberRepository memberRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(
         summary = "로그인",
@@ -168,12 +170,16 @@ public class AuthController {
             @Valid @RequestBody AdditionalInfoRequest request,
             HttpServletResponse response
     ) {
-        // memberId 유효성 검증
-        Long memberId = request.getMemberId();
-        if (memberId == null || memberId <= 0) {
-            log.error("memberId가 유효하지 않습니다. MemberId: {}", memberId);
+        // 임시 토큰 검증 및 memberId 추출
+        Long memberId;
+        try {
+            memberId = jwtTokenProvider.validateAndGetMemberIdFromTemporaryToken(
+                    request.getTemporaryToken()
+            );
+        } catch (IllegalArgumentException e) {
+            log.error("임시 토큰 검증 실패: {}", e.getMessage());
             throw new IllegalArgumentException(
-                com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage()
+                com.back.global.exception.ErrorCode.AUTH_TOKEN_INVALID.getMessage()
             );
         }
         

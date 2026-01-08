@@ -6,6 +6,7 @@ import com.back.domain.member.entity.SocialProvider;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.SocialLoginService;
 import com.back.domain.member.util.OAuth2UserInfoFactory;
+import com.back.global.jwt.JwtTokenProvider;
 import com.back.global.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +31,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final SocialLoginService socialLoginService;
     private final AuthService authService;
     private final CookieUtil cookieUtil;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${app.oauth2.redirect-uri:http://localhost:3000/auth/callback}")
     private String redirectUri;
@@ -55,10 +57,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // 추가 정보 입력 필요 여부 확인
             String targetUrl;
             if (member.isAdditionalInfoRequired()) {
-                // 추가 정보 입력이 필요한 경우: JWT 발급하지 않음 (회원 상태 미확정)
+                // 추가 정보 입력이 필요한 경우: 임시 토큰 발급 (회원 상태 미확정)
                 // OAuth 인증만 완료하고, JWT는 추가 정보 입력 완료 후에만 발급
+                String temporaryToken = jwtTokenProvider.createTemporaryToken(member.getId());
                 targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/login-additional")
-                        .queryParam("memberId", member.getId())
+                        .queryParam("token", temporaryToken)
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
