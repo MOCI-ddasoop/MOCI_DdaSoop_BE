@@ -58,7 +58,7 @@ public class TogetherControllerTest {
                 .description("한강에서 플로깅 하실 분 모집합니다")
                 .category(TogetherCategory.PLOGGING)
                 .mode(TogetherMode.OFFLINE)
-                .capacity(10)
+                .capacity(10L)
                 .status(TogetherStatus.RECRUITING)
                 .organizerId(1L)
                 .build();
