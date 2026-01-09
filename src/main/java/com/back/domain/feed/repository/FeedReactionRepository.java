@@ -44,4 +44,12 @@ public interface FeedReactionRepository extends JpaRepository<FeedReaction, Long
            "WHERE fr.member.id = :memberId AND fr.feed.deletedAt IS NULL " +
            "ORDER BY fr.createdAt DESC")
     Page<FeedReaction> findByMemberIdOrderByCreatedAtDesc(@Param("memberId") Long memberId, Pageable pageable);
+    
+    /**
+     * 특정 회원이 누른 좋아요 개수 (Member 통계용)
+     * 
+     * @param memberId 회원 ID
+     * @return 누른 좋아요 개수
+     */
+    Long countByMemberId(Long memberId);
 }
