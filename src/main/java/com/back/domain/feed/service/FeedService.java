@@ -475,4 +475,28 @@ public class FeedService {
                 .requestedSize(requestedSize)
                 .build();
     }
+
+    // ========== 회원 통계 ==========
+
+    /**
+     * 특정 회원이 작성한 피드 개수
+     * Member 도메인의 GET /api/members/me 응답에 사용
+     * 
+     * @param memberId 회원 ID
+     * @return 작성한 피드 개수
+     */
+    public Long getMemberFeedCount(Long memberId) {
+        return feedRepository.countByMemberIdAndDeletedAtIsNull(memberId);
+    }
+
+    /**
+     * 특정 회원이 누른 좋아요(리액션) 개수
+     * Member 도메인의 GET /api/members/me 응답에 사용
+     * 
+     * @param memberId 회원 ID
+     * @return 누른 좋아요 개수
+     */
+    public Long getMemberReactionCount(Long memberId) {
+        return feedReactionRepository.countByMemberId(memberId);
+    }
 }

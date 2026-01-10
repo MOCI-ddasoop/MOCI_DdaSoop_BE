@@ -66,4 +66,12 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
      * 전체 피드 개수 (삭제된 것 제외)
      */
     Long countByDeletedAtIsNull();
+    
+    /**
+     * 특정 회원이 작성한 피드 개수
+     * 
+     * @param memberId 회원 ID
+     * @return 작성한 피드 개수
+     */
+    Long countByMemberIdAndDeletedAtIsNull(Long memberId);
 }
