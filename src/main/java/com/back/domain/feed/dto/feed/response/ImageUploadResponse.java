@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ImageUploadResponse {
 
-    private String imageUrl;           // 업로드된 이미지 URL
+    private String imageUrl;           // 업로드된 이미지 URL (Python 서버에서 제공)
     private Integer width;             // 이미지 가로 크기 (px)
     private Integer height;            // 이미지 세로 크기 (px)
     private Long fileSize;             // 파일 크기 (bytes)
