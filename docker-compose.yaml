@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: "moci-db"
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"
+#      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" # 비밀번호 설정할 경우
+      TZ: "Asia/Seoul"
+    volumes:
+      - ./postgres_data:/var/lib/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: "moci-redis"
+    ports:
+      - "6379:6379"
+    env_file:
+      - ./.env
+    command: ["redis-server", "--appendonly", "yes"]
+#    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - ./redis-data:/data
+    restart: unless-stopped
+
+#  api: # 한번에 백엔드 서버까지 실행하기 위함
+#    build: .
+#    container_name: "moci-be-api"
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - postgres
+#      - redis
+#    restart: unless-stopped
+
+
