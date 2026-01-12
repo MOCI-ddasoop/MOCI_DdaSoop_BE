@@ -1,6 +1,5 @@
 package com.back.domain.together.dto;
 
-import com.back.domain.member.entity.Member;
 import com.back.domain.together.entity.Participants;
 import com.back.domain.together.entity.Together;
 import com.back.domain.together.entity.TogetherCategory;
@@ -9,20 +8,23 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 public class TogetherDto {
 
     /* ===================Request====================== */
 
-    public record ListRequest(
+    public record CreateRequest(
             @NotBlank String title,
+            @NotBlank String description,
             @NotNull TogetherCategory category,
             @NotNull TogetherMode mode,
             @NotNull Long capacity,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
-            Member member
-    ){}
+            Long memberId
+    ) {
+    }
 
     /* ===================Response======================= */
 
@@ -37,9 +39,14 @@ public class TogetherDto {
             Long memberId,
             Participants participants,
             String thumbnailImage,
-            Long progress
+            Long progress,
+            Long dDay
     ) {
         public static ListResponse from(Together together) {
+
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, together.getEndDate());
+
             return new ListResponse(
                     together.getId(),
                     together.getTitle(),
@@ -49,9 +56,10 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null,
-                    null,
-                    null
+                    null, // TODO: participants 정보 매핑
+                    null, // TODO: thumbnailImage 정보 매핑
+                    null, // TODO: progress 정보 매핑
+                    dDay
             );
         }
     }
@@ -80,10 +88,46 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null,
-                    null,
-                    null,
-                    null
+                    null, //TODO: 추후에 participants 정보 매핑
+                    null, // TODO: 추후에 thumbnailImage 정보 매핑
+                    null, // TODO: 추후에 goal 정보 매핑
+                    null // TODO: 추후에 progress 정보 매핑
+            );
+        }
+    }
+
+    public record DescriptionResponse(
+            String description
+    ) {
+        public static DescriptionResponse from(Together together) {
+            return new DescriptionResponse(
+                    together.getDescription()
+            );
+        }
+    }
+
+    public record CreateResponse(
+            Long id,
+            String title,
+            String description,
+            TogetherCategory category,
+            TogetherMode mode,
+            Long capacity,
+            LocalDate startDate,
+            LocalDate endDate,
+            Long memberId
+    ) {
+        public static CreateResponse from(Together together) {
+            return new CreateResponse(
+                    together.getId(),
+                    together.getTitle(),
+                    together.getDescription(),
+                    together.getCategory(),
+                    together.getMode(),
+                    together.getCapacity(),
+                    together.getStartDate(),
+                    together.getEndDate(),
+                    together.getMember().getId()
             );
         }
     }

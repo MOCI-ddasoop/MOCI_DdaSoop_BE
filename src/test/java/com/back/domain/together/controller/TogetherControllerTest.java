@@ -1,6 +1,6 @@
 package com.back.domain.together.controller;
 
-import com.back.domain.together.dto.response.TogetherResponse;
+import com.back.domain.together.dto.TogetherDto;
 import com.back.domain.together.entity.TogetherCategory;
 import com.back.domain.together.entity.TogetherMode;
 import com.back.domain.together.entity.TogetherStatus;
@@ -48,20 +48,23 @@ public class TogetherControllerTest {
       "mode": "OFFLINE",
       "capacity": 10,
       "startDate": "2025-01-20",
-      "endDate": "2025-01-20"
+      "endDate": "2025-01-20",
+      "memberId": 1
     }
     """;
 
-        TogetherResponse response = TogetherResponse.builder()
-                .id(1L)
-                .title("주말 플로깅 같이 해요")
-                .description("한강에서 플로깅 하실 분 모집합니다")
-                .category(TogetherCategory.PLOGGING)
-                .mode(TogetherMode.OFFLINE)
-                .capacity(10L)
-                .status(TogetherStatus.RECRUITING)
-                .organizerId(1L)
-                .build();
+        TogetherDto.CreateResponse response =
+                new TogetherDto.CreateResponse(
+                        1L,
+                        "주말 플로깅 같이 해요",
+                        "한강에서 플로깅 하실 분 모집합니다",
+                        TogetherCategory.PLOGGING,
+                        TogetherMode.OFFLINE,
+                        10L,
+                        java.time.LocalDate.of(2025, 1, 20),
+                        java.time.LocalDate.of(2025, 1, 20),
+                        1L
+                );
 
         Mockito.when(togetherService.create(Mockito.any(), Mockito.anyLong()))
                 .thenReturn(response);

@@ -5,6 +5,8 @@ import com.back.domain.comment.entity.CommentReaction;
 import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentReactionRepository;
 import com.back.domain.comment.repository.CommentRepository;
+import com.back.domain.donation.repository.DonationRepository;
+import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
 import com.back.domain.feed.repository.FeedBookmarkRepository;
 import com.back.domain.feed.repository.FeedReactionRepository;
@@ -14,6 +16,12 @@ import com.back.domain.member.entity.MemberRole;
 import com.back.domain.member.entity.SocialProvider;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.MemberService;
+import com.back.domain.together.entity.Together;
+import com.back.domain.together.entity.TogetherCategory;
+import com.back.domain.together.entity.TogetherMode;
+import com.back.domain.together.entity.TogetherStatus;
+import com.back.domain.together.repository.TogetherRepository;
+import com.back.domain.together.service.TogetherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -22,6 +30,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -40,6 +49,10 @@ public class DevInitData {
     private final FeedBookmarkRepository feedBookmarkRepository;
     private final CommentRepository commentRepository;
     private final CommentReactionRepository commentReactionRepository;
+    private final TogetherRepository togetherRepository;
+    private final TogetherService togetherService;
+    private final DonationRepository donationRepository;
+    private final DonationService donationService;
 
     private final Random random = new Random();
 
@@ -79,9 +92,15 @@ public class DevInitData {
         int commentReactionCount = initCommentReactions(comments, members);
         log.info(" CommentReaction {} 개 생성 완료", commentReactionCount);
 
+        // 20. Together 생성
+        List<Together> togethers = initTogethers(members);
+        log.info(" Together {} 개 생성 완료", togethers.size());
+
         log.info("========== 초기 데이터 생성 완료 ==========");
         log.info("총 생성: Member {}, Feed {}, Comment {}", members.size(), feeds.size(), comments.size());
     }
+
+
 
     // ========== 1. Member 샘플 데이터 생성 ==========
 
@@ -362,6 +381,59 @@ public class DevInitData {
         }
 
         return count;
+    }
+
+
+    // ========== 20. Together 샘플 데이터 생성 ==========
+    private List<Together> initTogethers(List<Member> members) {
+        List<Together> togethers = new ArrayList<>();
+
+        String[][] templates = {
+                {"같이 플로깅해요", "주말 플로깅 참여자 모집", "PLOGGING"},
+                {"동네 환경 정화", "공원 쓰레기 줍기", "CLEANUP"},
+                {"분리수거 캠페인", "올바른 분리배출 실천", "RECYCLING"},
+                {"아침 플로깅", "출근 전 30분 플로깅", "PLOGGING"},
+                {"환경 보호 챌린지", "일주일간 친환경 실천", "CLEANUP"},
+                {"제로웨이스트 실천", "플라스틱 줄이기", "RECYCLING"}
+        };
+
+        Random random = new Random();
+
+        for (int i = 0; i < 20; i++) {
+            int templateIndex = i % templates.length;
+            String[] template = templates[templateIndex];
+
+            Member organizer = members.get(random.nextInt(members.size()));
+
+            TogetherCategory category = TogetherCategory.valueOf(template[2]);
+            TogetherMode mode = random.nextBoolean()
+                    ? TogetherMode.ONLINE
+                    : TogetherMode.OFFLINE;
+
+            Long capacity = (long) (random.nextInt(15) + 5); // 5 ~ 20명
+
+            LocalDate startDate = LocalDate.now().plusDays(random.nextInt(5));
+            LocalDate endDate = startDate.plusDays(random.nextInt(14) + 1);
+
+            TogetherStatus status =
+                    random.nextBoolean() ? TogetherStatus.RECRUITING : TogetherStatus.CLOSED;
+
+            Together together = Together.builder()
+                    .title(template[0])
+                    .description(template[1])
+                    .category(category)
+                    .mode(mode)
+                    .capacity(capacity)
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .status(status)
+                    .member(organizer)
+                    .build();
+
+            togethers.add(togetherRepository.save(together));
+        }
+
+        return togethers;
     }
 
     // ========== 헬퍼 메서드 ==========
