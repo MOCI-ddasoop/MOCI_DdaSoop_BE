@@ -10,9 +10,11 @@ services:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "password"
 #      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" # 비밀번호 설정할 경우
+      POSTGRES_DB: "ddasoop"
       TZ: "Asia/Seoul"
     volumes:
       - ./postgres_data:/var/lib/postgres
+#      - ./postgres_setting.sql:/docker-entrypoint-initdb.d/init-db.sql # 데이터베이스 조회 유저랑 테이블 생성 유저를 분리할 때
     ports:
       - "5432:5432"
     restart: unless-stopped
@@ -25,12 +27,12 @@ services:
     env_file:
       - ./.env
     command: ["redis-server", "--appendonly", "yes"]
-#    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+#    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"] # 비밀번호 설정할 경우
     volumes:
       - ./redis-data:/data
     restart: unless-stopped
 
-#  api: # 한번에 백엔드 서버까지 실행하기 위함
+#  api: # 한번에 백엔드 서버까지 실행하기 위함, 필요하면 주석 해제, profile 설정 dockerfile로 적어줄 수 있음
 #    build: .
 #    container_name: "moci-be-api"
 #    ports:

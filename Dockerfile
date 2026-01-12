@@ -5,7 +5,7 @@ WORKDIR /app
 COPY build.gradle .
 COPY settings.gradle .
 
-RUN gradle dependecies --no-daemon
+RUN gradle dependencies --no-daemon
 
 COPY .env .
 COPY src src
@@ -18,4 +18,4 @@ WORKDIR /app
 COPY --from=builder /app/build/libs/*jar app.jar
 COPY --from=builder /app/.env .env
 
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=dev", "-jar", "app.jar"]

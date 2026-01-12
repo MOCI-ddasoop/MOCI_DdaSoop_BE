@@ -41,3 +41,6 @@ out/
 
 *.mv.db
 *.trace.db
+
+postgres_data
+redis-data
