@@ -56,13 +56,13 @@ public class TogetherService {
 
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
         Together together = togetherRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id+"번 함께하기 설명하기 없음"));
+                .orElseThrow(() -> new IllegalArgumentException(id+" 번 함께하기 설명하기 없음"));
         return TogetherDto.DescriptionResponse.from(together);
     }
 
     public TogetherDto.DetailResponse getTogetherByMemberId(Long memberId) {
         Together together = togetherRepository.findByMember_Id(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원번호:"+memberId+"번 함께하기 없음"));
+                .orElseThrow(() -> new IllegalArgumentException("회원번호: "+memberId+" 번 함께하기 없음"));
         return TogetherDto.DetailResponse.from(together);
     }
 

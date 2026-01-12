@@ -48,7 +48,7 @@ public class TogetherController {
             @RequestParam(defaultValue = "10") int size
             ) {
         Pageable pageable = PageRequest.of(
-                page,size,
+                page, size,
                 switch (sortType){
                     case STATUS -> Sort.by("status").descending();
                     case CATEGORY -> Sort.by("category").ascending();
@@ -96,7 +96,7 @@ public class TogetherController {
             description = "ID별 함께하기 조회 성공",
             content = @Content(schema = @Schema(implementation = TogetherDto.class))
     )
-    @GetMapping("member/{memberId}")
+    @GetMapping("/member/{memberId}")
     public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogetherByMemberId(
             @PathVariable Long memberId
     ) {

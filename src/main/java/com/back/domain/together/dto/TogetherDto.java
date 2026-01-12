@@ -46,9 +46,6 @@ public class TogetherDto {
 
             LocalDate today = LocalDate.now();
             long dDay = ChronoUnit.DAYS.between(today, together.getEndDate());
-            if(dDay < 0){ // 지난경우 0으로 처리
-                dDay = 0;
-            }
 
             return new ListResponse(
                     together.getId(),
