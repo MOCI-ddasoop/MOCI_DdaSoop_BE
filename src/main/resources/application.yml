@@ -80,3 +80,8 @@ app:
 payment:
   secret-key: ${TOSS_SECRET_KEY:}
   client-key: ${TOSS_CLIENT_KEY:}
+
+# Python 파일 서버 설정 // 일단 현재는 로컬호스트로 되어있다고 함~~~!!! 수정 예정
+file:
+  server:
+    url: ${FILE_SERVER_URL:http://localhost:8000}
