@@ -22,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Image", description = "이미지 업로드 API")
@@ -51,7 +53,10 @@ public class ImageController {
     })
     @PostMapping("/upload")
     public ResponseEntity<ImageUploadResponse> uploadImage(
-            @Parameter(description = "업로드할 이미지 파일", required = true)
+            @Parameter(
+                    description = "업로드할 이미지 파일",
+                    required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
             @RequestParam("file") MultipartFile file
     ) throws IOException {
 
@@ -97,6 +102,95 @@ public class ImageController {
         log.info("이미지 업로드 완료 - URL: {}, 크기: {}x{}", imageUrl, width, height);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "다중 이미지 업로드",
+            description = "여러 이미지를 한번에 업로드하고 URL 목록을 반환합니다. 최대 10개까지 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "업로드 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (파일 개수 초과 등)"),
+            @ApiResponse(responseCode = "500", description = "업로드 실패")
+    })
+    @PostMapping("/upload-multiple")
+    public ResponseEntity<List<ImageUploadResponse>> uploadMultipleImages(
+            @Parameter(
+                    description = "업로드할 이미지 파일들 (최대 10개)",
+                    required = true,
+                    content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
+            @RequestParam("files") List<MultipartFile> files
+    ) throws IOException {
+
+        // 1. 파일 개수 검증
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
+
+        if (files.size() > 10) {
+            throw new IllegalArgumentException("이미지는 최대 10개까지 업로드 가능합니다.");
+        }
+
+        log.info("다중 이미지 업로드 시작 - 파일 개수: {}", files.size());
+
+        // 2. 각 파일 업로드
+        List<ImageUploadResponse> responses = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                // 파일 검증
+                if (file.isEmpty()) {
+                    throw new IllegalArgumentException("파일이 비어있습니다.");
+                }
+
+                String contentType = file.getContentType();
+                if (contentType == null || !contentType.startsWith("image/")) {
+                    throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+                }
+
+                // UUID 파일명 생성
+                String originalFilename = file.getOriginalFilename();
+                String extension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String uniqueFilename = UUID.randomUUID().toString() + extension;
+
+                // Python 파일 서버에 업로드
+                String imageUrl = uploadToFileServer(file, uniqueFilename);
+
+                // 이미지 크기 추출
+                BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
+                int width = bufferedImage.getWidth();
+                int height = bufferedImage.getHeight();
+
+                // 응답 생성
+                ImageUploadResponse response = ImageUploadResponse.builder()
+                        .imageUrl(imageUrl)
+                        .width(width)
+                        .height(height)
+                        .fileSize(file.getSize())
+                        .originalFileName(originalFilename)
+                        .savedFileName(uniqueFilename)
+                        .build();
+
+                responses.add(response);
+
+                log.info("이미지 업로드 완료 - {}: {}x{}", uniqueFilename, width, height);
+
+            } catch (Exception e) {
+                log.error("이미지 업로드 실패 - {}: {}", file.getOriginalFilename(), e.getMessage());
+                throw new RuntimeException("이미지 업로드 실패: " + file.getOriginalFilename(), e);
+            }
+        }
+
+        log.info("다중 이미지 업로드 완료 - 성공: {}/{}", responses.size(), files.size());
+
+        return ResponseEntity.ok(responses);
     }
 
     /**
