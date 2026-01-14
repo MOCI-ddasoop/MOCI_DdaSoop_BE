@@ -28,7 +28,7 @@ public class CookieUtil {
 
     /** Refresh Token 쿠키 삭제 */
     public void deleteRefreshTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, null);
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, "");
         cookie.setHttpOnly(HTTP_ONLY);
         cookie.setSecure(SECURE);
         cookie.setPath("/");

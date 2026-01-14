@@ -1,6 +1,10 @@
 package com.back.domain.member.service;
 
+import com.back.domain.comment.repository.CommentRepository;
+import com.back.domain.feed.repository.FeedReactionRepository;
+import com.back.domain.feed.repository.FeedRepository;
 import com.back.domain.member.dto.request.MemberUpdateRequest;
+import com.back.domain.member.dto.response.MemberCountsResponse;
 import com.back.domain.member.dto.response.MemberInfoResponse;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
@@ -19,6 +23,9 @@ import java.util.Random;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final FeedReactionRepository feedReactionRepository;
+    private final CommentRepository commentRepository;
+    private final FeedRepository feedRepository;
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int MEMBER_CODE_LENGTH = 8;
 
@@ -64,6 +71,27 @@ public class MemberService {
         return MemberInfoResponse.from(member);
     }
 
+    /** 회원 통계 정보 조회 (좋아요, 댓글, 피드 개수) */
+    public MemberCountsResponse getMemberCounts(Long memberId) {
+        // 회원 존재 여부 확인
+        getMember(memberId);
+
+        Long likedCount = feedReactionRepository.countByMemberId(memberId);
+        Long commentedCount = commentRepository.countByMemberIdAndDeletedAtIsNull(memberId);
+        Long feedCount = feedRepository.countByMemberIdAndDeletedAtIsNull(memberId);
+
+        // null 체크 (count 메서드는 null을 반환할 수 있으므로 0으로 처리)
+        likedCount = likedCount != null ? likedCount : 0L;
+        commentedCount = commentedCount != null ? commentedCount : 0L;
+        feedCount = feedCount != null ? feedCount : 0L;
+
+        return MemberCountsResponse.builder()
+                .likedCount(likedCount)
+                .commentedCount(commentedCount)
+                .feedCount(feedCount)
+                .build();
+    }
+
     public boolean checkNickname(String nickname) {
         return memberRepository.existsByNicknameAndDeletedAtIsNull(nickname);
     }
@@ -104,7 +132,6 @@ public class MemberService {
         }
 
         memberRepository.save(member);
-        log.info("회원 정보 수정 완료 - ID: {}", memberId);
     }
 
     @Transactional
@@ -119,7 +146,6 @@ public class MemberService {
 
         member.delete();
         memberRepository.save(member);
-        log.info("회원 탈퇴 완료 - ID: {}, 사유: {}", memberId, reason);
     }
 
     /** 추가 정보 입력 완료 (닉네임, 이메일 필수 입력) */
@@ -129,7 +155,6 @@ public class MemberService {
 
         // 이미 추가 정보가 입력된 경우
         if (!member.isAdditionalInfoRequired()) {
-            log.info("이미 추가 정보가 입력된 회원 - ID: {}", memberId);
             return;
         }
 
@@ -160,8 +185,6 @@ public class MemberService {
         }
 
         memberRepository.save(member);
-        log.info("추가 정보 입력 완료 - ID: {}, Nickname: {}, Email: {}", 
-                memberId, nickname, email);
     }
 }
 

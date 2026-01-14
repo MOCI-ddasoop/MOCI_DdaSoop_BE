@@ -39,26 +39,30 @@ public class SocialLoginService {
             // 기존 소셜 계정이 있으면 해당 회원 반환 및 정보 업데이트
             Member member = existingAccount.getMember();
             
+            // 최신 데이터를 보장하기 위해 DB에서 다시 조회 (JPA 캐싱 이슈 방지)
+            Member freshMember = memberRepository.findByIdAndDeletedAtIsNull(member.getId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            ErrorCode.MEMBER_NOT_FOUND.getMessage()
+                    ));
+            
             // 탈퇴한 회원인지 확인
-            if (member.isDeleted()) {
+            if (freshMember.isDeleted()) {
                 throw new IllegalArgumentException(
                         ErrorCode.MEMBER_ALREADY_DELETED.getMessage()
                 );
             }
 
             // 소셜 로그인에서 받은 최신 정보로 업데이트 (프로필 이미지, 이름 등이 변경되었을 수 있음)
-            updateMemberInfoFromSocialLogin(member, userInfo);
+            // 주의: nickname과 email은 업데이트하지 않음 (추가 정보 입력 페이지에서만 수정 가능)
+            updateMemberInfoFromSocialLogin(freshMember, userInfo);
 
             // 최근 로그인 정보 업데이트
             existingAccount.updateLastLogin();
-            member.updateLastLoginProvider(userInfo.getProvider());
+            freshMember.updateLastLoginProvider(userInfo.getProvider());
             memberSocialAccountRepository.save(existingAccount);
-            memberRepository.save(member);
+            memberRepository.save(freshMember);
 
-            log.info("기존 소셜 계정으로 로그인 - Provider: {}, ProviderId: {}, MemberId: {}",
-                    userInfo.getProvider(), userInfo.getProviderId(), member.getId());
-
-            return member;
+            return freshMember;
         }
 
         // 2. 소셜 계정이 없으면 새 회원 생성 (소셜 로그인으로만 가입 가능)
@@ -73,11 +77,7 @@ public class SocialLoginService {
         }
 
         // 이름 업데이트 (소셜 로그인에서 받은 최신 이름)
-        if (userInfo.getName() != null && !userInfo.getName().equals(member.getName())) {
-            // 이름은 변경하지 않고 로그만 남김 (이름 변경은 별도 API로 처리)
-            log.debug("소셜 로그인 이름 변경 감지 - 기존: {}, 새로운: {}", 
-                    member.getName(), userInfo.getName());
-        }
+        // 이름은 변경하지 않음 (이름 변경은 별도 API로 처리)
     }
 
     /** 새 회원 생성 (소셜 로그인 정보 저장, null 값 허용) */
@@ -123,12 +123,6 @@ public class SocialLoginService {
         // DB에 저장
         memberRepository.save(member);
         memberSocialAccountRepository.save(socialAccount);
-
-        log.info("새 회원 생성 및 소셜 계정 연결 - Provider: {}, ProviderId: {}, MemberId: {}, Email: {}, Name: {}, Nickname: {}",
-                userInfo.getProvider(), userInfo.getProviderId(), member.getId(), 
-                member.getEmail() != null ? member.getEmail() : "(없음)", 
-                member.getName() != null ? member.getName() : "(없음)",
-                member.getNickname() != null ? member.getNickname() : "(없음)");
 
         return member;
     }

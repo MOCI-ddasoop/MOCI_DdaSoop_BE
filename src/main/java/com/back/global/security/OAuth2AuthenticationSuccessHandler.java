@@ -3,9 +3,11 @@ package com.back.global.security;
 import com.back.domain.member.dto.OAuth2UserInfo;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.entity.SocialProvider;
+import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.AuthService;
 import com.back.domain.member.service.SocialLoginService;
 import com.back.domain.member.util.OAuth2UserInfoFactory;
+import com.back.global.exception.ErrorCode;
 import com.back.global.jwt.JwtTokenProvider;
 import com.back.global.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +34,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final AuthService authService;
     private final CookieUtil cookieUtil;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
     @Value("${app.oauth2.redirect-uri:http://localhost:3000/auth/callback}")
     private String redirectUri;
@@ -54,26 +57,31 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             // 최근 로그인 방식을 쿠키에 저장
             cookieUtil.setLastLoginProviderCookie(response, provider.name());
 
-            // 추가 정보 입력 필요 여부 확인
+            // 트랜잭션 커밋 후 최신 데이터를 보장하기 위해 다시 조회
+            // (findOrCreateMember의 트랜잭션이 커밋된 후 최신 데이터 확인)
+            Member latestMember = memberRepository.findByIdAndDeletedAtIsNull(member.getId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            ErrorCode.MEMBER_NOT_FOUND.getMessage()
+                    ));
+
+            // 추가 정보 입력 필요 여부 확인 (최신 데이터 기준)
             String targetUrl;
-            if (member.isAdditionalInfoRequired()) {
+            if (latestMember.isAdditionalInfoRequired()) {
                 // 추가 정보 입력이 필요한 경우: 임시 토큰 발급 (회원 상태 미확정)
                 // OAuth 인증만 완료하고, JWT는 추가 정보 입력 완료 후에만 발급
-                String temporaryToken = jwtTokenProvider.createTemporaryToken(member.getId());
+                String temporaryToken = jwtTokenProvider.createTemporaryToken(latestMember.getId());
                 targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/login-additional")
                         .queryParam("token", temporaryToken)
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
-                log.info("소셜 로그인 성공 (추가 정보 입력 필요) - Provider: {}, MemberId: {}", provider, member.getId());
             } else {
                 // 추가 정보 입력이 완료된 경우: JWT 발급 (회원 상태 확정)
-                authService.login(member.getId(), response);
+                authService.login(latestMember.getId(), response);
                 targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000")
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
-                log.info("소셜 로그인 성공 - Provider: {}, MemberId: {}", provider, member.getId());
             }
 
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
