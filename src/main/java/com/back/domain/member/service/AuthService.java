@@ -39,7 +39,8 @@ public class AuthService {
                         ErrorCode.MEMBER_NOT_FOUND.getMessage()
                 ));
 
-        refreshTokenRepository.findByMemberId(memberId).ifPresent(RefreshToken::revoke);
+        // 기존 Refresh Token 모두 삭제 (무효화만 하면 DB에 계속 쌓임)
+        refreshTokenRepository.deleteByMemberId(memberId);
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
@@ -54,9 +55,6 @@ public class AuthService {
                 .build());
 
         cookieUtil.setRefreshTokenCookie(response, refreshToken);
-        
-        log.info("로그인 성공 - Member ID: {}, Email: {}", 
-                member.getId(), member.getEmail() != null ? member.getEmail() : "(없음)");
 
         return accessToken;
     }
@@ -65,14 +63,10 @@ public class AuthService {
     /** 로그아웃 처리 */
     @Transactional
     public void logout(Long memberId, HttpServletResponse response) {
-        refreshTokenRepository.findByMemberId(memberId)
-                .ifPresent(refreshToken -> {
-                    refreshToken.revoke();
-                    refreshTokenRepository.save(refreshToken);
-                });
+        // Refresh Token 모두 삭제 (무효화만 하면 DB에 계속 쌓임)
+        refreshTokenRepository.deleteByMemberId(memberId);
+        
         cookieUtil.deleteRefreshTokenCookie(response);
-
-        log.info("로그아웃 성공 - Member ID: {}", memberId);
     }
 
     /** Access Token 갱신 */
@@ -99,12 +93,7 @@ public class AuthService {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.MEMBER_NOT_FOUND.getMessage()));
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(
-                member.getId(), member.getRole().name());
-
-        log.info("Access Token 갱신 성공 - Member ID: {}", memberId);
-
-        return newAccessToken;
+        return jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name());
     }
 
     /** Refresh Token 만료 시간 계산 */
@@ -115,7 +104,6 @@ public class AuthService {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime();
         } catch (Exception e) {
-            log.error("토큰 만료 시간 계산 실패", e);
             return LocalDateTime.now().plusDays(7);
         }
     }

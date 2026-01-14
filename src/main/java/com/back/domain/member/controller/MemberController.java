@@ -5,6 +5,7 @@ import com.back.domain.member.dto.request.MemberUpdateRequest;
 import com.back.domain.member.dto.request.MemberWithdrawRequest;
 import com.back.domain.member.dto.request.NicknameCheckRequest;
 import com.back.domain.member.dto.response.EmailCheckResponse;
+import com.back.domain.member.dto.response.MemberCountsResponse;
 import com.back.domain.member.dto.response.MemberInfoResponse;
 import com.back.domain.member.dto.response.MemberWithdrawResponse;
 import com.back.domain.member.dto.response.NicknameCheckResponse;
@@ -48,6 +49,26 @@ public class MemberController {
         @AuthenticationPrincipal Long memberId
     ) {
         MemberInfoResponse response = memberService.getMemberInfo(memberId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "내 회원 정보 조회 Counts",
+        description = "현재 로그인한 회원의 통계 정보(좋아요, 댓글, 피드 개수)를 조회합니다."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = MemberCountsResponse.class))
+        ),
+        @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @GetMapping("/me/counts")
+    public ResponseEntity<MemberCountsResponse> getMyCounts(
+        @AuthenticationPrincipal Long memberId
+    ) {
+        MemberCountsResponse response = memberService.getMemberCounts(memberId);
         return ResponseEntity.ok(response);
     }
 

@@ -177,14 +177,10 @@ public class AuthController {
                     request.getTemporaryToken()
             );
         } catch (IllegalArgumentException e) {
-            log.error("임시 토큰 검증 실패: {}", e.getMessage());
             throw new IllegalArgumentException(
                 com.back.global.exception.ErrorCode.AUTH_TOKEN_INVALID.getMessage()
             );
         }
-        
-        log.info("추가 정보 입력 요청 - MemberId: {}, Nickname: {}, Email: {}", 
-                memberId, request.getNickname(), request.getEmail());
         
         // 추가 정보 입력 완료 처리
         memberService.completeAdditionalInfo(memberId, request.getNickname(), request.getEmail());
@@ -197,8 +193,6 @@ public class AuthController {
 
         // 추가 정보가 실제로 입력되었는지 확인 (null이나 blank 값이 들어온 경우 방지)
         if (member.isAdditionalInfoRequired()) {
-            log.error("추가 정보 입력이 완료되지 않았습니다. MemberId: {}, Nickname: {}, Email: {}", 
-                    memberId, member.getNickname(), member.getEmail());
             throw new IllegalArgumentException(
                 com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage()
             );
