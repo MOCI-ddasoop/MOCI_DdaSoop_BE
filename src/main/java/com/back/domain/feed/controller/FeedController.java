@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +34,30 @@ import java.util.List;
 public class FeedController {
 
     private final FeedService feedService;
+    
+    /**
+     * SecurityContext에서 현재 로그인한 회원 ID 추출
+     * @return 현재 로그인한 회원 ID
+     */
+    private Long getCurrentMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        return (Long) authentication.getPrincipal();
+    }
+    
+    /**
+     * 로그인하지 않은 경우 null 반환 (조회 API용)
+     * @return 현재 로그인한 회원 ID 또는 null
+     */
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            return getCurrentMemberId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @Operation(
             summary = "피드 생성",
@@ -48,10 +74,8 @@ public class FeedController {
     @PostMapping
     public ResponseEntity<Long> createFeed(
             @Valid @RequestBody FeedCreateRequest request
-            // @AuthenticationPrincipal CustomUserDetails userDetails  // 인증 후 추가
     ) {
-        // Long currentMemberId = userDetails.getMemberId();  // 인증 후 사용
-        Long currentMemberId = 1L;  // 임시 (Member 연결 전)
+        Long currentMemberId = getCurrentMemberId();
 
         Long feedId = feedService.createFeed(request, currentMemberId);
 
@@ -74,10 +98,8 @@ public class FeedController {
     public ResponseEntity<FeedResponse> getFeed(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
-            // @AuthenticationPrincipal CustomUserDetails userDetails  // 선택적 인증
     ) {
-        // Long currentMemberId = userDetails != null ? userDetails.getMemberId() : null;
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberIdOrNull();
 
         FeedResponse response = feedService.getFeed(feedId, currentMemberId);
 
@@ -195,9 +217,8 @@ public class FeedController {
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId,
             @Valid @RequestBody FeedUpdateRequest request
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         feedService.updateFeed(feedId, request, currentMemberId);
 
@@ -217,9 +238,8 @@ public class FeedController {
     public ResponseEntity<Void> deleteFeed(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         feedService.deleteFeed(feedId, currentMemberId);
 
@@ -242,9 +262,8 @@ public class FeedController {
     public ResponseEntity<Boolean> toggleReaction(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         boolean isReacted = feedService.toggleReaction(feedId, currentMemberId);
 
@@ -267,9 +286,8 @@ public class FeedController {
     public ResponseEntity<Boolean> toggleBookmark(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         boolean isBookmarked = feedService.toggleBookmark(feedId, currentMemberId);
 
@@ -381,9 +399,8 @@ public class FeedController {
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "20")
             @RequestParam(defaultValue = "20") int size
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         Page<FeedSummaryResponse> response = feedService.getBookmarkedFeeds(currentMemberId, page, size);
 
@@ -427,10 +444,8 @@ public class FeedController {
             )
     })
     @GetMapping("/bookmarks/me/count")
-    public ResponseEntity<Long> getMyBookmarkCount(
-            // @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
-        Long currentMemberId = 1L;  // 임시
+    public ResponseEntity<Long> getMyBookmarkCount() {
+        Long currentMemberId = getCurrentMemberId();
 
         Long count = feedService.getBookmarkCount(currentMemberId);
 
@@ -499,9 +514,8 @@ public class FeedController {
     public ResponseEntity<Boolean> togglePinNotice(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         boolean isPinned = feedService.togglePinNotice(feedId, currentMemberId);
 

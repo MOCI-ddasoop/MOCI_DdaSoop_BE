@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +28,18 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    
+    /**
+     * SecurityContext에서 현재 로그인한 회원 ID 추출
+     * @return 현재 로그인한 회원 ID
+     */
+    private Long getCurrentMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        return (Long) authentication.getPrincipal();
+    }
 
     // ========== 알림 조회 ==========
 
@@ -42,10 +56,8 @@ public class NotificationController {
     public ResponseEntity<Page<NotificationSummaryResponse>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
-            // TODO: @AuthenticationPrincipal 또는 @CurrentMember로 현재 사용자 ID 가져오기
     ) {
-        // 임시: 현재 사용자 ID
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Notification> notifications = notificationService.getMyNotifications(currentMemberId, pageable);
@@ -69,7 +81,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Notification> notifications = notificationService.getMyUnreadNotifications(currentMemberId, pageable);
@@ -95,7 +107,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Notification> notifications = notificationService.getNotificationsByType(
@@ -119,7 +131,7 @@ public class NotificationController {
     public ResponseEntity<List<NotificationSummaryResponse>> getRecentNotifications(
             @RequestParam(defaultValue = "10") int limit
     ) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         List<Notification> notifications = notificationService.getRecentNotifications(currentMemberId, limit);
 
@@ -142,7 +154,7 @@ public class NotificationController {
     public ResponseEntity<NotificationResponse> getNotification(
             @PathVariable Long notificationId
     ) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         Notification notification = notificationService.getNotification(notificationId);
 
@@ -165,7 +177,7 @@ public class NotificationController {
      */
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadNotificationCount() {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         Long unreadCount = notificationService.getUnreadNotificationCount(currentMemberId);
 
@@ -184,7 +196,7 @@ public class NotificationController {
      */
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         notificationService.markAsRead(notificationId, currentMemberId);
 
@@ -202,7 +214,7 @@ public class NotificationController {
      */
     @PutMapping("/read-all")
     public ResponseEntity<Integer> markAllAsRead() {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         int updatedCount = notificationService.markAllAsRead(currentMemberId);
 
@@ -223,7 +235,7 @@ public class NotificationController {
      */
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long notificationId) {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         notificationService.deleteNotification(notificationId, currentMemberId);
 
@@ -241,7 +253,7 @@ public class NotificationController {
      */
     @DeleteMapping("/read")
     public ResponseEntity<Integer> deleteAllReadNotifications() {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         int deletedCount = notificationService.deleteAllReadNotifications(currentMemberId);
 
@@ -259,7 +271,7 @@ public class NotificationController {
      */
     @DeleteMapping("/all")
     public ResponseEntity<Integer> deleteAllNotifications() {
-        Long currentMemberId = 1L;
+        Long currentMemberId = getCurrentMemberId();
 
         int deletedCount = notificationService.deleteAllNotifications(currentMemberId);
 
