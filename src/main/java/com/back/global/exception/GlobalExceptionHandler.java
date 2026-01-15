@@ -121,6 +121,7 @@ public class GlobalExceptionHandler {
 
     /**
      * 메시지로 ErrorCode 찾기 (헬퍼 메서드)
+     * ErrorCode를 찾지 못하면 경고 로그 남김
      */
     private ErrorCode findErrorCodeByMessage(String message) {
         for (ErrorCode errorCode : ErrorCode.values()) {
@@ -128,6 +129,11 @@ public class GlobalExceptionHandler {
                 return errorCode;
             }
         }
+        
+        // ErrorCode 매칭 실패 시 경고 로그
+        log.warn(" ErrorCode 매칭 실패 - 정의되지 않은 에러 메시지: '{}'", message);
+        log.warn(" ErrorCode enum에 해당 메시지가 존재하는지 확인");
+        
         return null;
     }
 }
