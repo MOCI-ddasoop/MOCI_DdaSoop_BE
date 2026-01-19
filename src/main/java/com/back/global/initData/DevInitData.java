@@ -16,10 +16,8 @@ import com.back.domain.member.entity.MemberRole;
 import com.back.domain.member.entity.SocialProvider;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.member.service.MemberService;
-import com.back.domain.together.entity.Together;
-import com.back.domain.together.entity.TogetherCategory;
-import com.back.domain.together.entity.TogetherMode;
-import com.back.domain.together.entity.TogetherStatus;
+import com.back.domain.together.entity.*;
+import com.back.domain.together.repository.ParticipantsRepository;
 import com.back.domain.together.repository.TogetherRepository;
 import com.back.domain.together.service.TogetherService;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +51,7 @@ public class DevInitData {
     private final TogetherService togetherService;
     private final DonationRepository donationRepository;
     private final DonationService donationService;
+    private final ParticipantsRepository participantsRepository;
 
     private final Random random = new Random();
 
@@ -95,6 +94,10 @@ public class DevInitData {
         // 20. Together 생성
         List<Together> togethers = initTogethers(members);
         log.info(" Together {} 개 생성 완료", togethers.size());
+
+        // 21. Participants 생성
+        List<Participants> participantsList = initParticipants(togethers, members);
+        log.info(" Participants {} 개 생성 완료", participantsList.size());
 
         log.info("========== 초기 데이터 생성 완료 ==========");
         log.info("총 생성: Member {}, Feed {}, Comment {}", members.size(), feeds.size(), comments.size());
@@ -399,7 +402,7 @@ public class DevInitData {
 
         Random random = new Random();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 30; i++) {
             int templateIndex = i % templates.length;
             String[] template = templates[templateIndex];
 
@@ -426,7 +429,7 @@ public class DevInitData {
                     .capacity(capacity)
                     .startDate(startDate)
                     .endDate(endDate)
-                    .status(status)
+                    .togetherStatus(status)
                     .member(organizer)
                     .build();
 
@@ -434,6 +437,40 @@ public class DevInitData {
         }
 
         return togethers;
+    }
+
+    // ========== 21. Participants 샘플 데이터 생성 ==========
+    private List<Participants> initParticipants(List<Together> togethers, List<Member> members) {
+        List<Participants> participantsList = new ArrayList<>();
+
+        // Together 1~5만 사용
+        togethers.stream().filter(together -> together.getId() !=null
+                && together.getId() >=1 && together.getId() <=10).forEach(together -> {
+                    // 참가하는 아이디는 6~30번만 사용
+            List<Member> candidateMember = members.stream()
+                    .filter(member -> member.getId() != null
+                            && member.getId() >=1 && member.getId() <=5).toList();
+
+            // 후보가 5명 미만이면 그대로 사용
+            List<Member> shuffled = new ArrayList<>(candidateMember);
+            java.util.Collections.shuffle(shuffled);
+
+            int limit = Math.min(5, candidateMember.size());
+
+            for (int i=0; i<limit; i++){
+                Member member = shuffled.get(i);
+                Participants participants = Participants.builder()
+                        .together(together)
+                        .member(member)
+                        .participantsStatus(ParticipantsStatus.PARTICIPATING)
+                        .build();
+
+                participantsRepository.save(participants);
+                participantsList.add(participants);
+            }
+        });
+
+        return participantsList;
     }
 
     // ========== 헬퍼 메서드 ==========

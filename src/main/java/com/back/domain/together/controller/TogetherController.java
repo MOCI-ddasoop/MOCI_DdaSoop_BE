@@ -22,6 +22,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/v1/together")
@@ -40,12 +42,12 @@ public class TogetherController {
     @GetMapping("/list")
     @Transactional
     public ResponseEntity<RsData<Page<TogetherDto.ListResponse>>> getAllTogether(
-            @RequestParam(required = false) TogetherCategory category,
+            @RequestParam(required = false) List<TogetherCategory> categories,
             @RequestParam(required = false) TogetherMode mode,
             @RequestParam(required = false) TogetherStatus status,
             @RequestParam(defaultValue = "LATEST") TogetherSortType sortType,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "12") int size
             ) {
         Pageable pageable = PageRequest.of(
                 page, size,
@@ -57,7 +59,7 @@ public class TogetherController {
                 }
         );
 
-        Page<TogetherDto.ListResponse> togetherPage = togetherService.getAllTogether(category, mode, status, pageable);
+        Page<TogetherDto.ListResponse> togetherPage = togetherService.getAllTogether(categories, mode, status, sortType, pageable);
         return ResponseEntity.ok().body(RsData.success("전체 함께하기 조회 성공", togetherPage));
     }
 
@@ -121,4 +123,55 @@ public class TogetherController {
         return ResponseEntity.status(201).body(RsData.success("함께하기 게시글이 등록되었습니다.", response));
     }
 
+    //함께하기 참여
+    @Operation(summary = "함께하기 참여")
+    @ApiResponse(
+            responseCode = "201",
+            description = "함께하기 참여 성공",
+            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+    )
+    @PostMapping("/{togetherId}/participate")
+    @Transactional
+    public ResponseEntity<RsData<String>> participate(
+            @PathVariable Long togetherId
+    ) {
+        Long memberId = 1L; // TODO: 인증 로직이 추가되면 수정 필요
+        String rsData = togetherService.participate(togetherId, memberId);
+        return ResponseEntity.status(201).body(RsData.success("함께하기 참여가 완료되었습니다.", rsData));
+    }
+
+    //
+    @Operation(summary = "함께하기 탈퇴")
+    @ApiResponse(
+            responseCode = "201",
+            description = "함께하기 탈퇴 성공",
+            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+    )
+    @DeleteMapping("/{togetherId}/leave")
+    @Transactional
+    public ResponseEntity<RsData<String>> leave(
+            @PathVariable Long togetherId
+    ) {
+        Long memberId = 1L; // TODO: 인증 로직이 추가되면
+        String rsData = togetherService.leave(togetherId, memberId);
+        return ResponseEntity.ok().body(RsData.success("함께하기에서 탈퇴되었습니다.", rsData));
+    }
+
+    //
+    @Operation(summary = "함께하기 강퇴")
+    @ApiResponse(
+            responseCode = "201",
+            description = "함께하기 강퇴 성공",
+            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+    )
+    @DeleteMapping("/{togetherId}/drop/{targetId}")
+    @Transactional
+    public ResponseEntity<RsData<String>> drop(
+            @PathVariable Long togetherId,
+            @PathVariable Long targetId
+    ) {
+        Long requestId = 1L; // TODO: 인증 로직이 추가되면
+        String rsData = togetherService.drop(togetherId, targetId, requestId);
+        return ResponseEntity.ok().body(RsData.success("함께하기에서 강퇴되었습니다.", rsData));
+    }
 }
