@@ -1,9 +1,8 @@
 package com.back.domain.member.service;
 
 import com.back.domain.member.entity.Member;
-import com.back.domain.member.entity.RefreshToken;
 import com.back.domain.member.repository.MemberRepository;
-import com.back.domain.member.repository.RefreshTokenRepository;
+import com.back.domain.member.repository.RedisTokenRepository;
 import com.back.global.exception.ErrorCode;
 import com.back.global.jwt.JwtTokenProvider;
 import com.back.global.util.CookieUtil;
@@ -11,101 +10,57 @@ import com.back.global.util.TokenHashUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-
-/** 인증 서비스 (로그인, 로그아웃, 토큰 갱신) */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AuthService {
 
     private final MemberRepository memberRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTokenRepository redisTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final CookieUtil cookieUtil;
 
-    /** 로그인 처리 (JWT 토큰 발급) - Access Token 반환 (컨트롤러에서 헤더 설정용) */
-    @Transactional
+    @Value("${jwt.refresh-token-validity}")
+    private long refreshTokenValidityInMilliseconds;
+
     public String login(Long memberId, HttpServletResponse response) {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        ErrorCode.MEMBER_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorCode.MEMBER_NOT_FOUND.getMessage()));
 
-        // 기존 Refresh Token 모두 삭제 (무효화만 하면 DB에 계속 쌓임)
-        refreshTokenRepository.deleteByMemberId(memberId);
+        redisTokenRepository.deleteByMemberId(memberId);
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
         String tokenHash = TokenHashUtil.hash(refreshToken);
-        LocalDateTime expiresAt = calculateExpiresAt(refreshToken);
 
-        refreshTokenRepository.save(RefreshToken.builder()
-                .member(member)
-                .tokenHash(tokenHash)
-                .expiresAt(expiresAt)
-                .revoked(false)
-                .build());
+        int ttlSeconds = (int) (refreshTokenValidityInMilliseconds / 1000);
+        redisTokenRepository.save(tokenHash, memberId, ttlSeconds);
 
         cookieUtil.setRefreshTokenCookie(response, refreshToken);
-
         return accessToken;
     }
 
-
-    /** 로그아웃 처리 */
-    @Transactional
     public void logout(Long memberId, HttpServletResponse response) {
-        // Refresh Token 모두 삭제 (무효화만 하면 DB에 계속 쌓임)
-        refreshTokenRepository.deleteByMemberId(memberId);
-        
+        redisTokenRepository.deleteByMemberId(memberId);
         cookieUtil.deleteRefreshTokenCookie(response);
     }
 
-    /** Access Token 갱신 */
-    @Transactional
     public String refreshAccessToken(String refreshTokenString) {
         if (!jwtTokenProvider.validate(refreshTokenString)) {
             throw new IllegalArgumentException(ErrorCode.AUTH_TOKEN_INVALID.getMessage());
         }
 
-        Long memberId = jwtTokenProvider.getMemberId(refreshTokenString);
         String tokenHash = TokenHashUtil.hash(refreshTokenString);
-        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        ErrorCode.AUTH_REFRESH_TOKEN_NOT_FOUND.getMessage()));
-
-        if (!refreshToken.isValid()) {
-            if (refreshToken.isExpired()) {
-                throw new IllegalArgumentException(ErrorCode.AUTH_REFRESH_TOKEN_EXPIRED.getMessage());
-            } else {
-                throw new IllegalArgumentException(ErrorCode.AUTH_REFRESH_TOKEN_REVOKED.getMessage());
-            }
-        }
+        Long memberId = redisTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorCode.AUTH_REFRESH_TOKEN_NOT_FOUND.getMessage()));
 
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.MEMBER_NOT_FOUND.getMessage()));
 
         return jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name());
-    }
-
-    /** Refresh Token 만료 시간 계산 */
-    private LocalDateTime calculateExpiresAt(String token) {
-        try {
-            Date expiration = jwtTokenProvider.getExpiration(token);
-            return Instant.ofEpochMilli(expiration.getTime())
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime();
-        } catch (Exception e) {
-            return LocalDateTime.now().plusDays(7);
-        }
     }
 }
 
