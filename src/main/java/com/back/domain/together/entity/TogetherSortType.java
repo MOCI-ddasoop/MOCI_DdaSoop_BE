@@ -1,5 +1,5 @@
 package com.back.domain.together.entity;
 
 public enum TogetherSortType {
-    LATEST, CATEGORY, MODE, STATUS
+    LATEST, POPULAR, DEADLINE, STATUS, CATEGORY, MODE
 }
