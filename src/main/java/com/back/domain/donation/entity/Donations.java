@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,10 +31,10 @@ public class Donations extends BaseEntity {
     private Long currentAmount = 0L;
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @Column(name = "end_date")
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @Column(name = "status")
     private String status;
@@ -41,6 +42,10 @@ public class Donations extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
     private Member member;
+
+    @Column(name = "donation_category")
+    @Enumerated(EnumType.STRING)
+    private DonationCategory donationCategory;
 
     public void increaseAmount(Long amount) {
         this.currentAmount += amount;
