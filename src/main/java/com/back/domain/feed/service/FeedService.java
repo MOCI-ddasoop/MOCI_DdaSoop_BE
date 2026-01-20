@@ -409,7 +409,6 @@ public class FeedService {
 
     /**
      * 공지 피드 상단 고정 토글
-     * TODO: Together 모임장 권한 체크 필요 (Together 도메인 구현 후)
      * 
      * @param feedId 피드 ID
      * @param currentMemberId 현재 사용자 ID
@@ -425,11 +424,14 @@ public class FeedService {
             throw new IllegalArgumentException("공지 피드만 상단에 고정할 수 있습니다.");
         }
 
-        // TODO: Together 모임장 권한 체크
-        // Together together = feed.getTogether();
-        // if (!together.getMember().getId().equals(currentMemberId)) {
-        //     throw new IllegalArgumentException("방장만 공지를 고정할 수 있습니다.");
-        // }
+        // Together 모임장 권한 체크
+        if (feed.getTogether() == null) {
+            throw new IllegalArgumentException("함께하기 정보를 찾을 수 없습니다.");
+        }
+        
+        if (!feed.getTogether().getMember().getId().equals(currentMemberId)) {
+            throw new IllegalArgumentException("방장만 공지를 고정할 수 있습니다.");
+        }
 
         // 고정 토글
         if (feed.getIsPinned()) {

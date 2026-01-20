@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +31,30 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
+    
+    /**
+     * SecurityContext에서 현재 로그인한 회원 ID 추출
+     * @return 현재 로그인한 회원 ID
+     */
+    private Long getCurrentMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        return (Long) authentication.getPrincipal();
+    }
+    
+    /**
+     * 로그인하지 않은 경우 null 반환 (조회 API용)
+     * @return 현재 로그인한 회원 ID 또는 null
+     */
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            return getCurrentMemberId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @Operation(
             summary = "댓글 생성",
@@ -45,9 +71,8 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<Long> createComment(
             @Valid @RequestBody CommentCreateRequest request
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         Long commentId = commentService.createComment(request, currentMemberId);
 
@@ -70,9 +95,8 @@ public class CommentController {
     public ResponseEntity<CommentResponse> getComment(
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberIdOrNull();
 
         CommentResponse response = commentService.getComment(commentId, currentMemberId);
 
@@ -254,9 +278,8 @@ public class CommentController {
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId,
             @Valid @RequestBody CommentUpdateRequest request
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         commentService.updateComment(commentId, request, currentMemberId);
 
@@ -276,9 +299,8 @@ public class CommentController {
     public ResponseEntity<Void> deleteComment(
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         commentService.deleteComment(commentId, currentMemberId);
 
@@ -301,9 +323,8 @@ public class CommentController {
     public ResponseEntity<Boolean> toggleReaction(
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
-            // @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long currentMemberId = 1L;  // 임시
+        Long currentMemberId = getCurrentMemberId();
 
         boolean isReacted = commentService.toggleReaction(commentId, currentMemberId);
 
