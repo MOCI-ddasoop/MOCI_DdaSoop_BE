@@ -37,6 +37,9 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     from Together t
     where (:mode is null or t.mode = :mode)
       and (:status is null or t.togetherStatus = :status)
+          order by
+              case when t.id = 1 then 0 else 1 end,
+                  t.createdAt desc
     """)
     Page<Together> findLatestWithoutCategory(
             @Param("mode") TogetherMode mode,
@@ -46,6 +49,9 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     select t from Together t where (:categories is null or t.category in :categories)
         and (:mode is null or t.mode = :mode)
         and (:status is null or t.togetherStatus = :status)
+            order by
+                case when t.id = 1 then 0 else 1 end,
+                    t.createdAt desc
     """)
     Page<Together> findLatestWithCategory(
             @Param("categories") List<TogetherCategory> categories,
@@ -58,7 +64,10 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     select t
     from Together t
     where (:mode is null or t.mode = :mode)
-      and (:status is null or t.togetherStatus = :status)
+    and (:status is null or t.togetherStatus = :status)
+        order by
+            case when t.id = 1 then 0 else 1 end,
+                t.endDate asc
     """)
     Page<Together> findDeadlineWithoutCategory(
             @Param("mode") TogetherMode mode,
@@ -70,7 +79,9 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     where (:categories is null or t.category in :categories)
       and (:mode is null or t.mode = :mode)
       and (:status is null or t.togetherStatus = :status)
-    order by t.endDate asc
+        order by
+            case when t.id = 1 then 0 else 1 end,
+            t.endDate asc
 """)
     Page<Together> findDeadlineWithCategory(
             @Param("categories") List<TogetherCategory> categories,
@@ -82,13 +93,19 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     @Query("""
     select t
     from Together t
+    left join Feed f on f.together = t
     where (:mode is null or t.mode = :mode)
       and (:status is null or t.togetherStatus = :status)
+    group by t.id
+    order by
+        case when t.id = 1 then 0 else 1 end,
+            count(f.id) desc
     """)
     Page<Together> findPopularWithoutCategory(
             @Param("mode") TogetherMode mode,
             @Param("status") TogetherStatus status,
             Pageable pageable);
+
     @Query("""
     select t
     from Together t
@@ -97,7 +114,9 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
       and (:mode is null or t.mode = :mode)
       and (:status is null or t.togetherStatus = :status)
     group by t.id
-    order by count(f.id) desc
+    order by
+        case when t.id = 1 then 0 else 1 end,
+            count(f.id) desc
     """)
     Page<Together> findPopularWithCategory(
             @Param("categories") List<TogetherCategory> categories,

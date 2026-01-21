@@ -391,6 +391,19 @@ public class DevInitData {
     private List<Together> initTogethers(List<Member> members) {
         List<Together> togethers = new ArrayList<>();
 
+        Together togetherFake = Together.builder()
+                .title("샘플 함께하기")
+                .description("이것은 샘플용입니다.")
+                .category(TogetherCategory.PLOGGING)
+                .mode(TogetherMode.OFFLINE)
+                .capacity(10L)
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(7))
+                .togetherStatus(TogetherStatus.CLOSED)
+                .member(members.get(0))
+                .build();
+        togethers.add(togetherRepository.save(togetherFake));
+
         String[][] templates = {
                 {"같이 플로깅해요", "주말 플로깅 참여자 모집", "PLOGGING"},
                 {"동네 환경 정화", "공원 쓰레기 줍기", "CLEANUP"},
@@ -443,15 +456,15 @@ public class DevInitData {
     private List<Participants> initParticipants(List<Together> togethers, List<Member> members) {
         List<Participants> participantsList = new ArrayList<>();
 
-        // Together 1~5만 사용
+        // Together 1~10만 사용
         togethers.stream().filter(together -> together.getId() !=null
                 && together.getId() >=1 && together.getId() <=10).forEach(together -> {
-                    // 참가하는 아이디는 6~30번만 사용
+                    // 참가하는 아이디는 1~5번만 사용
             List<Member> candidateMember = members.stream()
                     .filter(member -> member.getId() != null
                             && member.getId() >=1 && member.getId() <=5).toList();
 
-            // 후보가 5명 미만이면 그대로 사용
+            // 5명선택
             List<Member> shuffled = new ArrayList<>(candidateMember);
             java.util.Collections.shuffle(shuffled);
 
