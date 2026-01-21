@@ -211,6 +211,29 @@ public class NotificationService {
     }
 
     /**
+     * 카테고리별 알림 목록 조회
+     * 여러 NotificationType을 묶어서 조회 (탭별 조회용)
+     * 
+     * @param receiverId 수신자 ID
+     * @param category 알림 카테고리 (LIKES, COMMENTS, TOGETHER, SYSTEM, FOLLOW)
+     * @param pageable 페이징 정보
+     * @return 카테고리에 속한 알림 목록
+     */
+    public Page<Notification> getNotificationsByCategory(
+            Long receiverId,
+            com.back.domain.notification.entity.NotificationCategory category,
+            Pageable pageable
+    ) {
+        // 카테고리에 속한 NotificationType 목록 가져오기
+        List<NotificationType> types = category.getTypes();
+        
+        return notificationRepository
+                .findByReceiver_IdAndNotificationTypeInAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        receiverId, types, pageable
+                );
+    }
+
+    /**
      * 최근 알림 빠르게 조회 (읽지 않은 것 우선, 드롭다운용)
      * 
      * @param receiverId 수신자 ID

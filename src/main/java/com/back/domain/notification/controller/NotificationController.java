@@ -120,6 +120,40 @@ public class NotificationController {
     }
 
     /**
+     * 카테고리별 알림 목록 조회 (여러 타입을 묶어서 조회)
+     * 
+     * GET /api/notifications/category/likes?page=0&size=20
+     * GET /api/notifications/category/comments?page=0&size=20
+     * GET /api/notifications/category/together?page=0&size=20
+     * GET /api/notifications/category/system?page=0&size=20
+     * GET /api/notifications/category/follow?page=0&size=20
+     * 
+     * @param category 알림 카테고리 (likes, comments, together, system, follow)
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @return 카테고리에 속한 알림 목록
+     */
+    @GetMapping("/category/{category}")
+    public ResponseEntity<Page<NotificationSummaryResponse>> getNotificationsByCategory(
+            @PathVariable com.back.domain.notification.entity.NotificationCategory category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Notification> notifications = notificationService.getNotificationsByCategory(
+                currentMemberId, category, pageable
+        );
+
+        Page<NotificationSummaryResponse> response = notifications.map(NotificationSummaryResponse::from);
+
+        log.info("카테고리별 알림 조회 API 호출 - 카테고리: {}, 회원 ID: {}", category, currentMemberId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 최근 알림 빠르게 조회 (드롭다운용)
      * 
      * GET /api/notifications/recent?limit=10

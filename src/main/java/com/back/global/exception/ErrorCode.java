@@ -49,6 +49,18 @@ public enum ErrorCode {
     FILE_INVALID_EXTENSION("FILE003", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
     FILE_NOT_FOUND("FILE004", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
+    // ========== 알림 (NOTIFICATION) ==========
+    NOTIFICATION_NOT_FOUND("NOTIFICATION001", "알림을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    NOTIFICATION_ALREADY_DELETED("NOTIFICATION002", "이미 삭제된 알림입니다.", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_FORBIDDEN("NOTIFICATION003", "알림에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
+
+    // ========== 신고 (REPORT) ==========
+    REPORT_NOT_FOUND("REPORT001", "신고를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    REPORT_ALREADY_EXISTS("REPORT002", "이미 신고한 콘텐츠입니다.", HttpStatus.CONFLICT),
+    REPORT_FORBIDDEN("REPORT003", "신고에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    REPORT_ALREADY_PROCESSED("REPORT004", "이미 처리된 신고입니다.", HttpStatus.BAD_REQUEST),
+    REPORT_INVALID_STATUS("REPORT005", "잘못된 신고 처리 상태입니다.", HttpStatus.BAD_REQUEST),
+
     // ========== 회원 (MEMBER) ==========
     MEMBER_NOT_FOUND("MEMBER001", "회원을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     MEMBER_ALREADY_DELETED("MEMBER002", "이미 탈퇴한 회원입니다.", HttpStatus.BAD_REQUEST),

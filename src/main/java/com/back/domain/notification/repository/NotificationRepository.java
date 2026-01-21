@@ -58,6 +58,21 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             Pageable pageable
     );
 
+    /**
+     * 특정 회원의 묶음 타입 알림 조회 (최신순, 페이징)
+     * 카테고리별 알림 조회용
+     *
+     * @param receiverId 수신자 ID
+     * @param notificationTypes 알림 타입 목록
+     * @param pageable 페이징 정보
+     * @return 특정 타입들의 알림 목록
+     */
+    Page<Notification> findByReceiver_IdAndNotificationTypeInAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Long receiverId,
+            List<NotificationType> notificationTypes,
+            Pageable pageable
+    );
+
     // ========== 알림 개수 조회 ==========
 
     /**
