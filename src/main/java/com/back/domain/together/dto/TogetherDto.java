@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class TogetherDto {
 
@@ -62,7 +63,24 @@ public class TogetherDto {
                     dDay
             );
         }
+        public static ListResponse fakeCard() {
+            return new ListResponse(
+                    -1L,"새 함께하기 추가",null,null,0L,null,
+                    null,null,null,null,null,null
+            );
+        }
     }
+
+    public record PageResponse<T>(
+            List<T> content,
+            int page,
+            int size,
+            Long totalElements,
+            int totalPages
+    ) {}
+
+    // 함께하기 1페이지의 1번에 들어갈 가짜 카드
+
 
     public record DetailResponse(
             Long id,

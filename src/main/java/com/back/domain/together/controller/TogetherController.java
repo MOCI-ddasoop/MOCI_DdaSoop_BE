@@ -41,7 +41,7 @@ public class TogetherController {
     )
     @GetMapping("/list")
     @Transactional
-    public ResponseEntity<RsData<Page<TogetherDto.ListResponse>>> getAllTogether(
+    public ResponseEntity<RsData<TogetherDto.PageResponse<TogetherDto.ListResponse>>> getAllTogether(
             @RequestParam(required = false) List<TogetherCategory> categories,
             @RequestParam(required = false) TogetherMode mode,
             @RequestParam(required = false) TogetherStatus status,
@@ -59,7 +59,7 @@ public class TogetherController {
                 }
         );
 
-        Page<TogetherDto.ListResponse> togetherPage = togetherService.getAllTogether(categories, mode, status, sortType, pageable);
+        TogetherDto.PageResponse<TogetherDto.ListResponse> togetherPage = togetherService.getAllTogether(categories, mode, status, sortType, pageable);
         return ResponseEntity.ok().body(RsData.success("전체 함께하기 조회 성공", togetherPage));
     }
 
