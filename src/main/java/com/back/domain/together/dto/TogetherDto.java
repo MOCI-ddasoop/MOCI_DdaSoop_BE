@@ -17,10 +17,10 @@ public class TogetherDto {
 
     public record CreateRequest(
             @NotBlank String title,
-            @NotBlank String description,
+            String description,
             @NotNull TogetherCategory category,
             @NotNull TogetherMode mode,
-            @NotNull Long capacity,
+            Long capacity,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
             Long memberId
