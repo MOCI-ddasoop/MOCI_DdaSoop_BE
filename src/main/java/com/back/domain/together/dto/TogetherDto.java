@@ -114,15 +114,7 @@ public class TogetherDto {
         }
     }
 
-    public record DescriptionResponse(
-            String description
-    ) {
-        public static DescriptionResponse from(Together together) {
-            return new DescriptionResponse(
-                    together.getDescription()
-            );
-        }
-    }
+    public record DescriptionResponse(String description) {}
 
     public record CreateResponse(
             Long id,
