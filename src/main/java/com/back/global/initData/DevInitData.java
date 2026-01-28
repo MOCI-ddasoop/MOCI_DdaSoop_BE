@@ -393,7 +393,7 @@ public class DevInitData {
 
         Together togetherFake = Together.builder()
                 .title("샘플 함께하기")
-                .description("이것은 샘플용입니다.")
+                .description(null)
                 .category(TogetherCategory.PLOGGING)
                 .mode(TogetherMode.OFFLINE)
                 .capacity(10L)

@@ -100,9 +100,12 @@ public class TogetherService {
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
         Together together = togetherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(id+" 번 함께하기 설명하기 없음"));
+
         String description = together.getDescription();
 
-        return new TogetherDto.DescriptionResponse(description);
+        return new TogetherDto.DescriptionResponse(
+                description == null ? "" : description
+        );
     }
 
     public TogetherDto.DetailResponse getTogetherByMemberId(Long memberId) {
