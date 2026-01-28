@@ -295,26 +295,27 @@ public class FeedController {
     }
 
     @Operation(
-            summary = "태그로 피드 검색",
-            description = "특정 태그가 포함된 피드를 검색합니다."
+            summary = "태그 검색 무한 스크롤",
+            description = "특정 태그가 포함된 피드를 무한 스크롤로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "검색 성공",
-                    content = @Content(schema = @Schema(implementation = List.class))
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
             )
     })
     @GetMapping("/search/tag")
-    public ResponseEntity<List<FeedSummaryResponse>> searchByTag(
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> searchByTagInfiniteScroll(
             @Parameter(description = "검색할 태그", required = true, example = "여행")
             @RequestParam String tag,
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기", example = "20")
-            @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
     ) {
-        List<FeedSummaryResponse> response = feedService.searchByTag(tag, page, size);
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.searchByTagInfiniteScroll(tag, lastFeedId, size);
 
         return ResponseEntity.ok(response);
     }
@@ -383,51 +384,53 @@ public class FeedController {
     }
 
     @Operation(
-            summary = "내가 북마크한 피드 목록 조회",
-            description = "특정 회원이 북마크한 피드 목록을 페이징 방식으로 조회합니다. (내가 저장한 게시물)"
+            summary = "내가 북마크한 피드 무한 스크롤",
+            description = "내가 북마크한 피드 목록을 무한 스크롤로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = Page.class))
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
             )
     })
     @GetMapping("/bookmarks/me")
-    public ResponseEntity<Page<FeedSummaryResponse>> getMyBookmarkedFeeds(
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기", example = "20")
-            @RequestParam(defaultValue = "20") int size
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getMyBookmarkedFeedsInfiniteScroll(
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
     ) {
         Long currentMemberId = getCurrentMemberId();
 
-        Page<FeedSummaryResponse> response = feedService.getBookmarkedFeeds(currentMemberId, page, size);
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.getBookmarkedFeedsInfiniteScroll(currentMemberId, lastFeedId, size);
 
         return ResponseEntity.ok(response);
     }
 
     @Operation(
-            summary = "특정 회원이 북마크한 피드 목록 조회",
-            description = "특정 회원이 북마크한 피드 목록을 페이징 방식으로 조회합니다. (다른 사람의 북마크 목록)"
+            summary = "특정 회원이 북마크한 피드 무한 스크롤",
+            description = "특정 회원이 북마크한 피드 목록을 무한 스크롤로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = Page.class))
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
             )
     })
     @GetMapping("/bookmarks/members/{memberId}")
-    public ResponseEntity<Page<FeedSummaryResponse>> getMemberBookmarkedFeeds(
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getMemberBookmarkedFeedsInfiniteScroll(
             @Parameter(description = "회원 ID", required = true, example = "1")
             @PathVariable Long memberId,
-            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기", example = "20")
-            @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
     ) {
-        Page<FeedSummaryResponse> response = feedService.getBookmarkedFeeds(memberId, page, size);
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.getBookmarkedFeedsInfiniteScroll(memberId, lastFeedId, size);
 
         return ResponseEntity.ok(response);
     }
