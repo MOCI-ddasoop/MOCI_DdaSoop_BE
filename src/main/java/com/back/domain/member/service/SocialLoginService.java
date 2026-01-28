@@ -71,13 +71,13 @@ public class SocialLoginService {
 
     /** 소셜 로그인 최신 정보로 회원 정보 업데이트 */
     private void updateMemberInfoFromSocialLogin(Member member, OAuth2UserInfo userInfo) {
-        // 프로필 이미지 업데이트 (소셜 로그인에서 받은 최신 이미지)
-        if (userInfo.getProfileImageUrl() != null) {
-            member.updateProfileImage(userInfo.getProfileImageUrl());
+        // 프로필 이미지: 사용자가 직접 수정한 이미지는 소셜 이미지로 덮어쓰지 않음
+        String currentImageUrl = member.getProfileImageUrl();
+        String socialImageUrl = userInfo.getProfileImageUrl();
+        
+        if (socialImageUrl != null && (currentImageUrl == null || currentImageUrl.equals(socialImageUrl))) {
+            member.updateProfileImage(socialImageUrl);
         }
-
-        // 이름 업데이트 (소셜 로그인에서 받은 최신 이름)
-        // 이름은 변경하지 않음 (이름 변경은 별도 API로 처리)
     }
 
     /** 새 회원 생성 (소셜 로그인 정보 저장, null 값 허용) */
