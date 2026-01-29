@@ -40,16 +40,32 @@ public class SocialLoginService {
             Member member = existingAccount.getMember();
             
             // 최신 데이터를 보장하기 위해 DB에서 다시 조회 (JPA 캐싱 이슈 방지)
-            Member freshMember = memberRepository.findByIdAndDeletedAtIsNull(member.getId())
+            // 소프트 딜리트된 회원도 조회 가능하도록 findById() 사용
+            Member freshMember = memberRepository.findById(member.getId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             ErrorCode.MEMBER_NOT_FOUND.getMessage()
                     ));
             
-            // 탈퇴한 회원인지 확인
+            // 소프트 딜리트된 회원인 경우 재가입 처리
+            // 탈퇴 후 재가입은 명시적인 재가입 절차를 거치도록 닉네임/이메일 초기화
             if (freshMember.isDeleted()) {
-                throw new IllegalArgumentException(
-                        ErrorCode.MEMBER_ALREADY_DELETED.getMessage()
-                );
+                // 닉네임/이메일 중복 체크 (활성 회원 기준)
+                // 다른 활성 회원이 사용 중이면 초기화, 사용 가능하면 기존 값 유지
+                boolean nicknameConflict = freshMember.getNickname() != null && 
+                        memberService.checkNickname(freshMember.getNickname());
+                boolean emailConflict = freshMember.getEmail() != null && 
+                        memberService.checkEmail(freshMember.getEmail());
+                
+                // 중복이 있으면 초기화 (재가입 절차를 거치도록 함)
+                if (nicknameConflict) {
+                    freshMember.updateNickname(null);
+                }
+                if (emailConflict) {
+                    freshMember.updateEmail(null);
+                }
+                
+                // 회원 복구
+                freshMember.restore();
             }
 
             // 소셜 로그인에서 받은 최신 정보로 업데이트 (프로필 이미지, 이름 등이 변경되었을 수 있음)
