@@ -102,7 +102,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long togetherId);
 
     /**
-     * 특정 Together의 최상위 댓글 조회 (페이징, 최신순)
+     * 특정 Together의 최상위 댓글 조회 (페이징, 최신순) 트리거
      * @EntityGraph로 replies fetch join하여 N+1 방지
      */
     @EntityGraph(attributePaths = {"replies", "member"})
