@@ -24,12 +24,18 @@ public interface FeedBookmarkRepository extends JpaRepository<FeedBookmark, Long
     void deleteByFeedIdAndMemberId(Long feedId, Long memberId);
 
     /**
-     * 특정 회원이 북마크한 피드 목록 조회 (페이징)
+     * 특정 회원이 북마크한 피드 무한 스크롤 조회
      */
     @Query("SELECT fb.feed FROM FeedBookmark fb " +
-           "WHERE fb.member.id = :memberId AND fb.feed.deletedAt IS NULL " +
-           "ORDER BY fb.createdAt DESC")
-    Page<Feed> findBookmarkedFeedsByMemberId(@Param("memberId") Long memberId, Pageable pageable);
+           "WHERE fb.member.id = :memberId " +
+           "AND fb.feed.id < :cursorId " +
+           "AND fb.feed.deletedAt IS NULL " +
+           "ORDER BY fb.feed.id DESC")
+    Page<Feed> findBookmarkedFeedsByMemberIdForInfiniteScroll(
+        @Param("memberId") Long memberId, 
+        @Param("cursorId") Long cursorId,
+        Pageable pageable
+    );
 
     /**
      * 특정 회원이 북마크한 피드 개수 조회

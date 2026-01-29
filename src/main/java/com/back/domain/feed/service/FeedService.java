@@ -292,17 +292,42 @@ public class FeedService {
     }
 
     /**
-     * 태그로 피드 검색 (QueryDSL)
+     * 태그 검색 무한 스크롤
      */
-    public List<FeedSummaryResponse> searchByTag(String tag, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        List<String> tags = List.of(tag);
+    public InfiniteScrollResponse<FeedSummaryResponse> searchByTagInfiniteScroll(
+            String tag,
+            Long lastFeedId,
+            Integer size
+    ) {
+        int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
+        Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        List<Feed> feeds = feedRepository.findByTagsWithDynamicQuery(tags, pageable);
+        List<Feed> feeds = feedRepository.findByTagForInfiniteScroll(tag, cursorId, requestedSize + 1);
 
-        return feeds.stream()
-                .map(FeedSummaryResponse::from)
-                .collect(Collectors.toList());
+        return createInfiniteScrollResponse(feeds, requestedSize);
+    }
+
+    /**
+     * 북마크 피드 무한 스크롤
+     */
+    public InfiniteScrollResponse<FeedSummaryResponse> getBookmarkedFeedsInfiniteScroll(
+            Long memberId,
+            Long lastFeedId,
+            Integer size
+    ) {
+        int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
+        Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
+
+        Pageable pageable = PageRequest.of(0, requestedSize + 1);
+        Page<Feed> feedPage = feedBookmarkRepository.findBookmarkedFeedsByMemberIdForInfiniteScroll(
+            memberId,
+            cursorId,
+            pageable
+        );
+
+        List<Feed> feeds = feedPage.getContent();
+
+        return createInfiniteScrollResponse(feeds, requestedSize);
     }
 
     /**
@@ -351,16 +376,6 @@ public class FeedService {
                 .limit(validatedSize)
                 .map(FeedSummaryResponse::from)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 특정 회원이 북마크한 피드 목록 조회 (페이징)
-     */
-    public Page<FeedSummaryResponse> getBookmarkedFeeds(Long memberId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Feed> feeds = feedBookmarkRepository.findBookmarkedFeedsByMemberId(memberId, pageable);
-
-        return feeds.map(FeedSummaryResponse::from);
     }
 
     /**

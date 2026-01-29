@@ -70,27 +70,6 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     // ========== Public 메서드 ==========
 
     @Override
-    public List<Feed> findByTagsWithDynamicQuery(List<String> tags, Pageable pageable) {
-        QFeed feed = QFeed.feed;
-
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(feed.deletedAt.isNull());
-
-        // 태그 조건 (OR)
-        if (tags != null && !tags.isEmpty()) {
-            builder.and(feed.tags.any().in(tags));
-        }
-
-        return queryFactory
-                .selectFrom(feed)
-                .where(builder)
-                .orderBy(feed.createdAt.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-    }
-
-    @Override
     public List<Feed> findPopularFeedsWithCondition(FeedSearchCondition condition, int limit) {
         QFeed feed = QFeed.feed;
         
@@ -156,6 +135,22 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 .selectFrom(feed)
                 .where(
                     feed.together.id.eq(togetherId)
+                    .and(feed.id.lt(cursorId))
+                    .and(feed.deletedAt.isNull())
+                )
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(
+                    feed.tags.any().eq(tag)
                     .and(feed.id.lt(cursorId))
                     .and(feed.deletedAt.isNull())
                 )

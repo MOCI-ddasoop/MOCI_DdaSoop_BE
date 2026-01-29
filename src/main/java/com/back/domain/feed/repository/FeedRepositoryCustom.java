@@ -29,18 +29,6 @@ public interface FeedRepositoryCustom {
     Page<Feed> searchFeeds(FeedSearchCondition condition, Pageable pageable);
     
     /**
-     * 태그로 피드 검색 (동적 쿼리)
-     * 
-     * @param tags 검색할 태그 목록 (OR 조건)
-     * @param pageable 페이징 정보
-     * @return 피드 리스트
-     * 
-     * 사용 예:
-     * - tags: ["여행", "맛집"] → 여행 OR 맛집 태그가 있는 피드
-     */
-    List<Feed> findByTagsWithDynamicQuery(List<String> tags, Pageable pageable);
-    
-    /**
      * 인기 피드 조회 (조건부)
      * 
      * @param condition 검색 조건 (기간, 타입 등)
@@ -92,4 +80,14 @@ public interface FeedRepositoryCustom {
      * @return 피드 리스트
      */
     List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit);
+
+    /**
+     * 태그 검색 무한 스크롤 조회
+     * 
+     * @param tag 검색할 태그
+     * @param cursorId 마지막 피드 ID
+     * @param limit 조회할 개수
+     * @return 피드 리스트
+     */
+    List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit);
 }
