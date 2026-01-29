@@ -124,7 +124,7 @@ public class CommentService {
      */
     public List<CommentResponse> getFeedCommentsAll(Long feedId) {
         List<Comment> comments = commentRepository
-                .findByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(feedId);
+                .findByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(feedId);
 
         return comments.stream()
                 .map(CommentResponse::from)
