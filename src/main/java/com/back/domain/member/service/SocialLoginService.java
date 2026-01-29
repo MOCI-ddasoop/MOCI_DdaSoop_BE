@@ -47,23 +47,9 @@ public class SocialLoginService {
                     ));
             
             // 소프트 딜리트된 회원인 경우 재가입 처리
-            // 탈퇴 후 재가입은 명시적인 재가입 절차를 거치도록 닉네임/이메일 초기화
+            // 탈퇴 시 이미 닉네임/이메일이 초기화되어 있으므로, 회원만 복구
+            // 재가입 시 최초 가입과 동일하게 추가 정보 입력 페이지로 이동
             if (freshMember.isDeleted()) {
-                // 닉네임/이메일 중복 체크 (활성 회원 기준)
-                // 다른 활성 회원이 사용 중이면 초기화, 사용 가능하면 기존 값 유지
-                boolean nicknameConflict = freshMember.getNickname() != null && 
-                        memberService.checkNickname(freshMember.getNickname());
-                boolean emailConflict = freshMember.getEmail() != null && 
-                        memberService.checkEmail(freshMember.getEmail());
-                
-                // 중복이 있으면 초기화 (재가입 절차를 거치도록 함)
-                if (nicknameConflict) {
-                    freshMember.updateNickname(null);
-                }
-                if (emailConflict) {
-                    freshMember.updateEmail(null);
-                }
-                
                 // 회원 복구
                 freshMember.restore();
             }
