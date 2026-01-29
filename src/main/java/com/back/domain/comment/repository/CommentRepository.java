@@ -25,14 +25,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /**
      * 특정 피드의 최상위 댓글만 조회 (삭제된 것 제외, 최신순)
      */
-    List<Comment> findByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(Long feedId);
+    List<Comment> findByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long feedId);
 
     /**
-     * 특정 피드의 최상위 댓글 조회 (페이징)
+     * 특정 피드의 최상위 댓글 조회 (페이징, 최신순)
      * @EntityGraph로 replies fetch join하여 N+1 방지
      */
     @EntityGraph(attributePaths = {"replies", "member"})
-    Page<Comment> findByFeedIdAndParentIsNullAndDeletedAtIsNull(Long feedId, Pageable pageable);
+    @Query("SELECT c FROM Comment c " +
+           "WHERE c.feed.id = :feedId AND c.parent IS NULL AND c.deletedAt IS NULL " +
+           "ORDER BY c.createdAt DESC")
+    Page<Comment> findByFeedIdAndParentIsNullAndDeletedAtIsNull(
+        @Param("feedId") Long feedId, 
+        Pageable pageable
+    );
 
     /**
      * 특정 피드의 전체 댓글 개수 (대댓글 포함, 삭제된 것 제외)
@@ -48,7 +54,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // ========== 대댓글 조회 ==========
 
     /**
-     * 특정 댓글의 대댓글 조회 (최신순)
+     * 특정 댓글의 대댓글 조회 (삭제된 것 제외, 오래된 순)
      */
     List<Comment> findByParentIdAndDeletedAtIsNullOrderByCreatedAtAsc(Long parentId);
 
@@ -80,7 +86,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * 특정 피드의 인기 댓글 (리액션 많은 순)
      */
     @Query("SELECT c FROM Comment c WHERE c.feed.id = :feedId AND c.parent IS NULL " +
-            "AND c.deletedAt IS NULL ORDER BY c.reactionCount DESC, c.createdAt ASC")
+            "AND c.deletedAt IS NULL ORDER BY c.reactionCount DESC, c.createdAt DESC")
     List<Comment> findPopularCommentsByFeedId(@Param("feedId") Long feedId, Pageable pageable);
 
     /**
@@ -93,14 +99,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /**
      * 특정 Together의 최상위 댓글만 조회 (삭제된 것 제외, 최신순)
      */
-    List<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtAsc(Long togetherId);
+    List<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(Long togetherId);
 
     /**
-     * 특정 Together의 최상위 댓글 조회 (페이징)
+     * 특정 Together의 최상위 댓글 조회 (페이징, 최신순) 트리거
      * @EntityGraph로 replies fetch join하여 N+1 방지
      */
     @EntityGraph(attributePaths = {"replies", "member"})
-    Page<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNull(Long togetherId, Pageable pageable);
+    @Query("SELECT c FROM Comment c " +
+           "WHERE c.together.id = :togetherId AND c.parent IS NULL AND c.deletedAt IS NULL " +
+           "ORDER BY c.createdAt DESC")
+    Page<Comment> findByTogetherIdAndParentIsNullAndDeletedAtIsNull(
+        @Param("togetherId") Long togetherId, 
+        Pageable pageable
+    );
 
     /**
      * 특정 Together의 전체 댓글 개수 (대댓글 포함)
@@ -116,7 +128,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * 특정 Together의 인기 댓글 (리액션 많은 순)
      */
     @Query("SELECT c FROM Comment c WHERE c.together.id = :togetherId AND c.parent IS NULL " +
-            "AND c.deletedAt IS NULL ORDER BY c.reactionCount DESC, c.createdAt ASC")
+            "AND c.deletedAt IS NULL ORDER BY c.reactionCount DESC, c.createdAt DESC")
     List<Comment> findPopularCommentsByTogetherId(@Param("togetherId") Long togetherId, Pageable pageable);
 
     /**
