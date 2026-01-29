@@ -59,10 +59,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
             // 트랜잭션 커밋 후 최신 데이터를 보장하기 위해 다시 조회
             // (findOrCreateMember의 트랜잭션이 커밋된 후 최신 데이터 확인)
-            Member latestMember = memberRepository.findByIdAndDeletedAtIsNull(member.getId())
+            // 소프트 딜리트된 회원도 조회 가능하도록 findById() 사용
+            Member latestMember = memberRepository.findById(member.getId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             ErrorCode.MEMBER_NOT_FOUND.getMessage()
                     ));
+            
+            // 탈퇴한 회원인지 확인 (소프트 딜리트 체크)
+            if (latestMember.isDeleted()) {
+                throw new IllegalArgumentException(
+                        ErrorCode.MEMBER_ALREADY_DELETED.getMessage()
+                );
+            }
 
             // 추가 정보 입력 필요 여부 확인 (최신 데이터 기준)
             String targetUrl;

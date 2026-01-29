@@ -144,6 +144,10 @@ public class MemberService {
             );
         }
 
+        // 탈퇴 시 닉네임/이메일 초기화 (재가입 시 최초 가입과 동일한 절차를 거치도록 함)
+        member.updateNickname(null);
+        member.updateEmail(null);
+        
         member.delete();
         memberRepository.save(member);
     }
