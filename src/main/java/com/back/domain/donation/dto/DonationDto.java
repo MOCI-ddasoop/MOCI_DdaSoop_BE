@@ -1,0 +1,61 @@
+package com.back.domain.donation.dto;
+
+import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.Donations;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
+public class DonationDto {
+
+    /* ===================Request====================== */
+    /* ===================Response===================== */
+
+    public record ListResponse(
+            Long id,
+            String title,
+            Long goalAmount,
+            Long currentAmount,
+            LocalDate endDate,
+            String status,
+            String thumbnailImage,
+            DonationCategory category,
+            Long dDay
+    ) {
+        public static ListResponse from(Donations donations){
+
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, donations.getEndDate());
+
+            return new ListResponse(
+                    donations.getId(),
+                    donations.getTitle(),
+                    donations.getGoalAmount(),
+                    donations.getCurrentAmount(),
+                    donations.getEndDate(),
+                    donations.getStatus(),
+                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getDonationCategory(),
+                    dDay
+            );
+        }
+    }
+
+    public record DetailResponse(
+            Long id,
+            String title,
+            String description,
+            Long goalAmount,
+            Long currentAmount,
+            LocalDate startDate,
+            LocalDate endDate,
+            String status,
+            String thumbnailImage,
+            DonationCategory category,
+            Long dDay
+    ) {}
+
+    public record DescriptionResponse(
+            String description
+    ) {}
+}

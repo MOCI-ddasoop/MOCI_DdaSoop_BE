@@ -1,0 +1,529 @@
+package com.back.domain.feed.controller;
+
+import com.back.domain.feed.dto.feed.request.FeedCreateRequest;
+import com.back.domain.feed.dto.feed.request.FeedSearchRequest;
+import com.back.domain.feed.dto.feed.request.FeedUpdateRequest;
+import com.back.domain.feed.dto.feed.response.FeedResponse;
+import com.back.domain.feed.dto.feed.response.FeedSummaryResponse;
+import com.back.domain.feed.dto.feed.response.InfiniteScrollResponse;
+import com.back.domain.feed.service.FeedService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Tag(name = "Feed", description = "피드 API")
+@Slf4j
+@RestController
+@RequestMapping("/api/feeds")
+@RequiredArgsConstructor
+public class FeedController {
+
+    private final FeedService feedService;
+    
+    /**
+     * SecurityContext에서 현재 로그인한 회원 ID 추출
+     * @return 현재 로그인한 회원 ID
+     */
+    private Long getCurrentMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        return (Long) authentication.getPrincipal();
+    }
+    
+    /**
+     * 로그인하지 않은 경우 null 반환 (조회 API용)
+     * @return 현재 로그인한 회원 ID 또는 null
+     */
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            return getCurrentMemberId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Operation(
+            summary = "피드 생성",
+            description = "새로운 피드를 생성합니다. content와 tags는 별도로 입력받으며, 최대 10개의 이미지를 첨부할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "피드 생성 성공",
+                    content = @Content(schema = @Schema(implementation = Long.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (유효성 검증 실패)")
+    })
+    @PostMapping
+    public ResponseEntity<Long> createFeed(
+            @Valid @RequestBody FeedCreateRequest request
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        Long feedId = feedService.createFeed(request, currentMemberId);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(feedId);
+    }
+
+    @Operation(
+            summary = "피드 상세 조회",
+            description = "특정 피드의 상세 정보를 조회합니다. 이미지, 태그, 카운트 정보를 포함합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = FeedResponse.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @GetMapping("/{feedId}")
+    public ResponseEntity<FeedResponse> getFeed(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+    ) {
+        Long currentMemberId = getCurrentMemberIdOrNull();
+
+        FeedResponse response = feedService.getFeed(feedId, currentMemberId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "피드 목록 조회 (페이징 + QueryDSL 동적 검색)",
+            description = "피드 목록을 페이징 방식으로 조회합니다. QueryDSL 동적 쿼리로 다양한 조건 조합이 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Page.class))
+            )
+    })
+    @GetMapping
+    public ResponseEntity<Page<FeedSummaryResponse>> getFeedList(
+            @Parameter(description = "검색 및 필터 조건", required = false)
+            @ModelAttribute FeedSearchRequest searchRequest
+    ) {
+        Page<FeedSummaryResponse> response = feedService.getFeedList(searchRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "전체 피드 무한 스크롤",
+            description = "커서 기반 페이징으로 전체 피드를 조회합니다. hasNext를 통해 다음 페이지 존재 여부를 확인할 수 있습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/scroll")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getFeedListInfiniteScroll(
+            @Parameter(description = "마지막으로 조회한 피드 ID (첫 조회 시에는 생략)", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        InfiniteScrollResponse<FeedSummaryResponse> response =
+                feedService.getFeedListInfiniteScroll(lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 회원의 피드 무한 스크롤",
+            description = "특정 회원이 작성한 피드를 무한 스크롤로 조회합니다. (프로필 페이지, 마이페이지용)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/members/{memberId}/scroll")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getMemberFeedsInfiniteScroll(
+            @Parameter(description = "회원 ID", required = true, example = "1")
+            @PathVariable Long memberId,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        InfiniteScrollResponse<FeedSummaryResponse> response =
+                feedService.getMemberFeedsInfiniteScroll(memberId, lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 Together의 인증 피드 무한 스크롤",
+            description = "특정 함께하기 모임의 인증 피드를 무한 스크롤로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/together/{togetherId}/scroll")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getTogetherFeedsInfiniteScroll(
+            @Parameter(description = "함께하기 ID", required = true, example = "1")
+            @PathVariable Long togetherId,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        InfiniteScrollResponse<FeedSummaryResponse> response =
+                feedService.getTogetherFeedsInfiniteScroll(togetherId, lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "피드 수정",
+            description = "기존 피드의 내용, 이미지, 태그, 공개 범위를 수정합니다. 작성자만 수정 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (작성자가 아님)"),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @PutMapping("/{feedId}")
+    public ResponseEntity<Void> updateFeed(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId,
+            @Valid @RequestBody FeedUpdateRequest request
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        feedService.updateFeed(feedId, request, currentMemberId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(
+            summary = "피드 삭제",
+            description = "피드를 논리적으로 삭제(Soft Delete)합니다. 작성자만 삭제 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (작성자가 아님)"),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @DeleteMapping("/{feedId}")
+    public ResponseEntity<Void> deleteFeed(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        feedService.deleteFeed(feedId, currentMemberId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "피드 리액션 토글 (좋아요)",
+            description = "피드에 좋아요를 추가하거나 취소합니다. 이미 좋아요를 누른 경우 취소되고, 아니면 추가됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토글 성공 (true: 좋아요 추가, false: 좋아요 취소)",
+                    content = @Content(schema = @Schema(implementation = Boolean.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @PostMapping("/{feedId}/reactions")
+    public ResponseEntity<Boolean> toggleReaction(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        boolean isReacted = feedService.toggleReaction(feedId, currentMemberId);
+
+        return ResponseEntity.ok(isReacted);
+    }
+
+    @Operation(
+            summary = "피드 북마크 토글",
+            description = "피드를 북마크에 추가하거나 제거합니다. 이미 북마크한 경우 제거되고, 아니면 추가됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토글 성공 (true: 북마크 추가, false: 북마크 제거)",
+                    content = @Content(schema = @Schema(implementation = Boolean.class))
+            ),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @PostMapping("/{feedId}/bookmarks")
+    public ResponseEntity<Boolean> toggleBookmark(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        boolean isBookmarked = feedService.toggleBookmark(feedId, currentMemberId);
+
+        return ResponseEntity.ok(isBookmarked);
+    }
+
+    @Operation(
+            summary = "태그 검색 무한 스크롤",
+            description = "특정 태그가 포함된 피드를 무한 스크롤로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "검색 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/search/tag")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> searchByTagInfiniteScroll(
+            @Parameter(description = "검색할 태그", required = true, example = "여행")
+            @RequestParam String tag,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.searchByTagInfiniteScroll(tag, lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "인기 피드 조회 (최근 7일)",
+            description = "리액션(좋아요)이 많은 인기 피드를 조회합니다. (최근 7일 기준)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/popular")
+    public ResponseEntity<List<FeedSummaryResponse>> getPopularFeeds(
+            @Parameter(description = "조회할 개수", example = "10")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<FeedSummaryResponse> response = feedService.getPopularFeeds(size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "댓글 많은 피드 Top N",
+            description = "댓글이 가장 많은 피드를 조회합니다. (토론 많은 게시물)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/most-commented")
+    public ResponseEntity<List<FeedSummaryResponse>> getMostCommentedFeeds(
+            @Parameter(description = "조회할 개수", example = "10")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<FeedSummaryResponse> response = feedService.getMostCommentedFeeds(size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "북마크 많은 피드 Top N",
+            description = "북마크가 가장 많은 피드를 조회합니다. (가장 많이 저장된 게시물)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/most-bookmarked")
+    public ResponseEntity<List<FeedSummaryResponse>> getMostBookmarkedFeeds(
+            @Parameter(description = "조회할 개수", example = "10")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<FeedSummaryResponse> response = feedService.getMostBookmarkedFeeds(size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "내가 북마크한 피드 무한 스크롤",
+            description = "내가 북마크한 피드 목록을 무한 스크롤로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/bookmarks/me")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getMyBookmarkedFeedsInfiniteScroll(
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.getBookmarkedFeedsInfiniteScroll(currentMemberId, lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 회원이 북마크한 피드 무한 스크롤",
+            description = "특정 회원이 북마크한 피드 목록을 무한 스크롤로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
+            )
+    })
+    @GetMapping("/bookmarks/members/{memberId}")
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getMemberBookmarkedFeedsInfiniteScroll(
+            @Parameter(description = "회원 ID", required = true, example = "1")
+            @PathVariable Long memberId,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 50)", required = false, example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        InfiniteScrollResponse<FeedSummaryResponse> response = 
+            feedService.getBookmarkedFeedsInfiniteScroll(memberId, lastFeedId, size);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "내 북마크 개수 조회",
+            description = "현재 로그인한 회원이 북마크한 피드의 총 개수를 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = Long.class))
+            )
+    })
+    @GetMapping("/bookmarks/me/count")
+    public ResponseEntity<Long> getMyBookmarkCount() {
+        Long currentMemberId = getCurrentMemberId();
+
+        Long count = feedService.getBookmarkCount(currentMemberId);
+
+        return ResponseEntity.ok(count);
+    }
+
+    // ========== 공지 피드 관련 API ==========
+
+    @Operation(
+            summary = "특정 Together의 공지 피드 목록 조회",
+            description = "특정 함께하기 모임의 공지 피드를 조회합니다. 상단 고정된 공지가 먼저 표시되고, 최신순으로 정렬됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/together/{togetherId}/notices")
+    public ResponseEntity<List<FeedSummaryResponse>> getTogetherNoticeFeeds(
+            @Parameter(description = "함께하기 ID", required = true, example = "1")
+            @PathVariable Long togetherId
+    ) {
+        List<FeedSummaryResponse> response = feedService.getTogetherNoticeFeeds(togetherId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "특정 Together의 상단 고정된 공지 피드만 조회",
+            description = "특정 함께하기 모임의 상단에 고정된 공지 피드만 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = List.class))
+            )
+    })
+    @GetMapping("/together/{togetherId}/notices/pinned")
+    public ResponseEntity<List<FeedSummaryResponse>> getPinnedNoticeFeeds(
+            @Parameter(description = "함께하기 ID", required = true, example = "1")
+            @PathVariable Long togetherId
+    ) {
+        List<FeedSummaryResponse> response = feedService.getPinnedNoticeFeeds(togetherId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "공지 피드 상단 고정 토글",
+            description = "공지 피드의 상단 고정 상태를 토글합니다. 고정되어 있으면 해제하고, 해제되어 있으면 고정합니다. (방장만 가능)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "토글 성공 (true: 고정됨, false: 고정 해제됨)",
+                    content = @Content(schema = @Schema(implementation = Boolean.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "공지 피드가 아님"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (방장이 아님)"),
+            @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
+    })
+    @PutMapping("/{feedId}/pin")
+    public ResponseEntity<Boolean> togglePinNotice(
+            @Parameter(description = "피드 ID", required = true, example = "1")
+            @PathVariable Long feedId
+    ) {
+        Long currentMemberId = getCurrentMemberId();
+
+        boolean isPinned = feedService.togglePinNotice(feedId, currentMemberId);
+
+        log.info("공지 피드 고정 토글 API 호출 - 피드 ID: {}, 고정 여부: {}", feedId, isPinned);
+
+        return ResponseEntity.ok(isPinned);
+    }
+}
