@@ -2,6 +2,8 @@ package com.back.domain.feed.repository;
 
 import com.back.domain.feed.entity.Feed;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +61,16 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
             Long togetherId,
             com.back.domain.feed.entity.FeedType feedType
     );
+    
+    /**
+     * 특정 Together의 최대 pinOrder 값 조회 (다음 순서 계산용)
+     * 
+     * @param togetherId Together ID
+     * @return 최대 pinOrder 값 (없으면 0)
+     */
+    @Query("SELECT COALESCE(MAX(f.pinOrder), 0) FROM Feed f " +
+           "WHERE f.together.id = :togetherId AND f.isPinned = true AND f.deletedAt IS NULL")
+    Integer findMaxPinOrderByTogetherId(@Param("togetherId") Long togetherId);
     
     // ========== 통계 ==========
     

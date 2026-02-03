@@ -70,6 +70,9 @@ public class Feed extends BaseEntity {
     @lombok.Builder.Default
     private Boolean isPinned = false;      // 상단 고정 여부 (공지 피드용)
 
+    @Column(name = "pin_order")
+    private Integer pinOrder;              // 핀 고정 순서 (1, 2, 3, ...)
+
     // ========== Soft Delete ==========
     @Column
     private LocalDateTime deletedAt;       // 삭제 시점 (null이면 삭제되지 않음)
@@ -133,13 +136,15 @@ public class Feed extends BaseEntity {
     }
 
     // 상단 고정 설정
-    public void pin() {
+    public void pin(Integer pinOrder) {
         this.isPinned = true;
+        this.pinOrder = pinOrder;
     }
 
     // 상단 고정 해제
     public void unpin() {
         this.isPinned = false;
+        this.pinOrder = null;
     }
 
     // 이미지 추가/삭제

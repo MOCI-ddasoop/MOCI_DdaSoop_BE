@@ -454,8 +454,12 @@ public class FeedService {
             log.info("공지 피드 고정 해제 - Feed ID: {}", feedId);
             return false;
         } else {
-            feed.pin();
-            log.info("공지 피드 고정 - Feed ID: {}", feedId);
+            // 다음 pinOrder 계산 (기존 최대값 + 1)
+            Integer maxPinOrder = feedRepository.findMaxPinOrderByTogetherId(feed.getTogether().getId());
+            Integer nextPinOrder = maxPinOrder + 1;
+            
+            feed.pin(nextPinOrder);
+            log.info("공지 피드 고정 - Feed ID: {}, pinOrder: {}", feedId, nextPinOrder);
             return true;
         }
     }

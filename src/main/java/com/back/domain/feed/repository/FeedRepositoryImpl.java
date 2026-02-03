@@ -131,6 +131,18 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit) {
         QFeed feed = QFeed.feed;
         
+        // 우선순위 계산:
+        // 3: 핀 고정 + 공지
+        // 2: 핀 고정 + 인증
+        // 0: 핀 미고정
+        com.querydsl.core.types.dsl.NumberExpression<Integer> priority = 
+            new com.querydsl.core.types.dsl.CaseBuilder()
+                .when(feed.isPinned.isTrue().and(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)))
+                .then(3)
+                .when(feed.isPinned.isTrue().and(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION)))
+                .then(2)
+                .otherwise(0);
+        
         return queryFactory
                 .selectFrom(feed)
                 .where(
@@ -138,7 +150,11 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     .and(feed.id.lt(cursorId))
                     .and(feed.deletedAt.isNull())
                 )
-                .orderBy(feed.id.desc())
+                .orderBy(
+                    priority.desc(),              // 1순위: 우선순위 (핀 공지 > 핀 인증 > 일반)
+                    feed.pinOrder.asc().nullsLast(),  // 2순위: 핀 순서 (1, 2, 3, ...)
+                    feed.createdAt.desc()         // 3순위: 최신순
+                )
                 .limit(limit)
                 .fetch();
     }
