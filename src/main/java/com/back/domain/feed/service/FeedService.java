@@ -154,7 +154,8 @@ public class FeedService {
     }
 
     /**
-     * 특정 Together의 인증 피드 무한 스크롤 (커서 기반)
+     * 특정 Together의 피드 무한 스크롤 (커서 기반)
+     * 첫 페이지일 때만 핀 고정 피드 포함, 이후 페이지에서는 일반 피드만 반환
      */
     public InfiniteScrollResponse<FeedSummaryResponse> getTogetherFeedsInfiniteScroll(
             Long togetherId,
@@ -162,11 +163,43 @@ public class FeedService {
             Integer size
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
+        boolean isFirstPage = (lastFeedId == null);
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        // 동적 limit 지원 (requestedSize + 1)
-        List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(togetherId, cursorId, requestedSize + 1);
+        List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(
+                togetherId, cursorId, requestedSize + 1, isFirstPage
+        );
 
+        // 첫 페이지일 때 핀 고정 피드와 일반 피드를 분리하여 nextCursor 계산
+        if (isFirstPage) {
+            List<Feed> unpinnedFeeds = feeds.stream().filter(f -> !f.getIsPinned()).toList();
+            List<Feed> pinnedFeeds = feeds.stream().filter(Feed::getIsPinned).toList();
+
+            boolean hasNext = unpinnedFeeds.size() > (requestedSize - pinnedFeeds.size());
+            int unpinnedSlotSize = requestedSize - pinnedFeeds.size();
+            List<Feed> actualUnpinned = hasNext ? unpinnedFeeds.subList(0, unpinnedSlotSize) : unpinnedFeeds;
+
+            List<Feed> actualFeeds = new ArrayList<>(pinnedFeeds);
+            actualFeeds.addAll(actualUnpinned);
+
+            List<FeedSummaryResponse> responses = actualFeeds.stream()
+                    .map(FeedSummaryResponse::from)
+                    .collect(Collectors.toList());
+
+            // nextCursor는 일반 피드 마지막 아이템의 ID
+            Long nextCursor = actualUnpinned.isEmpty() ? null :
+                    actualUnpinned.get(actualUnpinned.size() - 1).getId();
+
+            return InfiniteScrollResponse.<FeedSummaryResponse>builder()
+                    .content(responses)
+                    .nextCursor(nextCursor)
+                    .hasNext(hasNext)
+                    .size(responses.size())
+                    .requestedSize(requestedSize)
+                    .build();
+        }
+
+        // 두 번째 페이지 이후: 일반 피드만 반환되므로 공통 로직 사용
         return createInfiniteScrollResponse(feeds, requestedSize);
     }
 

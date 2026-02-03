@@ -128,35 +128,51 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     @Override
-    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit) {
+    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage) {
         QFeed feed = QFeed.feed;
-        
-        // 우선순위 계산:
-        // 3: 핀 고정 + 공지
-        // 2: 핀 고정 + 인증
-        // 0: 핀 미고정
-        com.querydsl.core.types.dsl.NumberExpression<Integer> priority = 
-            new com.querydsl.core.types.dsl.CaseBuilder()
-                .when(feed.isPinned.isTrue().and(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)))
-                .then(3)
-                .when(feed.isPinned.isTrue().and(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION)))
-                .then(2)
-                .otherwise(0);
-        
-        return queryFactory
+
+        List<Feed> result = new java.util.ArrayList<>();
+
+        // 첫 페이지일 때만 핀 고정 피드 포함
+        if (isFirstPage) {
+            com.querydsl.core.types.dsl.NumberExpression<Integer> priority =
+                new com.querydsl.core.types.dsl.CaseBuilder()
+                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)).then(3)
+                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION)).then(2)
+                    .otherwise(0);
+
+            List<Feed> pinnedFeeds = queryFactory
+                    .selectFrom(feed)
+                    .where(
+                        feed.together.id.eq(togetherId)
+                        .and(feed.isPinned.isTrue())
+                        .and(feed.deletedAt.isNull())
+                    )
+                    .orderBy(
+                        priority.desc(),
+                        feed.pinOrder.asc().nullsLast()
+                    )
+                    .fetch();
+
+            result.addAll(pinnedFeeds);
+            limit = Math.max(limit - pinnedFeeds.size(), 1);
+        }
+
+        // 핀 미고정 피드: 커서 기반 페이지네이션
+        List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
                 .where(
                     feed.together.id.eq(togetherId)
+                    .and(feed.isPinned.isFalse())
                     .and(feed.id.lt(cursorId))
                     .and(feed.deletedAt.isNull())
                 )
-                .orderBy(
-                    priority.desc(),              // 1순위: 우선순위 (핀 공지 > 핀 인증 > 일반)
-                    feed.pinOrder.asc().nullsLast(),  // 2순위: 핀 순서 (1, 2, 3, ...)
-                    feed.createdAt.desc()         // 3순위: 최신순
-                )
+                .orderBy(feed.createdAt.desc())
                 .limit(limit)
                 .fetch();
+
+        result.addAll(unpinnedFeeds);
+        return result;
     }
 
     @Override

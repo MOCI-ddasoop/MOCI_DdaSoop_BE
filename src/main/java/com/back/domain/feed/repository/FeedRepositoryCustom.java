@@ -77,9 +77,10 @@ public interface FeedRepositoryCustom {
      * @param togetherId Together ID
      * @param cursorId 마지막 피드 ID
      * @param limit 조회할 개수
+     * @param isFirstPage 첫 페이지 여부 (true이면 핀 고정 피드 포함)
      * @return 피드 리스트
      */
-    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit);
+    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage);
 
     /**
      * 태그 검색 무한 스크롤 조회
