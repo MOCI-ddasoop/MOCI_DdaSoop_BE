@@ -25,6 +25,10 @@ public class FeedResponse {
     private FeedType feedType;
     private String content;
     private List<FeedImageResponse> images;
+    private String thumbnailUrl;         // 첫 번째 이미지 (썸네일)
+    private Integer thumbnailWidth;      // 썸네일 가로 크기 (px)
+    private Integer thumbnailHeight;     // 썸네일 세로 크기 (px)
+    private Integer imageCount;          // 전체 이미지 개수
     private List<String> tags;
     private FeedVisibility visibility;
 
@@ -57,6 +61,17 @@ public class FeedResponse {
      * Entity -> DTO 변환 (정적 팩토리 메서드)
      */
     public static FeedResponse from(Feed feed) {
+        // 첫 번째 이미지 정보 추출 (썸네일)
+        String thumbnailUrl = null;
+        Integer thumbnailWidth = null;
+        Integer thumbnailHeight = null;
+        
+        if (feed.getFirstImage() != null) {
+            thumbnailUrl = feed.getFirstImage().getImageUrl();
+            thumbnailWidth = feed.getFirstImage().getWidth();
+            thumbnailHeight = feed.getFirstImage().getHeight();
+        }
+        
         return FeedResponse.builder()
                 .id(feed.getId())
                 .feedType(feed.getFeedType())
@@ -64,6 +79,10 @@ public class FeedResponse {
                 .images(feed.getImages().stream()
                         .map(FeedImageResponse::from)
                         .collect(Collectors.toList()))
+                .thumbnailUrl(thumbnailUrl)
+                .thumbnailWidth(thumbnailWidth)
+                .thumbnailHeight(thumbnailHeight)
+                .imageCount(feed.getImageCount())
                 .tags(feed.getTags())
                 .visibility(feed.getVisibility())
                 .reactionCount(feed.getReactionCount())
@@ -93,6 +112,10 @@ public class FeedResponse {
                 .feedType(response.getFeedType())
                 .content(response.getContent())
                 .images(response.getImages())
+                .thumbnailUrl(response.getThumbnailUrl())
+                .thumbnailWidth(response.getThumbnailWidth())
+                .thumbnailHeight(response.getThumbnailHeight())
+                .imageCount(response.getImageCount())
                 .tags(response.getTags())
                 .visibility(response.getVisibility())
                 .reactionCount(response.getReactionCount())
