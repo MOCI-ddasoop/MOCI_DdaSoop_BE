@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -42,12 +43,11 @@ public class Together extends BaseEntity {
     private LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id")
+    @JoinColumn(name = "organizer_id") // 함께하기 만든 사람 && 운영자, 주최자, 소유자
     private Member member;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "participant_id")
-    private List<Participants> participant;
+    @OneToMany(mappedBy = "together", fetch = FetchType.LAZY)// 함께하기 참가자들
+    private List<Participants> participants = new ArrayList<>();
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)

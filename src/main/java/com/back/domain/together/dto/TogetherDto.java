@@ -38,7 +38,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            List<Participants> participants,
+            List<ParticipantsResponse> participants,
             String thumbnailImage,
             Long progress,
             Long dDay
@@ -57,7 +57,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    together.getParticipant(),
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
                     null, // TODO: thumbnailImage 정보 매핑
                     null, // TODO: progress 정보 매핑
                     dDay
@@ -91,7 +91,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            List<Participants> participants,
+            List<ParticipantsResponse> participants,
             String thumbnailImage,
             Long goal,
             Long progress
@@ -106,7 +106,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    together.getParticipant(),
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
                     null, // TODO: 추후에 thumbnailImage 정보 매핑
                     null, // TODO: 추후에 goal 정보 매핑
                     null // TODO: 추후에 progress 정보 매핑
@@ -115,6 +115,22 @@ public class TogetherDto {
     }
 
     public record DescriptionResponse(String description) {}
+
+    public record ParticipantsResponse(
+            Long id,
+            Long memberId,
+            Long togetherId,
+            String participantsStatus
+    ) {
+        public static ParticipantsResponse from(Participants participants) {
+            return new ParticipantsResponse(
+                    participants.getId(),
+                    participants.getMember().getId(),
+                    participants.getTogether().getId(),
+                    participants.getParticipantsStatus().name()
+            );
+        }
+    }
 
     public record CreateResponse(
             Long id,

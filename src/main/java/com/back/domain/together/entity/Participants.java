@@ -18,11 +18,11 @@ import java.time.LocalDateTime;
 public class Participants extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "member_id") // 참가자
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "together_id")
+    @JoinColumn(name = "together_id") // 참가한 함께하기
     private Together together;
 
     @Column(name = "join_at")
@@ -41,6 +41,7 @@ public class Participants extends BaseEntity {
         p.member = member;
         p.participantsStatus = ParticipantsStatus.PARTICIPATING;
         p.joinAt = LocalDateTime.now();
+        together.getParticipants().add(p);
         return p;
     }
 
