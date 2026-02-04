@@ -207,7 +207,7 @@ public class FeedService {
      * 피드 수정
      */
     @Transactional
-    public void updateFeed(Long feedId, FeedUpdateRequest request, Long currentMemberId) {
+    public FeedResponse updateFeed(Long feedId, FeedUpdateRequest request, Long currentMemberId) {
         Feed feed = feedRepository.findByIdAndDeletedAtIsNull(feedId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
 
@@ -251,6 +251,12 @@ public class FeedService {
         }
 
         log.info("피드 수정 완료 - ID: {}", feedId);
+
+        // 수정된 피드의 리액션/북마크 여부 확인 후 FeedResponse 반환
+        boolean isReacted = feedReactionRepository.existsByFeedIdAndMemberId(feedId, currentMemberId);
+        boolean isBookmarked = feedBookmarkRepository.existsByFeedIdAndMemberId(feedId, currentMemberId);
+
+        return FeedResponse.from(feed, isReacted, isBookmarked);
     }
 
     /**

@@ -208,21 +208,25 @@ public class FeedController {
             description = "기존 피드의 내용, 이미지, 태그, 공개 범위를 수정합니다. 작성자만 수정 가능합니다."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = FeedResponse.class))
+            ),
             @ApiResponse(responseCode = "403", description = "권한 없음 (작성자가 아님)"),
             @ApiResponse(responseCode = "404", description = "피드를 찾을 수 없음")
     })
     @PutMapping("/{feedId}")
-    public ResponseEntity<Void> updateFeed(
+    public ResponseEntity<FeedResponse> updateFeed(
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId,
             @Valid @RequestBody FeedUpdateRequest request
     ) {
         Long currentMemberId = getCurrentMemberId();
 
-        feedService.updateFeed(feedId, request, currentMemberId);
+        FeedResponse response = feedService.updateFeed(feedId, request, currentMemberId);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
