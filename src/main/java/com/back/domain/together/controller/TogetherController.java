@@ -99,10 +99,26 @@ public class TogetherController {
             content = @Content(schema = @Schema(implementation = TogetherDto.class))
     )
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogetherByMemberId(
+    public ResponseEntity<RsData<List<TogetherDto.DetailResponse>>> getTogetherByMemberId(
             @PathVariable Long memberId
     ) {
         return ResponseEntity.ok().body(RsData.success("ID별 함께하기 조회 성공", togetherService.getTogetherByMemberId(memberId)));
+    }
+
+    @Operation(summary = "함께하기 참여 여부 조회")
+    @Description("ID와 함께하기 번호로 사용자의 참여 여부 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "함께하기 참여 여부 조회 성공",
+            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+    )
+    @GetMapping("/{togetherId}/{memberId}/participation")
+    public ResponseEntity<RsData<Boolean>> isParticipating(
+            @PathVariable Long togetherId,
+            @PathVariable Long memberId
+    ) {
+        Boolean isParticipating = togetherService.isParticipating(togetherId, memberId);
+        return ResponseEntity.ok().body(RsData.success("함께하기 참여 여부 조회 성공", isParticipating));
     }
 
 

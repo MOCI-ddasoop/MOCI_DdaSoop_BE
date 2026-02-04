@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public interface TogetherRepository extends JpaRepository<Together,Long> {
 
-    Optional<Together> findByMember_Id(Long memberId);
+    List<Together> findByMember_Id(Long memberId);
 
     //최신순 카테고리x & 카테고리o
     @Query("""

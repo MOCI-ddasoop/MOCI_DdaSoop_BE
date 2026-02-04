@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "challenges")
@@ -43,6 +44,10 @@ public class Together extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
     private Member member;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participant_id")
+    private List<Participants> participant;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)

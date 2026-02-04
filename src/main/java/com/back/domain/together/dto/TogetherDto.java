@@ -38,7 +38,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            Participants participants,
+            List<Participants> participants,
             String thumbnailImage,
             Long progress,
             Long dDay
@@ -57,7 +57,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null, // TODO: participants 정보 매핑
+                    together.getParticipant(),
                     null, // TODO: thumbnailImage 정보 매핑
                     null, // TODO: progress 정보 매핑
                     dDay
@@ -91,7 +91,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            Participants participants,
+            List<Participants> participants,
             String thumbnailImage,
             Long goal,
             Long progress
@@ -106,7 +106,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null, //TODO: 추후에 participants 정보 매핑
+                    together.getParticipant(),
                     null, // TODO: 추후에 thumbnailImage 정보 매핑
                     null, // TODO: 추후에 goal 정보 매핑
                     null // TODO: 추후에 progress 정보 매핑

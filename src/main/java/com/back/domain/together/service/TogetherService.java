@@ -108,10 +108,9 @@ public class TogetherService {
         );
     }
 
-    public TogetherDto.DetailResponse getTogetherByMemberId(Long memberId) {
-        Together together = togetherRepository.findByMember_Id(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원번호: "+memberId+" 번 함께하기 없음"));
-        return TogetherDto.DetailResponse.from(together);
+    public List<TogetherDto.DetailResponse> getTogetherByMemberId(Long memberId) {
+        List<Together> together = togetherRepository.findByMember_Id(memberId);
+        return together.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
@@ -189,5 +188,11 @@ public class TogetherService {
         participants.drop();
 
         return "강퇴가 완료되었습니다.";
+    }
+
+    public Boolean isParticipating(Long togetherId, Long memberId) {
+        Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
+                .orElse(null);
+        return participants != null && participants.getParticipantsStatus() == ParticipantsStatus.PARTICIPATING;
     }
 }
