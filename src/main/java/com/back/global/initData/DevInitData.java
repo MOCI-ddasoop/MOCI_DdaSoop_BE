@@ -92,15 +92,30 @@ public class DevInitData {
         log.info(" CommentReaction {} 개 생성 완료", commentReactionCount);
 
         // 20. Together 생성
-        List<Together> togethers = initTogethers(members);
-        log.info(" Together {} 개 생성 완료", togethers.size());
+//        List<Together> togethers = initTogethers(members);
+//        log.info(" Together {} 개 생성 완료", togethers.size());
 
         // 21. Participants 생성
-        List<Participants> participantsList = initParticipants(togethers, members);
-        log.info(" Participants {} 개 생성 완료", participantsList.size());
+//        List<Participants> participantsList = initParticipants(togethers, members);
+//        log.info(" Participants {} 개 생성 완료", participantsList.size());
+
+        // TODO : 임시 코드
+        List<Together> togethers = new ArrayList<>();
+        List<Participants> participantsList = new ArrayList<>();
+
+        try{
+            togethers = initTogethers(members);
+            log.info(" Together {} 개 생성 완료", togethers.size());
+
+            participantsList = initParticipants(togethers, members);
+            log.info(" Participants {} 개 생성 완료", participantsList.size());
+        } catch (Exception e){
+            log.error("Together 및 Participants 초기 데이터 생성 중 오류 발생: (원인:{})", e.getMessage(), e);
+        }
 
         log.info("========== 초기 데이터 생성 완료 ==========");
-        log.info("총 생성: Member {}, Feed {}, Comment {}", members.size(), feeds.size(), comments.size());
+        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}", members.size(), feeds.size(), comments.size(),
+                togethers.size(), participantsList.size());
     }
 
 
@@ -458,11 +473,11 @@ public class DevInitData {
 
         // Together 1~10만 사용
         togethers.stream().filter(together -> together.getId() !=null
-                && together.getId() >=1 && together.getId() <=10).forEach(together -> {
+                && together.getId() >= 1 && together.getId() <= 10).forEach(together -> {
                     // 참가하는 아이디는 1~5번만 사용
             List<Member> candidateMember = members.stream()
                     .filter(member -> member.getId() != null
-                            && member.getId() >=1 && member.getId() <=5).toList();
+                            && member.getId() >= 1 && member.getId() <= 4).toList();
 
             // 5명선택
             List<Member> shuffled = new ArrayList<>(candidateMember);

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "challenges")
+@Table(name = "together")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -53,7 +53,7 @@ public class Together extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TogetherStatus togetherStatus;
 
-    @Column(name = "participant_role")
-    @Enumerated(EnumType.STRING)
-    private TogetherRole togetherRole;
+//    @Column(name = "participant_role")
+//    @Enumerated(EnumType.STRING)
+//    private TogetherRole togetherRole;
 }
