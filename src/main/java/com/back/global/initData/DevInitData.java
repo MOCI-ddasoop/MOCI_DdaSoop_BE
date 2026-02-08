@@ -92,26 +92,26 @@ public class DevInitData {
         log.info(" CommentReaction {} 개 생성 완료", commentReactionCount);
 
         // 20. Together 생성
-//        List<Together> togethers = initTogethers(members);
-//        log.info(" Together {} 개 생성 완료", togethers.size());
+        List<Together> togethers = initTogethers(members);
+        log.info(" Together {} 개 생성 완료", togethers.size());
 
         // 21. Participants 생성
-//        List<Participants> participantsList = initParticipants(togethers, members);
-//        log.info(" Participants {} 개 생성 완료", participantsList.size());
+        List<Participants> participantsList = initParticipants(togethers, members);
+        log.info(" Participants {} 개 생성 완료", participantsList.size());
 
-        // TODO : 임시 코드
-        List<Together> togethers = new ArrayList<>();
-        List<Participants> participantsList = new ArrayList<>();
-
-        try{
-            togethers = initTogethers(members);
-            log.info(" Together {} 개 생성 완료", togethers.size());
-
-            participantsList = initParticipants(togethers, members);
-            log.info(" Participants {} 개 생성 완료", participantsList.size());
-        } catch (Exception e){
-            log.error("Together 및 Participants 초기 데이터 생성 중 오류 발생: (원인:{})", e.getMessage(), e);
-        }
+//        // TODO : 임시 코드
+//        List<Together> togethers = new ArrayList<>();
+//        List<Participants> participantsList = new ArrayList<>();
+//
+//        try{
+//            togethers = initTogethers(members);
+//            log.info(" Together {} 개 생성 완료", togethers.size());
+//
+//            participantsList = initParticipants(togethers, members);
+//            log.info(" Participants {} 개 생성 완료", participantsList.size());
+//        } catch (Exception e){
+//            log.error("Together 및 Participants 초기 데이터 생성 중 오류 발생: (원인:{})", e.getMessage(), e);
+//        }
 
         log.info("========== 초기 데이터 생성 완료 ==========");
         log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}", members.size(), feeds.size(), comments.size(),
@@ -403,21 +403,29 @@ public class DevInitData {
 
 
     // ========== 20. Together 샘플 데이터 생성 ==========
+    private Together createTogether(
+            String[] template,
+            Member organizer,
+            int startDayRange
+    ) {
+        TogetherMode mode = random.nextBoolean()
+                ? TogetherMode.ONLINE
+                : TogetherMode.OFFLINE;
+
+        return Together.builder()
+                .title(template[0])
+                .description(template[1])
+                .category(TogetherCategory.valueOf(template[2]))
+                .mode(mode)
+                .capacity((long) (random.nextInt(15) + 5)) // 5 ~ 20명
+                .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
+                .endDate(LocalDate.now().plusDays(100)) // 100일 후 종료
+                .togetherStatus(TogetherStatus.RECRUITING)
+                .member(organizer)
+                .build();
+    }
     private List<Together> initTogethers(List<Member> members) {
         List<Together> togethers = new ArrayList<>();
-
-        Together togetherFake = Together.builder()
-                .title("샘플 함께하기")
-                .description(null)
-                .category(TogetherCategory.PLOGGING)
-                .mode(TogetherMode.OFFLINE)
-                .capacity(10L)
-                .startDate(LocalDate.now().plusDays(1))
-                .endDate(LocalDate.now().plusDays(7))
-                .togetherStatus(TogetherStatus.CLOSED)
-                .member(members.get(0))
-                .build();
-        togethers.add(togetherRepository.save(togetherFake));
 
         String[][] templates = {
                 {"같이 플로깅해요", "주말 플로깅 참여자 모집", "PLOGGING"},
@@ -428,43 +436,21 @@ public class DevInitData {
                 {"제로웨이스트 실천", "플라스틱 줄이기", "RECYCLING"}
         };
 
-        Random random = new Random();
+        // 처음 4개는 1~4번 멤버가 각각 주최
+        for (int i = 0; i < 4; i++){
+            String[] template = templates[i%templates.length];
+            togethers.add(togetherRepository.save(createTogether(template, members.get(i), 5)));
+        }
 
-        for (int i = 0; i < 30; i++) {
-            int templateIndex = i % templates.length;
-            String[] template = templates[templateIndex];
-
+        // 나머지 26개는 랜덤 멤버가 주최
+        for (int i = 4; i < 30; i++) {
+            String[] template = templates[i%templates.length];
             Member organizer = members.get(random.nextInt(members.size()));
-
-            TogetherCategory category = TogetherCategory.valueOf(template[2]);
-            TogetherMode mode = random.nextBoolean()
-                    ? TogetherMode.ONLINE
-                    : TogetherMode.OFFLINE;
-
-            Long capacity = (long) (random.nextInt(15) + 5); // 5 ~ 20명
-
-            LocalDate startDate = LocalDate.now().plusDays(random.nextInt(5));
-            LocalDate endDate = startDate.plusDays(random.nextInt(14) + 1);
-
-            TogetherStatus status =
-                    random.nextBoolean() ? TogetherStatus.RECRUITING : TogetherStatus.CLOSED;
-
-            Together together = Together.builder()
-                    .title(template[0])
-                    .description(template[1])
-                    .category(category)
-                    .mode(mode)
-                    .capacity(capacity)
-                    .startDate(startDate)
-                    .endDate(endDate)
-                    .togetherStatus(status)
-                    .member(organizer)
-                    .build();
-
-            togethers.add(togetherRepository.save(together));
+            togethers.add(togetherRepository.save(createTogether(template, organizer, 10)));
         }
 
         return togethers;
+
     }
 
     // ========== 21. Participants 샘플 데이터 생성 ==========

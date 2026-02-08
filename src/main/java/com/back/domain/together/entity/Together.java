@@ -52,8 +52,4 @@ public class Together extends BaseEntity {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private TogetherStatus togetherStatus;
-
-//    @Column(name = "participant_role")
-//    @Enumerated(EnumType.STRING)
-//    private TogetherRole togetherRole;
 }
