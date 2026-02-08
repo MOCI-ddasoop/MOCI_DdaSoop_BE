@@ -11,7 +11,7 @@ public class DonationDto {
     /* ===================Request====================== */
     /* ===================Response===================== */
 
-    public record ListResponse(
+    public record ListResponse( // 전체 조회
             Long id,
             String title,
             Long goalAmount,
@@ -41,7 +41,7 @@ public class DonationDto {
         }
     }
 
-    public record DetailResponse(
+    public record DetailResponse( // 상세 조회
             Long id,
             String title,
             String description,
@@ -53,9 +53,26 @@ public class DonationDto {
             String thumbnailImage,
             DonationCategory category,
             Long dDay
-    ) {}
+    ) {
+        public static DetailResponse from(Donations donations){
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, donations.getEndDate());
 
-    public record DescriptionResponse(
-            String description
-    ) {}
+            return new DetailResponse(
+                    donations.getId(),
+                    donations.getTitle(),
+                    donations.getDescription(),
+                    donations.getGoalAmount(),
+                    donations.getCurrentAmount(),
+                    donations.getStartDate(),
+                    donations.getEndDate(),
+                    donations.getStatus(),
+                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getDonationCategory(),
+                    dDay
+            );
+        }
+    }
+
+    public record DescriptionResponse(String description) {}
 }

@@ -35,9 +35,9 @@ public class Participants extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ParticipantsStatus participantsStatus;
 
-//    @Column(name = "participant_role")
-//    @Enumerated(EnumType.STRING)
-//    private TogetherRole togetherRole;
+    @Column(name = "participant_role")
+    @Enumerated(EnumType.STRING)
+    private ParticipantRole participantRole;
 
     public static Participants create(Together together, Member member) {
         Participants p = new Participants();

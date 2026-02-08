@@ -5,6 +5,8 @@ import com.back.domain.comment.entity.CommentReaction;
 import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentReactionRepository;
 import com.back.domain.comment.repository.CommentRepository;
+import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.Donations;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
@@ -99,23 +101,13 @@ public class DevInitData {
         List<Participants> participantsList = initParticipants(togethers, members);
         log.info(" Participants {} 개 생성 완료", participantsList.size());
 
-//        // TODO : 임시 코드
-//        List<Together> togethers = new ArrayList<>();
-//        List<Participants> participantsList = new ArrayList<>();
-//
-//        try{
-//            togethers = initTogethers(members);
-//            log.info(" Together {} 개 생성 완료", togethers.size());
-//
-//            participantsList = initParticipants(togethers, members);
-//            log.info(" Participants {} 개 생성 완료", participantsList.size());
-//        } catch (Exception e){
-//            log.error("Together 및 Participants 초기 데이터 생성 중 오류 발생: (원인:{})", e.getMessage(), e);
-//        }
+        // 22. Donation 생성
+        List<Donations> donationsList = initDonations(members);
+        log.info(" Donation {} 개 생성 완료", donationsList.size());
 
         log.info("========== 초기 데이터 생성 완료 ==========");
         log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}", members.size(), feeds.size(), comments.size(),
-                togethers.size(), participantsList.size());
+                togethers.size(), participantsList.size(), donationsList.size());
     }
 
 
@@ -473,10 +465,16 @@ public class DevInitData {
 
             for (int i=0; i<limit; i++){
                 Member member = shuffled.get(i);
+
+                ParticipantRole role = together.getMember().getId().equals(member.getId())
+                        ? ParticipantRole.LEADER
+                        : ParticipantRole.MEMBER;
+
                 Participants participants = Participants.builder()
                         .together(together)
                         .member(member)
                         .participantsStatus(ParticipantsStatus.PARTICIPATING)
+                        .participantRole(role)
                         .build();
 
                 participantsRepository.save(participants);
@@ -485,6 +483,41 @@ public class DevInitData {
         });
 
         return participantsList;
+    }
+
+    // ========== 22. Donation 샘플 데이터 생성 ==========
+    private List<Donations> initDonations(List<Member> members) {
+        List<Donations> donationsList = new ArrayList<>();
+
+        String[][] templates = {
+                {"환경 보호를 위한 후원", "우리 지구를 지키기 위한 작은 실천에 동참해주세요!"},
+                {"해양 생태계 보존", "바다의 소중한 생명들을 위해 후원해주세요!"},
+                {"산림 복원 프로젝트", "숲을 다시 푸르게 만드는 일에 함께해요!"},
+                {"멸종 위기 동물 보호", "소중한 동물들을 지키는 일에 동참해주세요!"},
+                {"깨끗한 물 공급", "모든 이에게 깨끗한 물을 제공하기 위한 후원입니다."}
+        };
+
+        // 처음 5개는 1~5번 멤버가 각각 주최
+        for (int i = 0; i < templates.length; i++){
+            String[] template = templates[i];
+            Member organizer = members.get(i % members.size());
+
+            Donations donation = Donations.builder()
+                    .title(template[0])
+                    .description(template[1])
+                    .goalAmount(100000L)
+                    .currentAmount(0L)
+                    .startDate(LocalDate.now())
+                    .endDate(LocalDate.now().plusDays(60))
+                    .status("ONGOING")
+                    .member(organizer)
+                    .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
+                    .build();
+
+            donationsList.add(donationRepository.save(donation));
+        }
+
+        return donationsList;
     }
 
     // ========== 헬퍼 메서드 ==========
