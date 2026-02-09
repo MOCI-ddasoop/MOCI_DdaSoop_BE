@@ -191,6 +191,60 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 .fetch();
     }
 
+    @Override
+    public List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.deletedAt.isNull());
+        
+        // 추천 태그 중 하나라도 포함된 피드
+        if (tags != null && !tags.isEmpty()) {
+            builder.and(feed.tags.any().in(tags));
+        }
+        
+        // 본인이 작성한 피드 제외
+        if (excludeMemberId != null) {
+            builder.and(feed.member.id.ne(excludeMemberId));
+        }
+        
+        // 이미 조회된 피드 제외
+        if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
+            builder.and(feed.id.notIn(excludeFeedIds));
+        }
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(builder)
+                .orderBy(
+                    feed.reactionCount.desc(),  // 인기도 우선
+                    feed.createdAt.desc()       // 최신순
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.id.lt(cursorId));
+        builder.and(feed.deletedAt.isNull());
+        
+        // 제외할 피드 ID 목록
+        if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
+            builder.and(feed.id.notIn(excludeFeedIds));
+        }
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(builder)
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
     // ========== Private 헬퍼 메서드 ==========
 
     /**

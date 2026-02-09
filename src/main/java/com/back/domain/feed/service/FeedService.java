@@ -129,11 +129,36 @@ public class FeedService {
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
+        Long currentMemberId = getCurrentMemberIdOrNull();
 
-        // 동적 limit 지원 (requestedSize + 1)
-        List<Feed> feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
+        List<Feed> feeds;
+
+        // 첫 페이지만 추천 섞기
+        if (lastFeedId == null && currentMemberId != null) {
+            // 첫 페이지: 추천 3개 + 일반 17개 섞기
+            feeds = getMixedRecommendedAndRegularFeeds(currentMemberId, requestedSize);
+        } else {
+            // 두 번째 페이지부터: 기존 방식 (최신순)
+            feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
+        }
 
         return createInfiniteScrollResponse(feeds, requestedSize);
+    }
+
+    /**
+     * getCurrentMemberIdOrNull() 헬퍼 메서드 (로그인 안 한 경우 null 반환)
+     */
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+            return (Long) authentication.getPrincipal();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -504,6 +529,103 @@ public class FeedService {
     }
 
     // ========== Private 헬퍼 메서드 ==========
+
+    /**
+     * 추천 피드와 일반 피드를 섞어서 반환 (첫 페이지용)
+     * 
+     * @param memberId 회원 ID
+     * @param totalSize 총 반환할 개수
+     * @return 섞인 피드 리스트
+     */
+    private List<Feed> getMixedRecommendedAndRegularFeeds(Long memberId, int totalSize) {
+        // 1. 태그 기반 추천 피드 조회 (3개)
+        List<Feed> recommendedFeeds = getTagBasedRecommendations(memberId, 3);
+        
+        // 2. 추천된 피드 ID 수집 (중복 방지용)
+        List<Long> excludeFeedIds = recommendedFeeds.stream()
+                .map(Feed::getId)
+                .collect(Collectors.toList());
+        
+        // 3. 일반 피드 조회 (totalSize - 추천개수 + 1)
+        int regularFeedCount = totalSize - recommendedFeeds.size() + 1; // hasNext 체크용 +1
+        List<Feed> regularFeeds = feedRepository.findFeedsForInfiniteScrollExcluding(
+            Long.MAX_VALUE, 
+            excludeFeedIds, 
+            regularFeedCount
+        );
+        
+        // 4. 섞기 (추천 피드를 상위에 배치: 위치 0, 2, 5)
+        return mixFeedsWithTopFocus(recommendedFeeds, regularFeeds, totalSize);
+    }
+
+    /**
+     * 태그 기반 추천 피드 조회
+     * 
+     * @param memberId 회원 ID
+     * @param count 추천 개수
+     * @return 추천 피드 리스트
+     */
+    private List<Feed> getTagBasedRecommendations(Long memberId, int count) {
+        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (최대 5개)
+        List<String> frequentTags = feedReactionRepository.findFrequentTagsByMemberId(memberId);
+        
+        if (frequentTags.isEmpty()) {
+            // 태그가 없으면 빈 리스트 반환
+            return List.of();
+        }
+        
+        // 최대 5개만 사용
+        List<String> topTags = frequentTags.stream()
+                .limit(5)
+                .collect(Collectors.toList());
+        
+        // 2. 이미 좋아요 누른 피드 ID 조회 (제외용)
+        List<Long> reactedFeedIds = feedReactionRepository.findReactedFeedIdsByMemberId(memberId);
+        
+        // 3. 추천 피드 조회 (태그 매칭 + 인기도 + 최신성)
+        return feedRepository.findRecommendedFeedsByTags(topTags, memberId, reactedFeedIds, count);
+    }
+
+    /**
+     * 추천 피드와 일반 피드 섞기 (상위 집중 배치)
+     * 
+     * @param recommended 추천 피드 리스트
+     * @param regular 일반 피드 리스트
+     * @param totalSize 총 반환할 개수
+     * @return 섞인 피드 리스트
+     */
+    private List<Feed> mixFeedsWithTopFocus(List<Feed> recommended, List<Feed> regular, int totalSize) {
+        List<Feed> result = new ArrayList<>();
+        
+        // 추천 피드 배치 위치 (0, 2, 5)
+        int[] recommendedPositions = {0, 2, 5};
+        int recIndex = 0;
+        int regIndex = 0;
+        
+        for (int i = 0; i < totalSize + 1; i++) { // +1은 hasNext 체크용
+            // 현재 위치가 추천 피드 배치 위치인지 확인
+            boolean isRecommendedPosition = false;
+            for (int pos : recommendedPositions) {
+                if (i == pos) {
+                    isRecommendedPosition = true;
+                    break;
+                }
+            }
+            
+            if (isRecommendedPosition && recIndex < recommended.size()) {
+                // 추천 피드 배치
+                result.add(recommended.get(recIndex++));
+            } else if (regIndex < regular.size()) {
+                // 일반 피드 배치
+                result.add(regular.get(regIndex++));
+            } else {
+                // 더 이상 피드가 없으면 종료
+                break;
+            }
+        }
+        
+        return result;
+    }
 
     /**
      * 무한 스크롤 응답 생성 (공통 로직)
