@@ -40,6 +40,7 @@ public class FeedService {
     private final FeedBookmarkRepository feedBookmarkRepository;
     private final MemberRepository memberRepository;
     private final TagService tagService;
+    private final com.back.domain.together.repository.TogetherRepository togetherRepository;
 
     /**
      * 피드 생성
@@ -49,7 +50,14 @@ public class FeedService {
         // 1. 태그 검증 및 정제
         List<String> validatedTags = tagService.validateAndRefineTags(request.getTags());
 
-        // 2. Feed 엔티티 생성
+        // 2. Together 조회 (togetherId가 있는 경우)
+        com.back.domain.together.entity.Together together = null;
+        if (request.getTogetherId() != null) {
+            together = togetherRepository.findById(request.getTogetherId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 함께하기입니다. ID: " + request.getTogetherId()));
+        }
+
+        // 3. Feed 엔티티 생성
         Feed feed = Feed.builder()
                 .feedType(request.getFeedType())
                 .content(request.getContent())
@@ -59,10 +67,11 @@ public class FeedService {
                 .bookmarkCount(0)
                 .commentCount(0)
                 .reactionCount(0)
-                .member(memberRepository.findById(currentMemberId).orElseThrow())  // Member 연결 후
+                .member(memberRepository.findById(currentMemberId).orElseThrow())
+                .together(together)
                 .build();
 
-        // 3. 이미지 추가
+        // 4. 이미지 추가
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             request.getImages().forEach(imageReq -> {
                 FeedImage feedImage = FeedImage.builder()
@@ -79,7 +88,8 @@ public class FeedService {
         }
 
         Feed savedFeed = feedRepository.save(feed);
-        log.info("피드 생성 완료 - ID: {}", savedFeed.getId());
+        log.info("피드 생성 완료 - ID: {}, Together ID: {}", savedFeed.getId(), 
+                 together != null ? together.getId() : "null");
 
         return savedFeed.getId();
     }
