@@ -105,7 +105,7 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
     left join t.participants p
     where t.member.id = :memberId
     or (p.member.id = :memberId and p.participantsStatus = com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING)
-        order by t.createdAt desc 
+        order by t.createdAt asc
     """)
     List<Together> findAllByMemberIdOrParticipants_MemberId(@Param("memberId") Long memberId);
 }
