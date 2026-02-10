@@ -51,7 +51,7 @@ public class TogetherController {
     @ApiResponse(
             responseCode = "200",
             description = "전체 함께하기 조회 성공",
-            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+            content = @Content(schema = @Schema(implementation = TogetherDto.ListResponse.class))
     )
     @GetMapping("/list")
     @Transactional
@@ -66,7 +66,7 @@ public class TogetherController {
         Pageable pageable = PageRequest.of(
                 page, size,
                 switch (sortType){
-                    case STATUS -> Sort.by("status").descending();
+                    case STATUS -> Sort.by("togetherStatus").descending();
                     case CATEGORY -> Sort.by("category").ascending();
                     case MODE -> Sort.by("mode").ascending();
                     default -> Sort.by("createdAt").descending();
@@ -81,7 +81,7 @@ public class TogetherController {
     @ApiResponse(
             responseCode = "200",
             description = "함께하기 상세 조회 성공",
-            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+            content = @Content(schema = @Schema(implementation = TogetherDto.DetailResponse.class))
     )
     @GetMapping("/list/{id}")
     public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogether(
@@ -95,7 +95,7 @@ public class TogetherController {
     @ApiResponse(
             responseCode = "200",
             description = "함께하기 리스트 별 설명 조회 성공",
-            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+            content = @Content(schema = @Schema(implementation = TogetherDto.DescriptionResponse.class))
     )
     @GetMapping("/list/{id}/description")
     public ResponseEntity<RsData<String>> getTogetherDescription(
@@ -110,7 +110,7 @@ public class TogetherController {
     @ApiResponse(
             responseCode = "200",
             description = "ID별 함께하기 조회 성공",
-            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+            content = @Content(schema = @Schema(implementation = TogetherDto.DetailResponse.class))
     )
     @GetMapping("/member/{memberId}")
     public ResponseEntity<RsData<List<TogetherDto.DetailResponse>>> getTogetherByMemberId(
@@ -141,7 +141,7 @@ public class TogetherController {
     @ApiResponse(
             responseCode = "201",
             description = "함께하기 게시글 등록 성공",
-            content = @Content(schema = @Schema(implementation = TogetherDto.class))
+            content = @Content(schema = @Schema(implementation = TogetherDto.CreateResponse.class))
     )
     @PostMapping
     @Transactional

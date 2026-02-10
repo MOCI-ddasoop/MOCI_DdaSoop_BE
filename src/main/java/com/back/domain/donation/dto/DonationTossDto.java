@@ -1,6 +1,8 @@
 package com.back.domain.donation.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -8,10 +10,10 @@ public class DonationTossDto {
 
     /* ===================Request====================== */
     public record DonationTossRequest(
-            String paymentKey,
-            String orderId,
-            Long amount,
-            Long memberId
+            @NotBlank String paymentKey,
+            @NotBlank String orderId,
+            @NotNull Long amount,
+            @NotNull Long memberId
     ) {
     }
 

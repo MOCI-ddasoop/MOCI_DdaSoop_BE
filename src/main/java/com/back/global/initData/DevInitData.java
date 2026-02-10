@@ -106,7 +106,7 @@ public class DevInitData {
         log.info(" Donation {} 개 생성 완료", donationsList.size());
 
         log.info("========== 초기 데이터 생성 완료 ==========");
-        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}", members.size(), feeds.size(), comments.size(),
+        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}", members.size(), feeds.size(), comments.size(),
                 togethers.size(), participantsList.size(), donationsList.size());
     }
 
