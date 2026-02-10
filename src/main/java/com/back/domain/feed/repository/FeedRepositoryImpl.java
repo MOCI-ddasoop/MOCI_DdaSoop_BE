@@ -128,19 +128,51 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     @Override
-    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit) {
+    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage) {
         QFeed feed = QFeed.feed;
-        
-        return queryFactory
+
+        List<Feed> result = new java.util.ArrayList<>();
+
+        // 첫 페이지일 때만 핀 고정 피드 포함
+        if (isFirstPage) {
+            com.querydsl.core.types.dsl.NumberExpression<Integer> priority =
+                new com.querydsl.core.types.dsl.CaseBuilder()
+                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)).then(3)
+                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION)).then(2)
+                    .otherwise(0);
+
+            List<Feed> pinnedFeeds = queryFactory
+                    .selectFrom(feed)
+                    .where(
+                        feed.together.id.eq(togetherId)
+                        .and(feed.isPinned.isTrue())
+                        .and(feed.deletedAt.isNull())
+                    )
+                    .orderBy(
+                        priority.desc(),
+                        feed.pinOrder.asc().nullsLast()
+                    )
+                    .fetch();
+
+            result.addAll(pinnedFeeds);
+            limit = Math.max(limit - pinnedFeeds.size(), 1);
+        }
+
+        // 핀 미고정 피드: 커서 기반 페이지네이션
+        List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
                 .where(
                     feed.together.id.eq(togetherId)
+                    .and(feed.isPinned.isFalse())
                     .and(feed.id.lt(cursorId))
                     .and(feed.deletedAt.isNull())
                 )
-                .orderBy(feed.id.desc())
+                .orderBy(feed.createdAt.desc())
                 .limit(limit)
                 .fetch();
+
+        result.addAll(unpinnedFeeds);
+        return result;
     }
 
     @Override
@@ -154,6 +186,60 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     .and(feed.id.lt(cursorId))
                     .and(feed.deletedAt.isNull())
                 )
+                .orderBy(feed.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.deletedAt.isNull());
+        
+        // 추천 태그 중 하나라도 포함된 피드
+        if (tags != null && !tags.isEmpty()) {
+            builder.and(feed.tags.any().in(tags));
+        }
+        
+        // 본인이 작성한 피드 제외
+        if (excludeMemberId != null) {
+            builder.and(feed.member.id.ne(excludeMemberId));
+        }
+        
+        // 이미 조회된 피드 제외
+        if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
+            builder.and(feed.id.notIn(excludeFeedIds));
+        }
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(builder)
+                .orderBy(
+                    feed.reactionCount.desc(),  // 인기도 우선
+                    feed.createdAt.desc()       // 최신순
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit) {
+        QFeed feed = QFeed.feed;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.id.lt(cursorId));
+        builder.and(feed.deletedAt.isNull());
+        
+        // 제외할 피드 ID 목록
+        if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
+            builder.and(feed.id.notIn(excludeFeedIds));
+        }
+        
+        return queryFactory
+                .selectFrom(feed)
+                .where(builder)
                 .orderBy(feed.id.desc())
                 .limit(limit)
                 .fetch();

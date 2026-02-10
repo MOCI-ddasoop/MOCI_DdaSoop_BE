@@ -43,6 +43,8 @@ public class FeedSummaryResponse {
     // 함께하기 정보
     private Long togetherId;
     private String togetherTitle;
+    private String togetherCategory;    // Together 카테고리 (PLOGGING, CLEANUP, RECYCLING)
+    private String togetherMode;        // Together 모드 (ONLINE, OFFLINE)
     
     // 공지 피드 관련
     private Boolean isPinned;
@@ -82,6 +84,10 @@ public class FeedSummaryResponse {
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
+                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ? 
+                        feed.getTogether().getCategory().name() : null)
+                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ? 
+                        feed.getTogether().getMode().name() : null)
                 .isPinned(feed.getIsPinned())
                 .createdAt(feed.getCreatedAt())
                 .build();

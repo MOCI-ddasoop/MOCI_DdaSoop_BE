@@ -25,6 +25,10 @@ public class FeedResponse {
     private FeedType feedType;
     private String content;
     private List<FeedImageResponse> images;
+    private String thumbnailUrl;         // 첫 번째 이미지 (썸네일)
+    private Integer thumbnailWidth;      // 썸네일 가로 크기 (px)
+    private Integer thumbnailHeight;     // 썸네일 세로 크기 (px)
+    private Integer imageCount;          // 전체 이미지 개수
     private List<String> tags;
     private FeedVisibility visibility;
 
@@ -42,6 +46,8 @@ public class FeedResponse {
     // 함께하기 정보
     private Long togetherId;
     private String togetherTitle;
+    private String togetherCategory;    // Together 카테고리 (PLOGGING, CLEANUP, RECYCLING)
+    private String togetherMode;        // Together 모드 (ONLINE, OFFLINE)
     
     // 공지 피드 관련
     private Boolean isPinned;
@@ -57,6 +63,17 @@ public class FeedResponse {
      * Entity -> DTO 변환 (정적 팩토리 메서드)
      */
     public static FeedResponse from(Feed feed) {
+        // 첫 번째 이미지 정보 추출 (썸네일)
+        String thumbnailUrl = null;
+        Integer thumbnailWidth = null;
+        Integer thumbnailHeight = null;
+        
+        if (feed.getFirstImage() != null) {
+            thumbnailUrl = feed.getFirstImage().getImageUrl();
+            thumbnailWidth = feed.getFirstImage().getWidth();
+            thumbnailHeight = feed.getFirstImage().getHeight();
+        }
+        
         return FeedResponse.builder()
                 .id(feed.getId())
                 .feedType(feed.getFeedType())
@@ -64,6 +81,10 @@ public class FeedResponse {
                 .images(feed.getImages().stream()
                         .map(FeedImageResponse::from)
                         .collect(Collectors.toList()))
+                .thumbnailUrl(thumbnailUrl)
+                .thumbnailWidth(thumbnailWidth)
+                .thumbnailHeight(thumbnailHeight)
+                .imageCount(feed.getImageCount())
                 .tags(feed.getTags())
                 .visibility(feed.getVisibility())
                 .reactionCount(feed.getReactionCount())
@@ -75,6 +96,10 @@ public class FeedResponse {
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
+                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ? 
+                        feed.getTogether().getCategory().name() : null)
+                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ? 
+                        feed.getTogether().getMode().name() : null)
                 .isPinned(feed.getIsPinned())
                 .isReacted(false)
                 .isBookmarked(false)
@@ -93,6 +118,10 @@ public class FeedResponse {
                 .feedType(response.getFeedType())
                 .content(response.getContent())
                 .images(response.getImages())
+                .thumbnailUrl(response.getThumbnailUrl())
+                .thumbnailWidth(response.getThumbnailWidth())
+                .thumbnailHeight(response.getThumbnailHeight())
+                .imageCount(response.getImageCount())
                 .tags(response.getTags())
                 .visibility(response.getVisibility())
                 .reactionCount(response.getReactionCount())
@@ -104,6 +133,8 @@ public class FeedResponse {
                 .authorProfileImage(response.getAuthorProfileImage())
                 .togetherId(response.getTogetherId())
                 .togetherTitle(response.getTogetherTitle())
+                .togetherCategory(response.getTogetherCategory())
+                .togetherMode(response.getTogetherMode())
                 .isPinned(response.getIsPinned())
                 .isReacted(isReacted)
                 .isBookmarked(isBookmarked)
