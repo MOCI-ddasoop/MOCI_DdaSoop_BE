@@ -97,4 +97,15 @@ public interface TogetherRepository extends JpaRepository<Together,Long> {
             @Param("mode") TogetherMode mode,
             @Param("status") TogetherStatus status,
             Pageable pageable);
+
+    // 마이페이지용 참가 & 소유 투게더 조회
+    @Query("""
+    select distinct t
+    from Together t
+    left join t.participants p
+    where t.member.id = :memberId
+    or (p.member.id = :memberId and p.participantsStatus = com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING)
+        order by t.createdAt desc 
+    """)
+    List<Together> findAllByMemberIdOrParticipants_MemberId(@Param("memberId") Long memberId);
 }

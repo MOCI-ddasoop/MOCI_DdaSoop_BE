@@ -116,7 +116,7 @@ public class TogetherController {
     public ResponseEntity<RsData<List<TogetherDto.DetailResponse>>> getTogetherByMemberId(
             @PathVariable Long memberId
     ) {
-        return ResponseEntity.ok().body(RsData.success("ID별 함께하기 조회 성공", togetherService.getTogetherByMemberId(memberId)));
+        return ResponseEntity.ok().body(RsData.success("ID별 함께하기 조회 성공", togetherService.getMemberIdOrParticipating(memberId)));
     }
 
     @Operation(summary = "함께하기 참여 여부 조회")
