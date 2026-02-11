@@ -147,7 +147,9 @@ public class MemberService {
         // 탈퇴 시 닉네임/이메일 초기화 (재가입 시 최초 가입과 동일한 절차를 거치도록 함)
         member.updateNickname(null);
         member.updateEmail(null);
-        
+        // 이름·프로필 이미지 익명 처리 (다른 도메인에서 member.getName() 등 그대로 쓰면 "탈퇴한 회원"으로 노출)
+        member.applyWithdrawnProfile();
+
         member.delete();
         memberRepository.save(member);
     }

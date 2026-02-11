@@ -66,6 +66,14 @@ public class Member extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    public static final String WITHDRAWN_NAME = "탈퇴한 회원";
+
+    /** 탈퇴 시 이름·프로필 이미지를 익명 처리. 게시글/댓글 등에서 그대로 노출 */
+    public void applyWithdrawnProfile() {
+        this.name = WITHDRAWN_NAME;
+        this.profileImageUrl = null;
+    }
+
     public void updateProfileImage(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
     }
