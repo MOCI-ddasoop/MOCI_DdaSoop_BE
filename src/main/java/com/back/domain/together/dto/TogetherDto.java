@@ -120,14 +120,16 @@ public class TogetherDto {
             Long id,
             Long memberId,
             Long togetherId,
-            String participantsStatus
+            String participantsStatus,
+            String participantRole
     ) {
         public static ParticipantsResponse from(Participants participants) {
             return new ParticipantsResponse(
                     participants.getId(),
                     participants.getMember().getId(),
                     participants.getTogether().getId(),
-                    participants.getParticipantsStatus().name()
+                    participants.getParticipantsStatus().name(),
+                    participants.getParticipantRole().name()
             );
         }
     }
