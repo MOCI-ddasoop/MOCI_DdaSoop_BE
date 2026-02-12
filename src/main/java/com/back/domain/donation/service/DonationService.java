@@ -28,12 +28,6 @@ public class DonationService {
     private final TossPaymentRepository tossPaymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
     private final MemberRepository memberRepository;
-
-//    public List<DonationDto.ListResponse> getAllDonations() {
-//        return donationRepository.findAll().stream()
-//                .map(DonationDto.ListResponse::from)
-//                .toList();
-//    }
     
     public DonationDto.PageResponse<DonationDto.ListResponse> getAllDonations(
             List<DonationCategory> categories,
@@ -104,6 +98,18 @@ public class DonationService {
         return new DonationDto.DescriptionResponse(
                 description == null ? "" : description
         );
+    }
+
+    public List<DonationNoticeDto.ListResponse> getAllDonationNotices() {
+        List<DonationNotice> notices = donationNoticeRepository.findAll();
+
+        return notices.stream().map(DonationNoticeDto.ListResponse::from).toList();
+    }
+
+    public DonationNoticeDto.ListResponse getDonationNoticesByDonationId(Long donationId) {
+        DonationNotice notices = donationNoticeRepository.findByDonationsId(donationId);
+
+        return DonationNoticeDto.ListResponse.from(notices);
     }
 
     public List<DonorDto.ListResponse> getAllDonorList(Long id){

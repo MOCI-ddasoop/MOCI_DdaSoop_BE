@@ -49,4 +49,24 @@ public class DonationNoticeDto {
             );
         }
     }
+
+    public record ListResponse(
+            Long id,
+            String title,
+            String description,
+            String progressNews,
+            String reviews,
+            Long donationId
+    ) {
+        public static ListResponse from(DonationNotice donationNotice) {
+            return new ListResponse(
+                    donationNotice.getId(),
+                    donationNotice.getTitle(),
+                    donationNotice.getDescription(),
+                    donationNotice.getProgressNews(),
+                    donationNotice.getReviews(),
+                    donationNotice.getDonations().getId()
+            );
+        }
+    }
 }
