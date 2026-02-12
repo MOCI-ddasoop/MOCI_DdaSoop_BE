@@ -2,6 +2,8 @@ package com.back.domain.donation.dto;
 
 import com.back.domain.donation.entity.DonationCategory;
 import com.back.domain.donation.entity.Donations;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -10,6 +12,16 @@ import java.util.List;
 public class DonationDto {
 
     /* ===================Request====================== */
+    public record CreateRequest(
+            @NotBlank String title,
+            String description,
+            @NotNull Long goalAmount,
+            @NotNull LocalDate startDate,
+            @NotNull LocalDate endDate,
+            @NotNull String status,
+            @NotNull DonationCategory category,
+            Long memberId
+    ) {}
     /* ===================Response===================== */
 
     public record ListResponse( // 전체 조회
@@ -90,4 +102,30 @@ public class DonationDto {
     }
 
     public record DescriptionResponse(String description) {}
+
+    public record CreateResponse(
+            Long id,
+            String title,
+            String description,
+            Long goalAmount,
+            LocalDate startDate,
+            LocalDate endDate,
+            String status,
+            DonationCategory category,
+            Long memberId
+    ) {
+        public static CreateResponse from(Donations donations){
+            return new CreateResponse(
+                    donations.getId(),
+                    donations.getTitle(),
+                    donations.getDescription(),
+                    donations.getGoalAmount(),
+                    donations.getStartDate(),
+                    donations.getEndDate(),
+                    donations.getStatus(),
+                    donations.getDonationCategory(),
+                    donations.getMember().getId()
+            );
+        }
+    }
 }

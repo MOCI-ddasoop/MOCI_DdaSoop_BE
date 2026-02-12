@@ -110,6 +110,30 @@ public class DonationService {
         return payments.stream().map(DonorDto.ListResponse::from).toList();
     }
 
+    // 후원하기 게시글 등록
+    @Transactional
+    public DonationDto.CreateResponse createDonation(
+            DonationDto.CreateRequest request, Long memberId
+    ) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원(memberId)을 찾을 수 없습니다."));
+
+        Donations donation = Donations.builder()
+                .title(request.title())
+                .description(request.description())
+                .goalAmount(request.goalAmount())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .status("ONGOING")
+                .donationCategory(request.category())
+                .member(member)
+                .build();
+
+        donationRepository.save(donation);
+
+        return DonationDto.CreateResponse.from(donation);
+    }
+
     //Toss 결제 승인 및 후원 결제 내역 저장
     @Transactional
     public DonationPaymentDto.DonationPaymentResponse donationTossPayment(
