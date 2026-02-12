@@ -5,8 +5,11 @@ import com.back.domain.comment.entity.CommentReaction;
 import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentReactionRepository;
 import com.back.domain.comment.repository.CommentRepository;
+import com.back.domain.donation.dto.DonationNoticeDto;
 import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.DonationNotice;
 import com.back.domain.donation.entity.Donations;
+import com.back.domain.donation.repository.DonationNoticeRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
@@ -52,6 +55,7 @@ public class DevInitData {
     private final TogetherRepository togetherRepository;
     private final TogetherService togetherService;
     private final DonationRepository donationRepository;
+    private final DonationNoticeRepository donationNoticeRepository;
     private final DonationService donationService;
     private final ParticipantsRepository participantsRepository;
 
@@ -105,9 +109,14 @@ public class DevInitData {
         List<Donations> donationsList = initDonations(members);
         log.info(" Donation {} 개 생성 완료", donationsList.size());
 
+        // 23. DonationNotice 생성
+        List<DonationNotice> donationNotices = initDonationNotices(donationsList);
+        log.info(" DonationNotice {} 개 생성 완료", donationNotices.size());
+
         log.info("========== 초기 데이터 생성 완료 ==========");
-        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}", members.size(), feeds.size(), comments.size(),
-                togethers.size(), participantsList.size(), donationsList.size());
+        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}, DonationNotice {}",
+                members.size(), feeds.size(), comments.size(),
+                togethers.size(), participantsList.size(), donationsList.size(), donationNotices.size());
     }
 
 
@@ -527,6 +536,36 @@ public class DevInitData {
         }
 
         return donations;
+    }
+
+    // ========== 23. DonationNotice 샘플 데이터 생성 ==========
+    private DonationNotice createDonationNotice(
+            String[] template,
+            Donations donations
+    ) {
+        return DonationNotice.builder()
+                .title(template[0])
+                .description(template[1])
+                .progressNews(template[2])
+                .reviews(template[3])
+                .donations(donations)
+                .build();
+    }
+    private List<DonationNotice> initDonationNotices(List<Donations> donationsList) {
+        List<DonationNotice> notices = new ArrayList<>();
+
+        String[][] templates = {
+                {"첫 번째 소식", "후원해주셔서 감사합니다!", "현재 목표 금액의 30% 달성!", "후원자 여러분께 감사드립니다."},
+                {"두 번째 소식", "더 많은 참여 부탁드려요!", "새로운 후원자가 늘고 있습니다.", "함께 해주셔서 감사합니다."},
+                {"세 번째 소식", "목표 금액에 가까워지고 있어요!", "지금까지의 성과를 공유합니다.", "여러분의 후원이 큰 힘이 됩니다."}
+        };
+
+        for (int i = 0; i < 11; i++){
+            String[] template = templates[i%templates.length];
+            notices.add(donationNoticeRepository.save(createDonationNotice(template, donationsList.get(i))));
+        }
+
+        return notices;
     }
 
     // ========== 헬퍼 메서드 ==========
