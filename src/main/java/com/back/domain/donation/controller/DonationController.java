@@ -1,9 +1,8 @@
 package com.back.domain.donation.controller;
 
-import com.back.domain.donation.dto.DonationDto;
-import com.back.domain.donation.dto.DonationPaymentDto;
-import com.back.domain.donation.dto.DonationTossDto;
-import com.back.domain.donation.dto.DonorListResponse;
+import com.back.domain.donation.dto.*;
+import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.DonationSortType;
 import com.back.domain.donation.service.DonationService;
 import com.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +11,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,9 +46,22 @@ public class DonationController {
             content = @Content(schema = @Schema(implementation = DonationDto.ListResponse.class))
     )
     @GetMapping("/list")
-    public ResponseEntity<RsData<List<DonationDto.ListResponse>>> getAllDonations() {
-        List<DonationDto.ListResponse> donationList = donationService.getAllDonations();
-        return ResponseEntity.ok().body(RsData.success("전체 후원 조회 성공", donationList));
+    public ResponseEntity<RsData<DonationDto.PageResponse<DonationDto.ListResponse>>> getAllDonations(
+            @RequestParam(required = false) List<DonationCategory> categories,
+            @RequestParam(defaultValue = "LATEST") DonationSortType sortType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+            ) {
+        Pageable pageable = PageRequest.of(
+                page, size,
+                switch (sortType) {
+                    case CATEGORY ->  Sort.by("donationCategory").ascending();
+                    default ->  Sort.by("createdAt").descending();
+                }
+        );
+
+        DonationDto.PageResponse<DonationDto.ListResponse> donationPage = donationService.getAllDonations(categories, sortType, pageable);
+        return ResponseEntity.ok().body(RsData.success("전체 후원 조회 성공", donationPage));
     }
 
 
@@ -83,13 +98,13 @@ public class DonationController {
     @ApiResponse(
             responseCode = "200",
             description = "상세보기별 후원 현황 조회 성공",
-            content = @Content(schema = @Schema(implementation = DonorListResponse.class))
+            content = @Content(schema = @Schema(implementation = DonorDto.ListResponse.class))
     )
     @GetMapping("/list/{id}/donorList")
-    public ResponseEntity<RsData<List<DonorListResponse>>> getDonationStatusById(
+    public ResponseEntity<RsData<List<DonorDto.ListResponse>>> getDonationStatusById(
             @PathVariable Long id
     ) {
-        List<DonorListResponse> donorList = donationService.getAllDonorList(id);
+        List<DonorDto.ListResponse> donorList = donationService.getAllDonorList(id);
         return ResponseEntity.ok(RsData.success("상세보기별 후원 현황 조회 성공", donorList));
     }
 

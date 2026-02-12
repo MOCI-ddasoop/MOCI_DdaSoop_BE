@@ -1,20 +1,17 @@
 package com.back.domain.donation.service;
 
 import com.back.domain.donation.client.TossPaymentsClient;
-import com.back.domain.donation.dto.DonationDto;
-import com.back.domain.donation.dto.DonationPaymentDto;
-import com.back.domain.donation.dto.DonationTossDto;
-import com.back.domain.donation.dto.DonorListResponse;
-import com.back.domain.donation.entity.DonationPayments;
-import com.back.domain.donation.entity.Donations;
-import com.back.domain.donation.entity.TossPaymentStatus;
-import com.back.domain.donation.entity.TossPayments;
+import com.back.domain.donation.dto.*;
+import com.back.domain.donation.entity.*;
 import com.back.domain.donation.repository.DonationPaymentsRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.repository.TossPaymentRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +27,66 @@ public class DonationService {
     private final TossPaymentsClient tossPaymentsClient;
     private final MemberRepository memberRepository;
 
-    public List<DonationDto.ListResponse> getAllDonations() {
-        return donationRepository.findAll().stream()
+//    public List<DonationDto.ListResponse> getAllDonations() {
+//        return donationRepository.findAll().stream()
+//                .map(DonationDto.ListResponse::from)
+//                .toList();
+//    }
+    
+    public DonationDto.PageResponse<DonationDto.ListResponse> getAllDonations(
+            List<DonationCategory> categories,
+            DonationSortType sortType,
+            Pageable pageable
+    ) {
+        final int page = pageable.getPageNumber();
+        final int size = pageable.getPageSize();
+        final int firstPageRealSize = Math.max(0, size - 1); // 1페이지는 11개
+
+        boolean hasCategory = categories != null && !categories.isEmpty();
+
+        // 우리가 원하는 slice 범위
+        final int start = (page == 0) ? 0 : (firstPageRealSize + (page - 1) * size);
+        final int limit = (page == 0) ? firstPageRealSize : size;
+        final int endExclusive = start + limit;
+
+        PageRequest fetchPageable = PageRequest.of(0, Math.max(endExclusive, firstPageRealSize), pageable.getSort());
+
+        Page<Donations> fetched;
+        if (!hasCategory) {
+            fetched = switch (sortType) {
+                case POPULAR -> donationRepository.findPopularWithoutCategory(fetchPageable);
+                case DEADLINE -> donationRepository.findDeadlineWithoutCategory(fetchPageable);
+                default -> donationRepository.findLatestWithoutCategory(fetchPageable);
+            };
+        } else {
+            fetched = switch (sortType) {
+                case POPULAR -> donationRepository.findPopularWithCategory(categories, fetchPageable);
+                case DEADLINE -> donationRepository.findDeadlineWithCategory(categories, fetchPageable);
+                default -> donationRepository.findLatestWithCategory(categories, fetchPageable);
+            };
+        }
+
+        long totalElements = fetched.getTotalElements();
+        int totalPages = calcTotalPagesUi(totalElements, size);
+
+        List<Donations> all = fetched.getContent();
+        int safeFrom = Math.min(start, all.size());
+        int safeTo = Math.min(endExclusive, all.size());
+
+        List<DonationDto.ListResponse> content = all.subList(safeFrom, safeTo)
+                .stream()
                 .map(DonationDto.ListResponse::from)
                 .toList();
+
+        return new DonationDto.PageResponse<>(content, page, size, totalElements, totalPages);
+    }
+
+    private int calcTotalPagesUi(long total, int size) {
+        int firstPageRealSize = Math.max(0, size - 1);
+        if (total <= firstPageRealSize) return 1;
+        long remain = total - firstPageRealSize;
+        long pagesAfter = (remain + size - 1) / size; // ceil
+        return (int) (1 + pagesAfter);
     }
 
     public DonationDto.DetailResponse getDonation(Long id) {
@@ -51,12 +104,10 @@ public class DonationService {
         );
     }
 
-    public List<DonorListResponse> getAllDonorList(Long id){
+    public List<DonorDto.ListResponse> getAllDonorList(Long id){
+        List<DonationPayments> payments = donationPaymentsRepository.findAllDonorList(id);
 
-        donationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id + "번 후원 없음"));
-        // 후원에 대한 기부자 리스트 조회
-        return donationRepository.findAllDonorList(id);
+        return payments.stream().map(DonorDto.ListResponse::from).toList();
     }
 
     //Toss 결제 승인 및 후원 결제 내역 저장

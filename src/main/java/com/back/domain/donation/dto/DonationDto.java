@@ -5,6 +5,7 @@ import com.back.domain.donation.entity.Donations;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class DonationDto {
 
@@ -39,7 +40,21 @@ public class DonationDto {
                     dDay
             );
         }
+        public static ListResponse fakeCard() {
+            return new ListResponse(
+                    -1L,"샘플 모금함",1000000L,500000L,LocalDate.now().plusDays(10),
+                    "ONGOING", null, DonationCategory.ANIMAL,10L
+            );
+        }
     }
+
+    public record PageResponse<T>( // 페이징 조회
+            List<T> content,
+            int page,
+            int size,
+            Long totalElements,
+            int totalPages
+    ) {}
 
     public record DetailResponse( // 상세 조회
             Long id,

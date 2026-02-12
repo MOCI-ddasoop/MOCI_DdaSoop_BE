@@ -486,8 +486,25 @@ public class DevInitData {
     }
 
     // ========== 22. Donation 샘플 데이터 생성 ==========
+    private Donations createDonation(
+            String[] template,
+            Member organizer,
+            int startDayRange
+    ){
+        return Donations.builder()
+                .title(template[0])
+                .description(template[1])
+                .goalAmount(100000L)
+                .currentAmount(0L)
+                .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
+                .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
+                .status("ONGOING")
+                .member(organizer)
+                .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
+                .build();
+    }
     private List<Donations> initDonations(List<Member> members) {
-        List<Donations> donationsList = new ArrayList<>();
+        List<Donations> donations = new ArrayList<>();
 
         String[][] templates = {
                 {"환경 보호를 위한 후원", "우리 지구를 지키기 위한 작은 실천에 동참해주세요!"},
@@ -498,26 +515,18 @@ public class DevInitData {
         };
 
         // 처음 5개는 1~5번 멤버가 각각 주최
-        for (int i = 0; i < templates.length; i++){
-            String[] template = templates[i];
-            Member organizer = members.get(i % members.size());
-
-            Donations donation = Donations.builder()
-                    .title(template[0])
-                    .description(template[1])
-                    .goalAmount(100000L)
-                    .currentAmount(0L)
-                    .startDate(LocalDate.now())
-                    .endDate(LocalDate.now().plusDays(60))
-                    .status("ONGOING")
-                    .member(organizer)
-                    .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
-                    .build();
-
-            donationsList.add(donationRepository.save(donation));
+        for (int i = 0; i < 4; i++){
+            String[] template = templates[i%templates.length];
+            donations.add(donationRepository.save(createDonation(template, members.get(i), 5)));
         }
 
-        return donationsList;
+        for (int i = 4; i < 30; i++){
+            String[] template = templates[i%templates.length];
+            Member organizer = members.get(random.nextInt(members.size()));
+            donations.add(donationRepository.save(createDonation(template, organizer, 10)));
+        }
+
+        return donations;
     }
 
     // ========== 헬퍼 메서드 ==========
