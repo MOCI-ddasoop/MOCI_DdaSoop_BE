@@ -47,6 +47,10 @@ public class Donations extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private DonationCategory donationCategory;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donation_notice_id")
+    private DonationNotice donationNotice;
+
     public void increaseAmount(Long amount) {
         this.currentAmount += amount;
     }

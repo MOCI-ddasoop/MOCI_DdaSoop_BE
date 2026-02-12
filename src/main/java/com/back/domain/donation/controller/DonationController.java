@@ -123,6 +123,21 @@ public class DonationController {
         return ResponseEntity.ok(RsData.success("후원하기 게시글 등록 성공", response));
     }
 
+    @Operation(summary = "후원하기 공지 게시글 등록")
+    @ApiResponse(
+            responseCode = "200",
+            description = "후원하기 공지 게시글 등록 성공",
+            content = @Content(schema = @Schema(implementation = DonationNoticeDto.CreateResponse.class))
+    )
+    @PostMapping("/notice/create")
+    public ResponseEntity<RsData<DonationNoticeDto.CreateResponse>> createDonationNotice(
+            @Valid @RequestBody DonationNoticeDto.CreateRequest request
+    ) {
+        Long memberId = getCurrentMemberId();
+        DonationNoticeDto.CreateResponse response = donationService.createDonationNotice(request, request.donationId(), memberId);
+        return ResponseEntity.ok(RsData.success("후원하기 공지 게시글 등록 성공", response));
+    }
+
     @Operation(summary = "TOSS 결제")
     @ApiResponse(
             responseCode = "200",

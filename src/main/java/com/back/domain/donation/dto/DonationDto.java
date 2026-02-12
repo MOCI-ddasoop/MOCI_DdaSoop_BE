@@ -12,6 +12,8 @@ import java.util.List;
 public class DonationDto {
 
     /* ===================Request====================== */
+
+    // 후원하기 게시
     public record CreateRequest(
             @NotBlank String title,
             String description,
@@ -22,6 +24,7 @@ public class DonationDto {
             @NotNull DonationCategory category,
             Long memberId
     ) {}
+
     /* ===================Response===================== */
 
     public record ListResponse( // 전체 조회

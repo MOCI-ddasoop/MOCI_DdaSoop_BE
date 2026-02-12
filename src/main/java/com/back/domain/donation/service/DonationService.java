@@ -3,6 +3,7 @@ package com.back.domain.donation.service;
 import com.back.domain.donation.client.TossPaymentsClient;
 import com.back.domain.donation.dto.*;
 import com.back.domain.donation.entity.*;
+import com.back.domain.donation.repository.DonationNoticeRepository;
 import com.back.domain.donation.repository.DonationPaymentsRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.repository.TossPaymentRepository;
@@ -22,6 +23,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class DonationService {
     private final DonationRepository donationRepository;
+    private final DonationNoticeRepository donationNoticeRepository;
     private final DonationPaymentsRepository donationPaymentsRepository;
     private final TossPaymentRepository tossPaymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
@@ -132,6 +134,27 @@ public class DonationService {
         donationRepository.save(donation);
 
         return DonationDto.CreateResponse.from(donation);
+    }
+
+    // 후원하기 공지 게시글 등록
+    @Transactional
+    public DonationNoticeDto.CreateResponse createDonationNotice(
+            DonationNoticeDto.CreateRequest request, Long donationId, Long memberId
+    ) {
+        Donations donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new IllegalArgumentException("후원페이지(donationId)를 찾을 수 없습니다."));
+
+        DonationNotice notice = DonationNotice.builder()
+                .title(request.title())
+                .description(request.description())
+                .progressNews(request.progressNews())
+                .reviews(request.reviews())
+                .donations(donation)
+                .build();
+
+        donationNoticeRepository.save(notice);
+
+        return DonationNoticeDto.CreateResponse.from(notice);
     }
 
     //Toss 결제 승인 및 후원 결제 내역 저장
