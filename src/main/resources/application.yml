@@ -77,7 +77,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
-  access-token-validity: 3600000
+  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:3600000}  # 1시간. 단축 테스트 시 30000(30초) 등으로 설정
   refresh-token-validity: 604800000
 
 app:

@@ -9,6 +9,7 @@ import com.back.domain.together.repository.TogetherRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,36 +24,71 @@ public class TogetherService {
     private final MemberRepository memberRepository;
     private final ParticipantsRepository participantsRepository;
 
+    // 1페이지는 11개, 2페이지부터 12개
     // 최신순, 마감임박순, 인기순 통합
-    public Page<TogetherDto.ListResponse> getAllTogether(
+    public TogetherDto.PageResponse<TogetherDto.ListResponse> getAllTogether(
             List<TogetherCategory> categories, // 카데고리 다중 선택 가능
             TogetherMode mode,
             TogetherStatus status,
             TogetherSortType sortType,
             Pageable pageable
     ) {
+        final int page = pageable.getPageNumber();
+        final int size = pageable.getPageSize();
+        final int firstPageRealSize = Math.max(0, size - 1); // 1페이지는 11개
+
         boolean hasCategory = categories != null && !categories.isEmpty();
 
-        log.info("categories = {}", categories);
-        log.info("hasCategory = {}", hasCategory);
+        // 우리가 원하는 slice 범위
+        final int start = (page == 0) ? 0 : (firstPageRealSize + (page - 1) * size);
+        final int limit = (page == 0) ? firstPageRealSize : size;
+        final int endExclusive = start + limit;
 
-        Page<Together> page;
+        PageRequest fetchPageable = PageRequest.of(0, Math.max(endExclusive, firstPageRealSize), pageable.getSort());
 
+        Page<Together> fetched;
         if (!hasCategory) {
-            page = switch (sortType) {
-                case POPULAR -> togetherRepository.findPopularWithoutCategory(mode, status, pageable);
-                case DEADLINE -> togetherRepository.findDeadlineWithoutCategory(mode, status, pageable);
-                default -> togetherRepository.findLatestWithoutCategory(mode, status, pageable);
+            fetched = switch (sortType) {
+                case POPULAR -> togetherRepository.findPopularWithoutCategory(mode, status, fetchPageable);
+                case DEADLINE -> togetherRepository.findDeadlineWithoutCategory(mode, status, fetchPageable);
+                default -> togetherRepository.findLatestWithoutCategory(mode, status, fetchPageable);
             };
         } else {
-            page = switch (sortType) {
-                case POPULAR -> togetherRepository.findPopularWithCategory(categories, mode, status, pageable);
-                case DEADLINE -> togetherRepository.findDeadlineWithCategory(categories, mode, status, pageable);
-                default -> togetherRepository.findLatestWithCategory(categories, mode, status, pageable);
+            fetched = switch (sortType) {
+                case POPULAR -> togetherRepository.findPopularWithCategory(categories, mode, status, fetchPageable);
+                case DEADLINE -> togetherRepository.findDeadlineWithCategory(categories, mode, status, fetchPageable);
+                default -> togetherRepository.findLatestWithCategory(categories, mode, status, fetchPageable);
             };
         }
 
-        return page.map(TogetherDto.ListResponse::from);
+        long totalElements = fetched.getTotalElements();
+        int totalPages = calcTotalPagesUi(totalElements, size);
+
+        List<Together> all = fetched.getContent();
+        int safeFrom = Math.min(start, all.size());
+        int safeTo = Math.min(endExclusive, all.size());
+        List<TogetherDto.ListResponse> content = all.subList(safeFrom, safeTo)
+                .stream()
+                .map(TogetherDto.ListResponse::from)
+                .toList();
+
+        // 1페이지 첫번째에 가짜 카드 추가
+        if (page == 0) {
+            java.util.ArrayList<TogetherDto.ListResponse> tmp = new java.util.ArrayList<>(content.size() + 1);
+            tmp.add(TogetherDto.ListResponse.fakeCard());
+            tmp.addAll(content);
+            content = tmp;
+        }
+
+        return new TogetherDto.PageResponse<>(content, page, size, totalElements, totalPages);
+    }
+
+    private int calcTotalPagesUi(long total, int size) {
+        int firstPageRealSize = Math.max(0, size - 1);
+        if (total <= firstPageRealSize) return 1;
+        long remain = total - firstPageRealSize;
+        long pagesAfter = (remain + size - 1) / size; // ceil
+        return (int) (1 + pagesAfter);
     }
 
     public TogetherDto.DetailResponse getTogether(Long id) {
@@ -64,13 +100,17 @@ public class TogetherService {
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
         Together together = togetherRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(id+" 번 함께하기 설명하기 없음"));
-        return TogetherDto.DescriptionResponse.from(together);
+
+        String description = together.getDescription();
+
+        return new TogetherDto.DescriptionResponse(
+                description == null ? "" : description
+        );
     }
 
-    public TogetherDto.DetailResponse getTogetherByMemberId(Long memberId) {
-        Together together = togetherRepository.findByMember_Id(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원번호: "+memberId+" 번 함께하기 없음"));
-        return TogetherDto.DetailResponse.from(together);
+    public List<TogetherDto.DetailResponse> getTogetherByMemberId(Long memberId) {
+        List<Together> together = togetherRepository.findByMember_Id(memberId);
+        return together.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
@@ -148,5 +188,11 @@ public class TogetherService {
         participants.drop();
 
         return "강퇴가 완료되었습니다.";
+    }
+
+    public Boolean isParticipating(Long togetherId, Long memberId) {
+        Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
+                .orElse(null);
+        return participants != null && participants.getParticipantsStatus() == ParticipantsStatus.PARTICIPATING;
     }
 }

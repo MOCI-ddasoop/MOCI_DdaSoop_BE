@@ -1,11 +1,10 @@
 package com.back.domain.donation.service;
 
 import com.back.domain.donation.client.TossPaymentsClient;
-import com.back.domain.donation.dto.request.DonationTossRequest;
-import com.back.domain.donation.dto.response.DonationPaymentResponse;
-import com.back.domain.donation.dto.response.DonationResponse;
-import com.back.domain.donation.dto.response.DonationTossResponse;
-import com.back.domain.donation.dto.response.DonorListResponse;
+import com.back.domain.donation.dto.DonationDto;
+import com.back.domain.donation.dto.DonationPaymentDto;
+import com.back.domain.donation.dto.DonationTossDto;
+import com.back.domain.donation.dto.DonorListResponse;
 import com.back.domain.donation.entity.DonationPayments;
 import com.back.domain.donation.entity.Donations;
 import com.back.domain.donation.entity.TossPaymentStatus;
@@ -31,16 +30,25 @@ public class DonationService {
     private final TossPaymentsClient tossPaymentsClient;
     private final MemberRepository memberRepository;
 
-    public List<DonationResponse> getAllDonations() {
+    public List<DonationDto.ListResponse> getAllDonations() {
         return donationRepository.findAll().stream()
-                .map(DonationResponse::from)
+                .map(DonationDto.ListResponse::from)
                 .toList();
     }
 
-    public DonationResponse getDonation(Long id) {
+    public DonationDto.DetailResponse getDonation(Long id) {
         var donation = donationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id + "번 후원 없음"));
-        return DonationResponse.from(donation);
+                .orElseThrow(() -> new IllegalArgumentException(id + "번 후원하기 없음"));
+        return DonationDto.DetailResponse.from(donation);
+    }
+
+    public DonationDto.DescriptionResponse getDonationDescription(Long id) {
+        Donations donations = donationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(id + "번 후원하기 설명 없음"));
+        String description = donations.getDescription();
+        return new DonationDto.DescriptionResponse(
+                description == null ? "" : description
+        );
     }
 
     public List<DonorListResponse> getAllDonorList(Long id){
@@ -53,8 +61,8 @@ public class DonationService {
 
     //Toss 결제 승인 및 후원 결제 내역 저장
     @Transactional
-    public DonationPaymentResponse donationTossPayment(
-            Long donationId, Long memberId, DonationTossRequest request
+    public DonationPaymentDto.DonationPaymentResponse donationTossPayment(
+            Long donationId, Long memberId, DonationTossDto.DonationTossRequest request
     ) {
         // 후원 대상 조회
         Donations donation = donationRepository.findById(donationId)
@@ -64,15 +72,15 @@ public class DonationService {
                 .orElseThrow(() -> new IllegalArgumentException("회원(memberId)을 찾을 수 없습니다."));
 
         // 토스 결제 승인
-        DonationTossResponse tossResponse =
+        DonationTossDto.DonationTossResponse tossResponse =
                 tossPaymentsClient.confirm(request);
 
         TossPayments tossPayments = TossPayments.builder()
-                .paymentKey(tossResponse.getPaymentKey())
-                .orderId(tossResponse.getOrderId())
-                .amount(tossResponse.getTotalAmount())
+                .paymentKey(tossResponse.paymentKey())
+                .orderId(tossResponse.orderId())
+                .amount(tossResponse.totalAmount())
                 .status(TossPaymentStatus.DONE)
-                .approvedAt(tossResponse.getApprovedAt())
+                .approvedAt(tossResponse.approvedAt())
                 .member(member)
                 .build();
 
@@ -82,7 +90,7 @@ public class DonationService {
         DonationPayments payment = DonationPayments.builder()
                 .donations(donation)
                 .member(member)
-                .amount(tossResponse.getTotalAmount())
+                .amount(tossResponse.totalAmount())
                 .paymentMethod("TOSS")
 //                .approvedAt(tossResponse.getApprovedAt()) //TODO: 일단 최소한으로 조건 사용
 //                .tossPayments(tossPayments)
@@ -90,11 +98,11 @@ public class DonationService {
 
         donationPaymentsRepository.save(payment);
 
-        if (TossPaymentStatus.DONE.name().equals(tossResponse.getStatus())) {
-            donation.increaseAmount(tossResponse.getTotalAmount());
+        if (TossPaymentStatus.DONE.name().equals(tossResponse.status())) {
+            donation.increaseAmount(tossResponse.totalAmount());
         }
 
         // 프론트로 응답
-        return DonationPaymentResponse.from(payment);
+        return DonationPaymentDto.DonationPaymentResponse.from(payment);
     }
 }
