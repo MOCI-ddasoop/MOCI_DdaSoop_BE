@@ -8,6 +8,8 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "donations")
@@ -42,6 +44,9 @@ public class Donations extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
     private Member member;
+
+    @OneToMany(mappedBy = "donations", fetch = FetchType.LAZY)
+    private List<DonationParticipants> donationParticipants = new ArrayList<>();
 
     @Column(name = "donation_category")
     @Enumerated(EnumType.STRING)

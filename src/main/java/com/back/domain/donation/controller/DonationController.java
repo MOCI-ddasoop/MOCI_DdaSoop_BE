@@ -136,6 +136,19 @@ public class DonationController {
         return ResponseEntity.ok(RsData.success("상세보기별 후원 현황 조회 성공", donorList));
     }
 
+    @Operation(summary = "나의 후원하기 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "나의 후원하기 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationDto.ListResponse.class))
+    )
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<RsData<List<DonationDto.DetailResponse>>> getDonationByMemberId(
+            @PathVariable Long memberId
+    ) {
+        return ResponseEntity.ok().body(RsData.success("나의 후원하기 조회 성공", donationService.getMemberIdOrParticipating(memberId)));
+    }
+
     @Operation(summary = "후원하기 게시글 등록")
     @ApiResponse(
             responseCode = "200",

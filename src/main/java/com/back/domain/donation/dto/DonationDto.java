@@ -20,7 +20,7 @@ public class DonationDto {
             @NotNull Long goalAmount,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
-            @NotNull String status,
+            String status,
             @NotNull DonationCategory category,
             Long memberId
     ) {}

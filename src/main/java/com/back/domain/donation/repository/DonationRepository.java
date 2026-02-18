@@ -68,4 +68,15 @@ public interface DonationRepository extends JpaRepository<Donations,Long> {
     Page<Donations> findPopularWithCategory(
             @Param("categories") List<DonationCategory> categories,
             Pageable pageable);
+
+    // "나"가 참여한 후원하기 & 개설한 후원하기 조회
+    @Query("""
+        select distinct d
+        from Donations d
+        left join d.donationParticipants dp
+        where d.member.id = :memberId
+        or (dp.member.id = :memberId and dp.participantsStatus = com.back.domain.donation.entity.DonationParticipantStatus.PARTICIPATING)
+            order by d.createdAt asc
+    """)
+    List<Donations> findByAllMemberIdOrParticipants_MemberId(@Param("memberId") Long memberId);
 }

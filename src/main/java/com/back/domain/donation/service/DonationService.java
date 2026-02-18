@@ -118,6 +118,11 @@ public class DonationService {
         return payments.stream().map(DonorDto.ListResponse::from).toList();
     }
 
+    public List<DonationDto.DetailResponse> getMemberIdOrParticipating(Long memberId) {
+        List<Donations> donations = donationRepository.findByAllMemberIdOrParticipants_MemberId(memberId);
+        return donations.stream().map(DonationDto.DetailResponse::from).toList();
+    }
+
     // 후원하기 게시글 등록
     @Transactional
     public DonationDto.CreateResponse createDonation(
