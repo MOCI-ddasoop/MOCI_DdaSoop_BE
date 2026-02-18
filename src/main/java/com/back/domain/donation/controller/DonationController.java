@@ -138,6 +138,21 @@ public class DonationController {
         return ResponseEntity.ok(RsData.success("상세보기별 후원 현황 조회 성공", donorList));
     }
 
+    @Operation(summary = "개설자 확인 API")
+    @ApiResponse(
+            responseCode = "200",
+            description = "개설자 확인 성공",
+            content = @Content(schema = @Schema(implementation = RsData.class))
+    )
+    @GetMapping("/{donationId}/{memberId}")
+    public ResponseEntity<RsData<Boolean>> isDonationCreator(
+            @PathVariable Long donationId,
+            @PathVariable Long memberId
+    ) {
+        Boolean isCreator = donationService.isDonationCreator(donationId,  memberId);
+        return ResponseEntity.ok(RsData.success("개설자 확인 성공", isCreator));
+    }
+
     @Operation(summary = "나의 후원하기 조회")
     @ApiResponse(
             responseCode = "200",

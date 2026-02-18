@@ -100,6 +100,12 @@ public class DonationService {
         );
     }
 
+    public Boolean isDonationCreator(Long donationId, Long memberId) {
+        Donations donations = donationRepository.findById(donationId)
+                .orElseThrow(() -> new IllegalArgumentException(donationId + "번 후원하기 없음"));
+        return donations.getMember().getId().equals(memberId);
+    }
+
     public List<DonationNoticeDto.ListResponse> getAllDonationNotices() {
         List<DonationNotice> notices = donationNoticeRepository.findAll();
 
@@ -214,4 +220,6 @@ public class DonationService {
         // 프론트로 응답
         return DonationPaymentDto.DonationPaymentResponse.from(payment);
     }
+
+
 }
