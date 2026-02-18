@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Ddonations", description = "후원하기 API")
 @RestController
 @RequestMapping("/api/v1/donation")
 @RequiredArgsConstructor
@@ -159,7 +161,7 @@ public class DonationController {
     public ResponseEntity<RsData<DonationDto.CreateResponse>> create(
             @Valid @RequestBody DonationDto.CreateRequest request
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = 1L;
         DonationDto.CreateResponse response = donationService.createDonation(request, memberId);
         return ResponseEntity.ok(RsData.success("후원하기 게시글 등록 성공", response));
     }

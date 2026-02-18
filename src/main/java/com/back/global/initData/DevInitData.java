@@ -8,6 +8,7 @@ import com.back.domain.comment.repository.CommentRepository;
 import com.back.domain.donation.dto.DonationNoticeDto;
 import com.back.domain.donation.entity.DonationCategory;
 import com.back.domain.donation.entity.DonationNotice;
+import com.back.domain.donation.entity.DonationStatus;
 import com.back.domain.donation.entity.Donations;
 import com.back.domain.donation.repository.DonationNoticeRepository;
 import com.back.domain.donation.repository.DonationRepository;
@@ -507,7 +508,7 @@ public class DevInitData {
                 .currentAmount(0L)
                 .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
                 .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
-                .status("ONGOING")
+                .status(DonationStatus.RECRUITING)
                 .member(organizer)
                 .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
                 .build();

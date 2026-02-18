@@ -1,6 +1,7 @@
 package com.back.domain.donation.dto;
 
 import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.DonationStatus;
 import com.back.domain.donation.entity.Donations;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +21,7 @@ public class DonationDto {
             @NotNull Long goalAmount,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
-            String status,
+            DonationStatus status,
             @NotNull DonationCategory category,
             Long memberId
     ) {}
@@ -33,7 +34,7 @@ public class DonationDto {
             Long goalAmount,
             Long currentAmount,
             LocalDate endDate,
-            String status,
+            DonationStatus status,
             String thumbnailImage,
             DonationCategory category,
             Long dDay
@@ -58,7 +59,7 @@ public class DonationDto {
         public static ListResponse fakeCard() {
             return new ListResponse(
                     -1L,"샘플 모금함",1000000L,500000L,LocalDate.now().plusDays(10),
-                    "ONGOING", null, DonationCategory.ANIMAL,10L
+                    null, null, DonationCategory.ANIMAL,10L
             );
         }
     }
@@ -79,7 +80,7 @@ public class DonationDto {
             Long currentAmount,
             LocalDate startDate,
             LocalDate endDate,
-            String status,
+            DonationStatus status,
             String thumbnailImage,
             DonationCategory category,
             Long dDay
@@ -113,7 +114,7 @@ public class DonationDto {
             Long goalAmount,
             LocalDate startDate,
             LocalDate endDate,
-            String status,
+            DonationStatus status,
             DonationCategory category,
             Long memberId
     ) {

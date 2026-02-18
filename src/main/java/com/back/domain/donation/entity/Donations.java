@@ -38,8 +38,10 @@ public class Donations extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Builder.Default
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private DonationStatus status = DonationStatus.RECRUITING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")

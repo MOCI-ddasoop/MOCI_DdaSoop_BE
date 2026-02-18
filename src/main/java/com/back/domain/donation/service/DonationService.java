@@ -137,7 +137,7 @@ public class DonationService {
                 .goalAmount(request.goalAmount())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
-                .status("ONGOING")
+                .status(request.status())
                 .donationCategory(request.category())
                 .member(member)
                 .build();
