@@ -113,9 +113,11 @@ public class DonationService {
     }
 
     public DonationNoticeDto.ListResponse getDonationNoticesByDonationId(Long donationId) {
-        DonationNotice notices = donationNoticeRepository.findByDonationsId(donationId);
 
-        return DonationNoticeDto.ListResponse.from(notices);
+        return donationNoticeRepository.findByDonations_Id(donationId)
+                .map(DonationNoticeDto.ListResponse::from)
+                .orElse(new DonationNoticeDto.ListResponse(
+                        null,"","","","",donationId));
     }
 
     public List<DonorDto.ListResponse> getAllDonorList(Long id){

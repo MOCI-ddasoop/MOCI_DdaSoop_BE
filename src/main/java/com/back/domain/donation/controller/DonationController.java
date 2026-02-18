@@ -106,6 +106,7 @@ public class DonationController {
             @PathVariable Long id
     ) {
         DonationDto.DetailResponse response = donationService.getDonation(id);
+
         return ResponseEntity.ok().body(RsData.success("후원 상세 조회 성공", response));
     }
 
