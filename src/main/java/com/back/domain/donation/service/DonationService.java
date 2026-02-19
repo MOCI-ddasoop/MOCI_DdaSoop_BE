@@ -16,7 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -126,9 +128,15 @@ public class DonationService {
         return payments.stream().map(DonorDto.ListResponse::from).toList();
     }
 
-    public List<DonationDto.DetailResponse> getMemberIdOrParticipating(Long memberId) {
-        List<Donations> donations = donationRepository.findByAllMemberIdOrParticipants_MemberId(memberId);
-        return donations.stream().map(DonationDto.DetailResponse::from).toList();
+    public List<DonationDto.MyDonationResponse> getMemberIdOrParticipating(Long memberId) {
+
+        List<Donations> create = donationRepository.findByMember_Id(memberId);
+        List<Donations> participating = donationRepository.findParticipatedDonations(memberId);
+        Set<Donations> merge = new HashSet<>();
+        merge.addAll(create);
+        merge.addAll(participating);
+
+        return merge.stream().map(d -> DonationDto.MyDonationResponse.from(d, memberId)).toList();
     }
 
     // 후원하기 게시글 등록

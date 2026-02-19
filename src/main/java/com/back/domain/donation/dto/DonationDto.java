@@ -105,6 +105,24 @@ public class DonationDto {
         }
     }
 
+    // 마이페이지용 ID별 상세 조회
+    public record MyDonationResponse(
+            Long id,
+            String title,
+            boolean isOwner
+    ) {
+        public static MyDonationResponse from(Donations donations, Long memberId){
+
+            boolean isOwner = donations.getMember().getId().equals(memberId);
+
+            return new MyDonationResponse(
+                    donations.getId(),
+                    donations.getTitle(),
+                    isOwner
+            );
+        }
+    }
+
     public record DescriptionResponse(String description) {}
 
     public record CreateResponse(

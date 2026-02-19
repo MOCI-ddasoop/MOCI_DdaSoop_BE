@@ -29,6 +29,9 @@ public class DonationParticipants extends BaseEntity {
     @JoinColumn(name = "donation_id") // 참가한 후원하기
     private Donations donations;
 
+    @Column(name = "amount")
+    private Long amount;
+
     @Column(name = "join_at")
     private LocalDateTime joinAt;
 

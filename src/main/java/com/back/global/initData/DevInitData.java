@@ -584,6 +584,7 @@ public class DevInitData {
                 .member(member)
                 .donations(donations)
                 .joinAt(LocalDateTime.now())
+                .amount(random.nextLong(1000, 10000))
                 .participantsStatus(DonationParticipantStatus.PARTICIPATING)
                 .participantRole(DonationParticipantRole.MEMBER)
                 .build();
@@ -597,6 +598,11 @@ public class DevInitData {
         for(int i = 0; i < 4; i++){
             participants.add(donationParticipantsRepository.save(
                     createDonationParticipants(members.get(i), donations.get(i))));
+        }
+        for(int i = 4; i < 30; i++){
+            Member organizer = members.get(random.nextInt(members.size()));
+            participants.add(donationParticipantsRepository.save(
+                    createDonationParticipants(organizer, donations.get(i))));
         }
 
         return participants;

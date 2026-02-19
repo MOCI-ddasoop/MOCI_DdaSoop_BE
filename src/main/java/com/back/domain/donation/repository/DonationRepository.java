@@ -79,4 +79,13 @@ public interface DonationRepository extends JpaRepository<Donations,Long> {
             order by d.createdAt asc
     """)
     List<Donations> findByAllMemberIdOrParticipants_MemberId(@Param("memberId") Long memberId);
+
+    List<Donations> findByMember_Id(Long memberId);
+
+    @Query("""
+    select dp.donations
+    from DonationParticipants dp
+    where dp.member.id = :memberId
+""")
+    List<Donations> findParticipatedDonations(@Param("memberId") Long memberId);
 }
