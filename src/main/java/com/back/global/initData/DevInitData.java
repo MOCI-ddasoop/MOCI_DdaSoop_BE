@@ -6,11 +6,9 @@ import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentReactionRepository;
 import com.back.domain.comment.repository.CommentRepository;
 import com.back.domain.donation.dto.DonationNoticeDto;
-import com.back.domain.donation.entity.DonationCategory;
-import com.back.domain.donation.entity.DonationNotice;
-import com.back.domain.donation.entity.DonationStatus;
-import com.back.domain.donation.entity.Donations;
+import com.back.domain.donation.entity.*;
 import com.back.domain.donation.repository.DonationNoticeRepository;
+import com.back.domain.donation.repository.DonationParticipantsRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
@@ -35,6 +33,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -56,6 +55,7 @@ public class DevInitData {
     private final TogetherRepository togetherRepository;
     private final TogetherService togetherService;
     private final DonationRepository donationRepository;
+    private final DonationParticipantsRepository donationParticipantsRepository;
     private final DonationNoticeRepository donationNoticeRepository;
     private final DonationService donationService;
     private final ParticipantsRepository participantsRepository;
@@ -114,10 +114,15 @@ public class DevInitData {
         List<DonationNotice> donationNotices = initDonationNotices(donationsList);
         log.info(" DonationNotice {} 개 생성 완료", donationNotices.size());
 
+        // 24. DonationParticipants 생성
+        List<DonationParticipants> donationParticipants = initDonationParticipants(donationsList, members);
+        log.info(" DonationParticipants {} 개 생성 완료", donationParticipants.size());
+
         log.info("========== 초기 데이터 생성 완료 ==========");
-        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}, DonationNotice {}",
-                members.size(), feeds.size(), comments.size(),
-                togethers.size(), participantsList.size(), donationsList.size(), donationNotices.size());
+        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}, DonationNotice {}" +
+                ", DonationParticipants {}",
+                members.size(), feeds.size(), comments.size(), togethers.size(), participantsList.size()
+                , donationsList.size(), donationNotices.size(), donationParticipants.size());
     }
 
 
@@ -524,7 +529,7 @@ public class DevInitData {
                 {"깨끗한 물 공급", "모든 이에게 깨끗한 물을 제공하기 위한 후원입니다."}
         };
 
-        // 처음 5개는 1~5번 멤버가 각각 주최
+        // 처음 5개는 1~4번 멤버가 각각 주최
         for (int i = 0; i < 4; i++){
             String[] template = templates[i%templates.length];
             donations.add(donationRepository.save(createDonation(template, members.get(i), 5)));
@@ -567,6 +572,34 @@ public class DevInitData {
         }
 
         return notices;
+    }
+
+    // ========== 24. DonationParticipation 샘플 데이터 생성 ==========
+
+    private DonationParticipants createDonationParticipants(
+            Member member,
+            Donations donations
+    ){
+        return DonationParticipants.builder()
+                .member(member)
+                .donations(donations)
+                .joinAt(LocalDateTime.now())
+                .participantsStatus(DonationParticipantStatus.PARTICIPATING)
+                .participantRole(DonationParticipantRole.MEMBER)
+                .build();
+    };
+
+    private List<DonationParticipants> initDonationParticipants(
+            List<Donations> donations, List<Member> members
+    ) {
+        List<DonationParticipants> participants = new ArrayList<>();
+
+        for(int i = 0; i < 4; i++){
+            participants.add(donationParticipantsRepository.save(
+                    createDonationParticipants(members.get(i), donations.get(i))));
+        }
+
+        return participants;
     }
 
     // ========== 헬퍼 메서드 ==========
