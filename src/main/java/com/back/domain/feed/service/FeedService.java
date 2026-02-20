@@ -41,6 +41,7 @@ public class FeedService {
     private final MemberRepository memberRepository;
     private final TagService tagService;
     private final com.back.domain.together.repository.TogetherRepository togetherRepository;
+    private final MemberTagStatisticsService memberTagStatisticsService;
 
     /**
      * 피드 생성
@@ -339,6 +340,10 @@ public class FeedService {
             // 리액션 취소
             feedReactionRepository.deleteByFeedIdAndMemberId(feedId, currentMemberId);
             log.info("피드 리액션 취소 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return false;
         } else {
             // 리액션 생성
@@ -348,6 +353,10 @@ public class FeedService {
                     .build();
             feedReactionRepository.save(reaction);
             log.info("피드 리액션 생성 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return true;
         }
     }
@@ -590,8 +599,8 @@ public class FeedService {
      * @return 추천 피드 리스트
      */
     private List<Feed> getTagBasedRecommendations(Long memberId, int count) {
-        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (최대 5개)
-        List<String> frequentTags = feedReactionRepository.findFrequentTagsByMemberId(memberId);
+        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (캐싱된 통계에서)
+        List<String> frequentTags = memberTagStatisticsService.getFrequentTags(memberId);
         
         if (frequentTags.isEmpty()) {
             // 태그가 없으면 빈 리스트 반환
