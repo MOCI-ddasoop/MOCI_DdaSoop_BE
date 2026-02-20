@@ -129,6 +129,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("readAt") LocalDateTime readAt
     );
 
+    /**
+     * 특정 회원의 특정 ID 목록 알림을 읽음 처리
+     * 
+     * @param receiverId 수신자 ID (권한 체크용)
+     * @param notificationIds 알림 ID 목록
+     * @param readAt 읽은 시간
+     * @return 업데이트된 알림 개수
+     */
+    @Modifying
+    @Query("UPDATE Notification n " +
+           "SET n.isRead = true, n.readAt = :readAt " +
+           "WHERE n.receiver.id = :receiverId " +
+           "AND n.id IN :notificationIds " +
+           "AND n.isRead = false " +
+           "AND n.deletedAt IS NULL")
+    int markAsReadByReceiverIdAndIds(
+            @Param("receiverId") Long receiverId,
+            @Param("notificationIds") List<Long> notificationIds,
+            @Param("readAt") LocalDateTime readAt
+    );
+
     // ========== 일괄 삭제 ==========
 
     /**
@@ -179,6 +200,26 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            "WHERE n.id IN :notificationIds " +
            "AND n.deletedAt IS NULL")
     int deleteByIds(
+            @Param("notificationIds") List<Long> notificationIds,
+            @Param("deletedAt") LocalDateTime deletedAt
+    );
+
+    /**
+     * 특정 회원의 특정 ID 목록 알림 삭제 (Soft Delete)
+     * 
+     * @param receiverId 수신자 ID (권한 체크용)
+     * @param notificationIds 알림 ID 목록
+     * @param deletedAt 삭제 시간
+     * @return 삭제된 알림 개수
+     */
+    @Modifying
+    @Query("UPDATE Notification n " +
+           "SET n.deletedAt = :deletedAt " +
+           "WHERE n.receiver.id = :receiverId " +
+           "AND n.id IN :notificationIds " +
+           "AND n.deletedAt IS NULL")
+    int deleteByReceiverIdAndIds(
+            @Param("receiverId") Long receiverId,
             @Param("notificationIds") List<Long> notificationIds,
             @Param("deletedAt") LocalDateTime deletedAt
     );

@@ -57,6 +57,20 @@ public class FeedService {
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 함께하기입니다. ID: " + request.getTogetherId()));
         }
 
+        // 2-1. TOGETHER_VERIFICATION인 경우 하루 1회 체크
+        if (request.getFeedType() == com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION && together != null) {
+            java.time.LocalDateTime startOfDay = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).atStartOfDay();
+            Long todayVerificationCount = feedRepository.countTodayVerificationByMemberAndTogether(
+                    currentMemberId,
+                    request.getTogetherId(),
+                    startOfDay
+            );
+            
+            if (todayVerificationCount != null && todayVerificationCount > 0) {
+                throw new IllegalArgumentException("이미 오늘 인증을 완료했습니다. 하루에 1번만 인증할 수 있습니다.");
+            }
+        }
+
         // 3. Feed 엔티티 생성
         Feed feed = Feed.builder()
                 .feedType(request.getFeedType())

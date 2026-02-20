@@ -300,15 +300,13 @@ public class NotificationService {
      */
     @Transactional
     public int markAsReadBatch(List<Long> notificationIds, Long currentMemberId) {
-        // TODO: 권한 확인 (본인의 알림만 처리 가능하도록)
-        // 현재는 일괄 처리 성능 우선
-
-        int updatedCount = notificationRepository.markAsReadByIds(
+        int updatedCount = notificationRepository.markAsReadByReceiverIdAndIds(
+                currentMemberId,
                 notificationIds, 
                 LocalDateTime.now()
         );
 
-        log.info("알림 일괄 읽음 처리 - {}개", updatedCount);
+        log.info("알림 일괄 읽음 처리 - 사용자: {}, {}개", currentMemberId, updatedCount);
 
         return updatedCount;
     }
@@ -362,14 +360,13 @@ public class NotificationService {
      */
     @Transactional
     public int deleteNotificationsBatch(List<Long> notificationIds, Long currentMemberId) {
-        // TODO: 권한 확인 (본인의 알림만 삭제 가능하도록)
-
-        int deletedCount = notificationRepository.deleteByIds(
+        int deletedCount = notificationRepository.deleteByReceiverIdAndIds(
+                currentMemberId,
                 notificationIds, 
                 LocalDateTime.now()
         );
 
-        log.info("알림 일괄 삭제 - {}개", deletedCount);
+        log.info("알림 일괄 삭제 - 사용자: {}, {}개", currentMemberId, deletedCount);
 
         return deletedCount;
     }
