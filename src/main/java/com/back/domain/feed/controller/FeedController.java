@@ -107,22 +107,22 @@ public class FeedController {
     }
 
     @Operation(
-            summary = "피드 목록 조회 (페이징 + QueryDSL 동적 검색)",
-            description = "피드 목록을 페이징 방식으로 조회합니다. QueryDSL 동적 쿼리로 다양한 조건 조합이 가능합니다."
+            summary = "피드 목록 조회 (무한 스크롤 + QueryDSL 동적 검색)",
+            description = "피드 목록을 무한 스크롤 방식으로 조회합니다. QueryDSL 동적 쿼리로 다양한 조건 조합이 가능합니다."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = Page.class))
+                    content = @Content(schema = @Schema(implementation = InfiniteScrollResponse.class))
             )
     })
     @GetMapping
-    public ResponseEntity<Page<FeedSummaryResponse>> getFeedList(
+    public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getFeedList(
             @Parameter(description = "검색 및 필터 조건", required = false)
             @ModelAttribute FeedSearchRequest searchRequest
     ) {
-        Page<FeedSummaryResponse> response = feedService.getFeedList(searchRequest);
+        InfiniteScrollResponse<FeedSummaryResponse> response = feedService.getFeedList(searchRequest);
 
         return ResponseEntity.ok(response);
     }
