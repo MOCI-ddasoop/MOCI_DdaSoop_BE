@@ -245,6 +245,44 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 .fetch();
     }
 
+    @Override
+    public List<Feed> searchFeedsForInfiniteScroll(FeedSearchCondition condition, Long cursorId, int limit) {
+        QFeed feed = QFeed.feed;
+
+        // 1. 동적 조건 생성
+        BooleanBuilder builder = createBaseCondition(condition);
+        
+        // 2. 커서 조건 추가
+        builder.and(feed.id.lt(cursorId));
+
+        // 3. Feed ID만 먼저 조회 (동적 조건 적용, 중복 없음)
+        List<Long> feedIds = queryFactory
+                .select(feed.id)
+                .from(feed)
+                .where(builder)
+                .orderBy(getOrderSpecifier(condition.getSortBy()))
+                .limit(limit)
+                .fetch();
+
+        // Feed가 없으면 빈 리스트 반환
+        if (feedIds.isEmpty()) {
+            return List.of();
+        }
+
+        // 4. ID로 Feed + 연관 엔티티 Fetch Join (조건 고정, N+1 방지)
+        List<Feed> content = queryFactory
+                .selectFrom(feed)
+                .distinct()
+                .leftJoin(feed.member).fetchJoin()        // Member Fetch Join (N+1 방지)
+                .leftJoin(feed.images).fetchJoin()        // FeedImage Fetch Join (N+1 방지)
+                .leftJoin(feed.together).fetchJoin()      // Together Fetch Join (N+1 방지)
+                .where(feed.id.in(feedIds))               // ID IN 쿼리 (중복 최소화)
+                .orderBy(getOrderSpecifier(condition.getSortBy()))
+                .fetch();
+
+        return content;
+    }
+
     // ========== Private 헬퍼 메서드 ==========
 
     /**

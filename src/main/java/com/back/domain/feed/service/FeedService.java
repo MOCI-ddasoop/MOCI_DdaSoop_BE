@@ -126,23 +126,21 @@ public class FeedService {
     }
 
     /**
-     * 피드 목록 조회 (QueryDSL 동적 검색 + 페이징)
+     * 피드 목록 조회 (QueryDSL 동적 검색 + 무한 스크롤)
      */
-    public Page<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
-        // 1. 페이징 설정
-        Pageable pageable = PageRequest.of(
-                searchRequest.getPageOrDefault(),
-                searchRequest.getSizeOrDefault()
-        );
+    public InfiniteScrollResponse<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
+        // 1. 무한 스크롤 설정
+        Long cursorId = searchRequest.getLastFeedId() != null ? searchRequest.getLastFeedId() : Long.MAX_VALUE;
+        int requestedSize = searchRequest.getSizeOrDefault();
 
         // 2. FeedSearchRequest → FeedSearchCondition 변환
         FeedSearchCondition condition = FeedSearchCondition.from(searchRequest);
 
-        // 3. QueryDSL로 검색 (동적 쿼리 + Fetch Join)
-        Page<Feed> feedPage = feedRepository.searchFeeds(condition, pageable);
+        // 3. QueryDSL로 검색 (동적 쿼리, requestedSize + 1개 조회)
+        List<Feed> feeds = feedRepository.searchFeedsForInfiniteScroll(condition, cursorId, requestedSize + 1);
 
-        // 4. DTO 변환
-        return feedPage.map(FeedSummaryResponse::from);
+        // 4. 무한 스크롤 응답 생성
+        return createInfiniteScrollResponse(feeds, requestedSize);
     }
 
     /**
