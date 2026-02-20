@@ -109,6 +109,7 @@ public class DonationDto {
     public record MyDonationResponse(
             Long id,
             String title,
+            Long amount,
             boolean isOwner
     ) {
         public static MyDonationResponse from(Donations donations, Long memberId){
@@ -118,10 +119,43 @@ public class DonationDto {
             return new MyDonationResponse(
                     donations.getId(),
                     donations.getTitle(),
+                    donations.getCurrentAmount(),
                     isOwner
             );
         }
     }
+
+    // 개설한 후원 리스트 조회
+    public record MyDonationListResponse(
+            Long id,
+            String title,
+            Long goalAmount,
+            Long currentAmount,
+            LocalDate endDate,
+            String status,
+            String thumbnailImage,
+            String category,
+            Long dDay
+    ) {
+        public static MyDonationListResponse from(Donations donations){
+
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, donations.getEndDate());
+
+            return new MyDonationListResponse(
+                    donations.getId(),
+                    donations.getTitle(),
+                    donations.getGoalAmount(),
+                    donations.getCurrentAmount(),
+                    donations.getEndDate(),
+                    donations.getStatus().name(),
+                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getDonationCategory().name(),
+                    dDay
+            );
+        }
+    }
+
 
     public record DescriptionResponse(String description) {}
 

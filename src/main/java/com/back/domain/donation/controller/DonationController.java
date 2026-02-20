@@ -154,6 +154,20 @@ public class DonationController {
         return ResponseEntity.ok(RsData.success("개설자 확인 성공", isCreator));
     }
 
+    @Operation(summary = "개설한 후원 리스트 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "개설한 후원 리스트 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationDto.MyDonationListResponse.class))
+    )
+    @GetMapping("/member/{memberId}/create")
+    public ResponseEntity<RsData<List<DonationDto.MyDonationListResponse>>> createDonationList(
+            @PathVariable Long memberId
+    ) {
+        List<DonationDto.MyDonationListResponse> createList = donationService.getMyDonationList(memberId);
+        return ResponseEntity.ok(RsData.success("개설한 후원 리스트 조회 성공", createList));
+    }
+
     @Operation(summary = "나의 후원하기 조회")
     @ApiResponse(
             responseCode = "200",

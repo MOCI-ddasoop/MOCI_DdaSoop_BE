@@ -108,6 +108,12 @@ public class DonationService {
         return donations.getMember().getId().equals(memberId);
     }
 
+    public List<DonationDto.MyDonationListResponse> getMyDonationList(Long memberId) {
+        List<Donations> donations = donationRepository.findByMember_Id(memberId);
+
+        return donations.stream().map(DonationDto.MyDonationListResponse::from).toList();
+    }
+
     public List<DonationNoticeDto.ListResponse> getAllDonationNotices() {
         List<DonationNotice> notices = donationNoticeRepository.findAll();
 
