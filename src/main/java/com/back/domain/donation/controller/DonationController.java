@@ -187,11 +187,11 @@ public class DonationController {
     @ApiResponse(
             responseCode = "200",
             description = "최신 후원하기 내역 2개 조회 성공",
-            content = @Content(schema = @Schema(implementation = DonationPaymentDto.DonationPaymentListResponse.class))
+            content = @Content(schema = @Schema(implementation = DonationPaymentDto.RecentDonationPaymentListResponse.class))
     )
     @GetMapping("/payment/recent")
-    public ResponseEntity<RsData<List<DonationPaymentDto.DonationPaymentListResponse>>> getRecentDonationPaymentList() {
-        List<DonationPaymentDto.DonationPaymentListResponse> response = donationService.getRecentDonationPayments();
+    public ResponseEntity<RsData<List<DonationPaymentDto.RecentDonationPaymentListResponse>>> getRecentDonationPaymentList() {
+        List<DonationPaymentDto.RecentDonationPaymentListResponse> response = donationService.getRecentDonationPayments();
 
         return ResponseEntity.ok(RsData.success("최신 후원하기 내역 2개 조회 성공", response));
     }

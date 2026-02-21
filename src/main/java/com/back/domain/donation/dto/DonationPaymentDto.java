@@ -49,4 +49,30 @@ public class DonationPaymentDto {
             );
         }
     }
+
+    public record RecentDonationPaymentListResponse(
+            Long id,
+            Long donationId,
+            Long memberId,
+            String memberName,
+            String title,
+            String thumbnailImage,
+            Long amount,
+            String paymentMethod,
+            LocalDateTime createdAt
+    ) {
+        public static RecentDonationPaymentListResponse from(DonationPayments payments) {
+            return new RecentDonationPaymentListResponse(
+                    payments.getId(),
+                    payments.getDonations().getId(),
+                    payments.getMember().getId(),
+                    payments.getMember().getName(),
+                    payments.getDonations().getTitle(),
+                    payments.getDonations().getThumbnailImageUrl(),
+                    payments.getAmount(),
+                    payments.getPaymentMethod(),
+                    payments.getCreatedAt()
+            );
+        }
+    }
 }
