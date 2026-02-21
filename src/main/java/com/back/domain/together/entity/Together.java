@@ -42,6 +42,9 @@ public class Together extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "thumbnail_image_url")
+    private String thumbnailImageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id") // 함께하기 만든 사람 && 운영자, 주최자, 소유자
     private Member member;

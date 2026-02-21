@@ -519,6 +519,7 @@ public class DevInitData {
                 .currentAmount(0L)
                 .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
                 .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
+                .thumbnailImageUrl("https://picsum.photos/200/300?random=" + random.nextInt(100))
                 .status(DonationStatus.RECRUITING)
                 .member(organizer)
                 .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])

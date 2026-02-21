@@ -51,7 +51,7 @@ public class DonationDto {
                     donations.getCurrentAmount(),
                     donations.getEndDate(),
                     donations.getStatus(),
-                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getThumbnailImageUrl(),
                     donations.getDonationCategory(),
                     dDay
             );
@@ -98,7 +98,7 @@ public class DonationDto {
                     donations.getStartDate(),
                     donations.getEndDate(),
                     donations.getStatus(),
-                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getThumbnailImageUrl(),
                     donations.getDonationCategory(),
                     dDay
             );
@@ -149,7 +149,7 @@ public class DonationDto {
                     donations.getCurrentAmount(),
                     donations.getEndDate(),
                     donations.getStatus().name(),
-                    null, // TODO: 추후 thumbnailImage 매핑
+                    donations.getThumbnailImageUrl(),
                     donations.getDonationCategory().name(),
                     dDay
             );

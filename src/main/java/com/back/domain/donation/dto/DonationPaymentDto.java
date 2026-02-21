@@ -42,7 +42,7 @@ public class DonationPaymentDto {
                     payments.getDonations().getId(),
                     payments.getMember().getId(),
                     payments.getDonations().getTitle(),
-                    null, // TODO: 추후 thumbnailImage 매핑
+                    payments.getDonations().getThumbnailImageUrl(),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()

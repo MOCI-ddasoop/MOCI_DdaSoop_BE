@@ -58,7 +58,7 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
-                    null, // TODO: thumbnailImage 정보 매핑
+                    together.getThumbnailImageUrl(),
                     null, // TODO: progress 정보 매핑
                     dDay
             );
