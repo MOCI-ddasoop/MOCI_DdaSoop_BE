@@ -27,4 +27,7 @@ public interface DonationPaymentsRepository
     order by dp.createdAt desc
 """)
     List<DonationPayments> findAllMyDonationPaymentByMember_Id(Long memberId);
+
+    // 최근 2개 후원 내역 조회
+    List<DonationPayments> findTop2ByOrderByCreatedAtDesc();
 }

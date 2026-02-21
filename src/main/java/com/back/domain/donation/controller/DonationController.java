@@ -179,7 +179,21 @@ public class DonationController {
             @PathVariable Long memberId
     ) {
         List<DonationPaymentDto.DonationPaymentListResponse> response = donationService.getDonationPaymentList(memberId);
+
         return ResponseEntity.ok(RsData.success("나의 후원하기 조회 성공", response));
+    }
+
+    @Operation(summary = "최신 2개 후원하기 내역 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "최신 후원하기 내역 2개 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationPaymentDto.DonationPaymentListResponse.class))
+    )
+    @GetMapping("/payment/recent")
+    public ResponseEntity<RsData<List<DonationPaymentDto.DonationPaymentListResponse>>> getRecentDonationPaymentList() {
+        List<DonationPaymentDto.DonationPaymentListResponse> response = donationService.getRecentDonationPayments();
+
+        return ResponseEntity.ok(RsData.success("최신 후원하기 내역 2개 조회 성공", response));
     }
 
     @Operation(summary = "후원하기 게시글 등록")

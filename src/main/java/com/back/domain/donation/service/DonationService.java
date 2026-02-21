@@ -118,6 +118,13 @@ public class DonationService {
         return paymentList.stream().map(DonationPaymentDto.DonationPaymentListResponse::from).toList();
     }
 
+    //최근 후원 내역 2개 조회
+    public List<DonationPaymentDto.DonationPaymentListResponse> getRecentDonationPayments(){
+        List<DonationPayments> paymentList = donationPaymentsRepository.findTop2ByOrderByCreatedAtDesc();
+
+        return paymentList.stream().map(DonationPaymentDto.DonationPaymentListResponse::from).toList();
+    }
+
     public List<DonationNoticeDto.ListResponse> getAllDonationNotices() {
         List<DonationNotice> notices = donationNoticeRepository.findAll();
 
