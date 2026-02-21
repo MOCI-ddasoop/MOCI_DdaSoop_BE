@@ -25,4 +25,28 @@ public class DonationPaymentDto {
             );
         }
     }
+
+    public record DonationPaymentListResponse(
+            Long id,
+            Long donationId,
+            Long memberId,
+            String title,
+            String thumbnailImage,
+            Long amount,
+            String paymentMethod,
+            LocalDateTime createdAt
+    ) {
+        public static DonationPaymentListResponse from(DonationPayments payments) {
+            return new DonationPaymentListResponse(
+                    payments.getId(),
+                    payments.getDonations().getId(),
+                    payments.getMember().getId(),
+                    payments.getDonations().getTitle(),
+                    null, // TODO: 추후 thumbnailImage 매핑
+                    payments.getAmount(),
+                    payments.getPaymentMethod(),
+                    payments.getCreatedAt()
+            );
+        }
+    }
 }

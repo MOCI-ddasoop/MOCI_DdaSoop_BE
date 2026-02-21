@@ -9,6 +9,7 @@ import com.back.domain.donation.dto.DonationNoticeDto;
 import com.back.domain.donation.entity.*;
 import com.back.domain.donation.repository.DonationNoticeRepository;
 import com.back.domain.donation.repository.DonationParticipantsRepository;
+import com.back.domain.donation.repository.DonationPaymentsRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
@@ -57,6 +58,7 @@ public class DevInitData {
     private final DonationRepository donationRepository;
     private final DonationParticipantsRepository donationParticipantsRepository;
     private final DonationNoticeRepository donationNoticeRepository;
+    private final DonationPaymentsRepository donationPaymentsRepository;
     private final DonationService donationService;
     private final ParticipantsRepository participantsRepository;
 
@@ -118,11 +120,15 @@ public class DevInitData {
         List<DonationParticipants> donationParticipants = initDonationParticipants(donationsList, members);
         log.info(" DonationParticipants {} 개 생성 완료", donationParticipants.size());
 
+        // 25. DonationPayments 생성
+        List<DonationPayments> donationPayments = initDonationPayments(donationsList);
+        log.info(" DonationPayments {}", donationPayments.size());
+
         log.info("========== 초기 데이터 생성 완료 ==========");
         log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}, DonationNotice {}" +
-                ", DonationParticipants {}",
+                ", DonationParticipants {}, DonationPayments {}",
                 members.size(), feeds.size(), comments.size(), togethers.size(), participantsList.size()
-                , donationsList.size(), donationNotices.size(), donationParticipants.size());
+                , donationsList.size(), donationNotices.size(), donationParticipants.size(), donationPayments.size());
     }
 
 
@@ -607,6 +613,39 @@ public class DevInitData {
 
         return participants;
     }
+
+    // ========== 25. DonationPayments 샘플 데이터 생성 ==========
+    private List<DonationPayments> initDonationPayments(List<Donations> donations) {
+        List<DonationPayments> payments = new ArrayList<>();
+        int memberCnt = memberRepository.findAll().size();
+        List<Member> members = memberRepository.findAll();
+
+
+        // 10개 이하의 후원하기
+        int limit_donation = Math.min(10, donations.size());
+        for(int j = 0; j < limit_donation; j++){
+            Donations donation = donations.get(j);
+            int randomParticipantCnt = random.nextInt(memberCnt + 1);
+            List<Member> shuffledMembers = new ArrayList<>(members);
+            java.util.Collections.shuffle(shuffledMembers);
+
+            for(int i = 0; i < randomParticipantCnt; i++){
+                Member member = shuffledMembers.get(i);
+                DonationPayments payment = DonationPayments.builder()
+                        .donations(donation)
+                        .member(member)
+                        .amount(random.nextLong(1000, 10000))
+                        .paymentMethod("TOSS")
+                        .build();
+                payments.add(donationPaymentsRepository.save(payment));
+                donation.setCurrentAmount(donation.getCurrentAmount() + payment.getAmount());
+            }
+            donationRepository.save(donation);
+        }
+        return payments;
+    }
+
+
 
     // ========== 헬퍼 메서드 ==========
 

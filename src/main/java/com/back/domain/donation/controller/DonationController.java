@@ -172,13 +172,14 @@ public class DonationController {
     @ApiResponse(
             responseCode = "200",
             description = "나의 후원하기 조회 성공",
-            content = @Content(schema = @Schema(implementation = DonationDto.MyDonationResponse.class))
+            content = @Content(schema = @Schema(implementation = DonationPaymentDto.DonationPaymentListResponse.class))
     )
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<RsData<List<DonationDto.MyDonationResponse>>> getDonationByMemberId(
+    public ResponseEntity<RsData<List<DonationPaymentDto.DonationPaymentListResponse>>> getMyDonationPaymentList(
             @PathVariable Long memberId
     ) {
-        return ResponseEntity.ok().body(RsData.success("나의 후원하기 조회 성공", donationService.getMemberIdOrParticipating(memberId)));
+        List<DonationPaymentDto.DonationPaymentListResponse> response = donationService.getDonationPaymentList(memberId);
+        return ResponseEntity.ok(RsData.success("나의 후원하기 조회 성공", response));
     }
 
     @Operation(summary = "후원하기 게시글 등록")

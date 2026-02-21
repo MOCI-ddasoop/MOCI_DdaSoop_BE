@@ -17,4 +17,14 @@ public interface DonationPaymentsRepository
     order by dp.createdAt desc
 """)
     List<DonationPayments> findAllDonorList(@Param("donationId") Long donationId);
+
+    // 마이 페이지 - 내가 후원한 내역 조회
+    @Query("""
+    select dp
+    from DonationPayments dp
+    join fetch dp.donations d
+    where dp.member.id = :memberId
+    order by dp.createdAt desc
+""")
+    List<DonationPayments> findAllMyDonationPaymentByMember_Id(Long memberId);
 }
