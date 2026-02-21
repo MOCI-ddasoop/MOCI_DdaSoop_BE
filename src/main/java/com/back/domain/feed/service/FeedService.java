@@ -41,6 +41,7 @@ public class FeedService {
     private final MemberRepository memberRepository;
     private final TagService tagService;
     private final com.back.domain.together.repository.TogetherRepository togetherRepository;
+    private final MemberTagStatisticsService memberTagStatisticsService;
 
     /**
      * 피드 생성
@@ -125,23 +126,21 @@ public class FeedService {
     }
 
     /**
-     * 피드 목록 조회 (QueryDSL 동적 검색 + 페이징)
+     * 피드 목록 조회 (QueryDSL 동적 검색 + 무한 스크롤)
      */
-    public Page<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
-        // 1. 페이징 설정
-        Pageable pageable = PageRequest.of(
-                searchRequest.getPageOrDefault(),
-                searchRequest.getSizeOrDefault()
-        );
+    public InfiniteScrollResponse<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
+        // 1. 무한 스크롤 설정
+        Long cursorId = searchRequest.getLastFeedId() != null ? searchRequest.getLastFeedId() : Long.MAX_VALUE;
+        int requestedSize = searchRequest.getSizeOrDefault();
 
         // 2. FeedSearchRequest → FeedSearchCondition 변환
         FeedSearchCondition condition = FeedSearchCondition.from(searchRequest);
 
-        // 3. QueryDSL로 검색 (동적 쿼리 + Fetch Join)
-        Page<Feed> feedPage = feedRepository.searchFeeds(condition, pageable);
+        // 3. QueryDSL로 검색 (동적 쿼리, requestedSize + 1개 조회)
+        List<Feed> feeds = feedRepository.searchFeedsForInfiniteScroll(condition, cursorId, requestedSize + 1);
 
-        // 4. DTO 변환
-        return feedPage.map(FeedSummaryResponse::from);
+        // 4. 무한 스크롤 응답 생성
+        return createInfiniteScrollResponse(feeds, requestedSize);
     }
 
     /**
@@ -339,6 +338,10 @@ public class FeedService {
             // 리액션 취소
             feedReactionRepository.deleteByFeedIdAndMemberId(feedId, currentMemberId);
             log.info("피드 리액션 취소 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return false;
         } else {
             // 리액션 생성
@@ -348,6 +351,10 @@ public class FeedService {
                     .build();
             feedReactionRepository.save(reaction);
             log.info("피드 리액션 생성 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return true;
         }
     }
@@ -590,8 +597,8 @@ public class FeedService {
      * @return 추천 피드 리스트
      */
     private List<Feed> getTagBasedRecommendations(Long memberId, int count) {
-        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (최대 5개)
-        List<String> frequentTags = feedReactionRepository.findFrequentTagsByMemberId(memberId);
+        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (캐싱된 통계에서)
+        List<String> frequentTags = memberTagStatisticsService.getFrequentTags(memberId);
         
         if (frequentTags.isEmpty()) {
             // 태그가 없으면 빈 리스트 반환

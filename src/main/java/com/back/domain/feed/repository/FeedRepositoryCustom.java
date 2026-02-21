@@ -112,4 +112,14 @@ public interface FeedRepositoryCustom {
      * @return 피드 리스트
      */
     List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit);
+
+    /**
+     * 동적 조건으로 피드 검색 (무한 스크롤)
+     * 
+     * @param condition 검색 조건 (feedType, memberId, tags, keyword, sortBy 등)
+     * @param cursorId 마지막 피드 ID (이보다 작은 ID 조회)
+     * @param limit 조회할 개수 (requestedSize + 1)
+     * @return 피드 리스트
+     */
+    List<Feed> searchFeedsForInfiniteScroll(FeedSearchCondition condition, Long cursorId, int limit);
 }
