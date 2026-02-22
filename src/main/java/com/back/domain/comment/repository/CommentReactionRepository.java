@@ -45,6 +45,17 @@ public interface CommentReactionRepository extends JpaRepository<CommentReaction
     List<Long> findCommentIdsByMemberId(@Param("memberId") Long memberId);
 
     /**
+     * 특정 회원이 리액션한 댓글 ID 목록 (배치 조회 - N+1 방지)
+     * 댓글 ID 목록 중 현재 사용자가 리액션한 것만 필터링해서 반환
+     */
+    @Query("SELECT cr.comment.id FROM CommentReaction cr " +
+            "WHERE cr.member.id = :memberId AND cr.comment.id IN :commentIds")
+    List<Long> findReactedCommentIdsByMemberIdAndCommentIdIn(
+            @Param("memberId") Long memberId,
+            @Param("commentIds") List<Long> commentIds
+    );
+
+    /**
      * 특정 댓글의 모든 리액션 삭제
      */
     void deleteByCommentId(Long commentId);

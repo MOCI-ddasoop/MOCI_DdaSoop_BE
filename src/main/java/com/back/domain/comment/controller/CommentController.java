@@ -123,7 +123,8 @@ public class CommentController {
             @Parameter(description = "페이지 크기", example = "20")
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<CommentResponse> response = commentService.getFeedComments(feedId, page, size);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        Page<CommentResponse> response = commentService.getFeedComments(feedId, page, size, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -144,7 +145,8 @@ public class CommentController {
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
     ) {
-        List<CommentResponse> response = commentService.getFeedCommentsAll(feedId);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        List<CommentResponse> response = commentService.getFeedCommentsAll(feedId, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -169,7 +171,8 @@ public class CommentController {
             @Parameter(description = "페이지 크기", example = "20")
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<CommentResponse> response = commentService.getTogetherComments(togetherId, page, size);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        Page<CommentResponse> response = commentService.getTogetherComments(togetherId, page, size, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -190,7 +193,8 @@ public class CommentController {
             @Parameter(description = "부모 댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
     ) {
-        List<CommentResponse> response = commentService.getReplies(commentId);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        List<CommentResponse> response = commentService.getReplies(commentId, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -213,7 +217,8 @@ public class CommentController {
             @Parameter(description = "조회할 개수", example = "5")
             @RequestParam(defaultValue = "5") int size
     ) {
-        List<CommentResponse> response = commentService.getPopularFeedComments(feedId, size);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        List<CommentResponse> response = commentService.getPopularFeedComments(feedId, size, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -234,7 +239,8 @@ public class CommentController {
             @Parameter(description = "피드 ID", required = true, example = "1")
             @PathVariable Long feedId
     ) {
-        List<CommentResponse> response = commentService.getRecentFeedComments(feedId);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        List<CommentResponse> response = commentService.getRecentFeedComments(feedId, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -259,7 +265,8 @@ public class CommentController {
             @Parameter(description = "페이지 크기", example = "20")
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<CommentResponse> response = commentService.getMemberComments(memberId, page, size);
+        Long currentMemberId = getCurrentMemberIdOrNull();
+        Page<CommentResponse> response = commentService.getMemberComments(memberId, page, size, currentMemberId);
 
         return ResponseEntity.ok(response);
     }

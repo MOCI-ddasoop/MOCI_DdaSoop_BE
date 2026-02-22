@@ -129,9 +129,10 @@ public class CommentResponse {
     }
 
     /**
-     * Entity -> DTO 변환 (대댓글 제외 - 목록 조회용)
+     * Entity -> DTO 변환 (대댓글 제외 - 목록 조회용, isReacted 포함)
+     * Service에서 배치 조회한 reactedCommentIds.contains(id) 결과를 전달받아 사용
      */
-    public static CommentResponse fromWithoutReplies(Comment comment) {
+    public static CommentResponse fromWithoutReplies(Comment comment, boolean isReacted) {
         return CommentResponse.builder()
                 .id(comment.getId())
                 .commentType(comment.getCommentType())
@@ -144,13 +145,13 @@ public class CommentResponse {
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
                 .replies(null)  // 대댓글 제외
-                .replyCount(comment.isTopLevelComment() 
+                .replyCount(comment.isTopLevelComment()
                     ? (int) comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
                         .count()
                     : null)
                 .reactionCount(comment.getReactionCount())
-                .isReacted(false)
+                .isReacted(isReacted)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
