@@ -119,9 +119,35 @@ public class FeedController {
     })
     @GetMapping
     public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getFeedList(
-            @Parameter(description = "검색 및 필터 조건", required = false)
-            @ModelAttribute FeedSearchRequest searchRequest
+            @Parameter(description = "검색 키워드", required = false, example = "환경")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "태그 리스트", required = false)
+            @RequestParam(required = false) List<String> tags,
+            @Parameter(description = "피드 타입", required = false)
+            @RequestParam(required = false) com.back.domain.feed.entity.FeedType feedType,
+            @Parameter(description = "작성자 ID", required = false)
+            @RequestParam(required = false) Long memberId,
+            @Parameter(description = "함께하기 ID", required = false)
+            @RequestParam(required = false) Long togetherId,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 100)", required = false, example = "20")
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "정렬 기준 (latest/popular/comments/bookmarks)", required = false, example = "latest")
+            @RequestParam(required = false) String sortBy
     ) {
+        // FeedSearchRequest 객체 생성
+        FeedSearchRequest searchRequest = FeedSearchRequest.builder()
+                .keyword(keyword)
+                .tags(tags)
+                .feedType(feedType)
+                .memberId(memberId)
+                .togetherId(togetherId)
+                .lastFeedId(lastFeedId)
+                .size(size)
+                .sortBy(sortBy)
+                .build();
+
         InfiniteScrollResponse<FeedSummaryResponse> response = feedService.getFeedList(searchRequest);
 
         return ResponseEntity.ok(response);
