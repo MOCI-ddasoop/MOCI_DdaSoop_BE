@@ -153,12 +153,19 @@ public class DonationService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원(memberId)을 찾을 수 없습니다."));
 
+        String thumbnail = null;
+
+        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+            thumbnail = request.imageUrls().getFirst();
+        }
+
         Donations donation = Donations.builder()
                 .title(request.title())
                 .description(request.description())
                 .goalAmount(request.goalAmount())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
+                .thumbnailImageUrl(thumbnail)
                 .status(request.status())
                 .donationCategory(request.category())
                 .member(member)

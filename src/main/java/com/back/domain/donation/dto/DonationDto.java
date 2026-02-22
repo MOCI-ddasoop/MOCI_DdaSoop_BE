@@ -5,6 +5,7 @@ import com.back.domain.donation.entity.DonationStatus;
 import com.back.domain.donation.entity.Donations;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -23,7 +24,9 @@ public class DonationDto {
             @NotNull LocalDate endDate,
             DonationStatus status,
             @NotNull DonationCategory category,
-            Long memberId
+            Long memberId,
+            @Size(max = 5, message = "최대 5개의 이미지 URL을 허용합니다.")
+            List<String> imageUrls
     ) {}
 
     /* ===================Response===================== */
@@ -166,6 +169,7 @@ public class DonationDto {
             Long goalAmount,
             LocalDate startDate,
             LocalDate endDate,
+            String thumbnailImageUrl,
             DonationStatus status,
             DonationCategory category,
             Long memberId
@@ -178,6 +182,7 @@ public class DonationDto {
                     donations.getGoalAmount(),
                     donations.getStartDate(),
                     donations.getEndDate(),
+                    donations.getThumbnailImageUrl(),
                     donations.getStatus(),
                     donations.getDonationCategory(),
                     donations.getMember().getId()
