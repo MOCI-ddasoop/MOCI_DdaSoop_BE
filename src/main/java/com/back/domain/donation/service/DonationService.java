@@ -165,7 +165,7 @@ public class DonationService {
                 .goalAmount(request.goalAmount())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
-                .thumbnailImageUrl(thumbnail)
+                .imageUrls(request.imageUrls())
                 .status(request.status())
                 .donationCategory(request.category())
                 .member(member)

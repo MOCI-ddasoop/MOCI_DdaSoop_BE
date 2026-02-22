@@ -509,6 +509,7 @@ public class DevInitData {
     // ========== 22. Donation 샘플 데이터 생성 ==========
     private Donations createDonation(
             String[] template,
+            String[] img,
             Member organizer,
             int startDayRange
     ){
@@ -519,7 +520,7 @@ public class DevInitData {
                 .currentAmount(0L)
                 .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
                 .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
-                .thumbnailImageUrl("https://picsum.photos/200/300?random=" + random.nextInt(100))
+                .imageUrls(java.util.List.of(img[0]))
                 .status(DonationStatus.RECRUITING)
                 .member(organizer)
                 .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
@@ -536,16 +537,26 @@ public class DevInitData {
                 {"깨끗한 물 공급", "모든 이에게 깨끗한 물을 제공하기 위한 후원입니다."}
         };
 
+        String[][] imgs = {
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)}
+        };
+
         // 처음 5개는 1~4번 멤버가 각각 주최
         for (int i = 0; i < 4; i++){
             String[] template = templates[i%templates.length];
-            donations.add(donationRepository.save(createDonation(template, members.get(i), 5)));
+            String[] img = imgs[i%imgs.length];
+            donations.add(donationRepository.save(createDonation(template, img, members.get(i), 5)));
         }
 
         for (int i = 4; i < 30; i++){
             String[] template = templates[i%templates.length];
+            String[] img = imgs[i%imgs.length];
             Member organizer = members.get(random.nextInt(members.size()));
-            donations.add(donationRepository.save(createDonation(template, organizer, 10)));
+            donations.add(donationRepository.save(createDonation(template, img, organizer, 10)));
         }
 
         return donations;

@@ -54,7 +54,7 @@ public class DonationDto {
                     donations.getCurrentAmount(),
                     donations.getEndDate(),
                     donations.getStatus(),
-                    donations.getThumbnailImageUrl(),
+                    donations.getImageUrls().getFirst(),
                     donations.getDonationCategory(),
                     dDay
             );
@@ -84,7 +84,7 @@ public class DonationDto {
             LocalDate startDate,
             LocalDate endDate,
             DonationStatus status,
-            String thumbnailImage,
+            List<String> imageUrls,
             DonationCategory category,
             Long dDay
     ) {
@@ -101,7 +101,7 @@ public class DonationDto {
                     donations.getStartDate(),
                     donations.getEndDate(),
                     donations.getStatus(),
-                    donations.getThumbnailImageUrl(),
+                    donations.getImageUrls(),
                     donations.getDonationCategory(),
                     dDay
             );
@@ -152,7 +152,7 @@ public class DonationDto {
                     donations.getCurrentAmount(),
                     donations.getEndDate(),
                     donations.getStatus().name(),
-                    donations.getThumbnailImageUrl(),
+                    donations.getImageUrls().getFirst(),
                     donations.getDonationCategory().name(),
                     dDay
             );
@@ -182,7 +182,7 @@ public class DonationDto {
                     donations.getGoalAmount(),
                     donations.getStartDate(),
                     donations.getEndDate(),
-                    donations.getThumbnailImageUrl(),
+                    donations.getImageUrls().getFirst(),
                     donations.getStatus(),
                     donations.getDonationCategory(),
                     donations.getMember().getId()

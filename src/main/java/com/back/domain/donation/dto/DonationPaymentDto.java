@@ -42,7 +42,7 @@ public class DonationPaymentDto {
                     payments.getDonations().getId(),
                     payments.getMember().getId(),
                     payments.getDonations().getTitle(),
-                    payments.getDonations().getThumbnailImageUrl(),
+                    payments.getDonations().getImageUrls().getFirst(),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()
@@ -68,7 +68,7 @@ public class DonationPaymentDto {
                     payments.getMember().getId(),
                     payments.getMember().getName(),
                     payments.getDonations().getTitle(),
-                    payments.getDonations().getThumbnailImageUrl(),
+                    payments.getDonations().getImageUrls().getFirst(),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()
