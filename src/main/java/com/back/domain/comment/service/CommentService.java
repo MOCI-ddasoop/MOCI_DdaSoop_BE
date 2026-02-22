@@ -105,11 +105,9 @@ public class CommentService {
         Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        // 현재 사용자의 리액션 여부 확인
-        boolean isReacted = currentMemberId != null &&
-                commentReactionRepository.existsByCommentIdAndMemberId(commentId, currentMemberId);
+        Set<Long> reactedCommentIds = extractReactedCommentIds(List.of(comment), currentMemberId);
 
-        return CommentResponse.from(comment, isReacted);
+        return CommentResponse.from(comment, reactedCommentIds);
     }
 
     /**
@@ -122,7 +120,7 @@ public class CommentService {
         // 배치 조회: 최상위 댓글 + 대댓글 ID를 한 번에 수집
         Set<Long> reactedCommentIds = extractReactedCommentIds(comments.getContent(), currentMemberId);
 
-        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds.contains(comment.getId())));
+        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds));
     }
 
     /**
@@ -136,7 +134,7 @@ public class CommentService {
         Set<Long> reactedCommentIds = extractReactedCommentIds(comments, currentMemberId);
 
         return comments.stream()
-                .map(comment -> CommentResponse.from(comment, reactedCommentIds.contains(comment.getId())))
+                .map(comment -> CommentResponse.from(comment, reactedCommentIds))
                 .collect(Collectors.toList());
     }
 
@@ -150,7 +148,7 @@ public class CommentService {
         // 배치 조회: 최상위 댓글 + 대댓글 ID를 한 번에 수집
         Set<Long> reactedCommentIds = extractReactedCommentIds(comments.getContent(), currentMemberId);
 
-        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds.contains(comment.getId())));
+        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds));
     }
 
     /**

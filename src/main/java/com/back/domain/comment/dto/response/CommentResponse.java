@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -92,11 +93,9 @@ public class CommentResponse {
 
     /**
      * Entity -> DTO 변환 (현재 사용자의 리액션 정보 포함)
-     * Service에서 배치 조회한 reactedCommentIds.contains(id) 결과를 전달받아 사용
-     * 대댓글의 isReacted도 reactedSet을 받아야 하지만, 현재 구조상 Set을 인자로 받지 않으므로
-     * 대댓글 isReacted는 Service에서 별도로 getReplies() API를 통해 처리됨
+     * Service에서 배치 조회한 reactedCommentIds Set을 전달받아 최상위 댓글 + 대댓글 모두 정확하게 처리
      */
-    public static CommentResponse from(Comment comment, boolean isReacted) {
+    public static CommentResponse from(Comment comment, Set<Long> reactedCommentIds) {
         return CommentResponse.builder()
                 .id(comment.getId())
                 .commentType(comment.getCommentType())
@@ -111,11 +110,11 @@ public class CommentResponse {
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
-                // 대댓글 (최상위 댓글인 경우만, 대댓글 isReacted는 false - getReplies() API에서 정확하게 처리)
+                // 대댓글 (최상위 댓글인 경우만, 동일한 Set으로 isReacted 정확하게 처리)
                 .replies(comment.isTopLevelComment()
                     ? comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
-                        .map(reply -> CommentResponse.fromWithoutReplies(reply, false))
+                        .map(reply -> CommentResponse.fromWithoutReplies(reply, reactedCommentIds.contains(reply.getId())))
                         .collect(Collectors.toList())
                     : null)
                 .replyCount(comment.isTopLevelComment()
@@ -125,7 +124,7 @@ public class CommentResponse {
                     : null)
                 // 카운트
                 .reactionCount(comment.getReactionCount())
-                .isReacted(isReacted)
+                .isReacted(reactedCommentIds.contains(comment.getId()))
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
