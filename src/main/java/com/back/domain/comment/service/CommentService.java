@@ -332,16 +332,4 @@ public class CommentService {
         );
     }
 
-    // ========== 회원 통계 (Member 도메인 연동용) ==========
-
-    /**
-     * 특정 회원이 작성한 댓글 개수
-     * Member 도메인의 GET /api/members/me 응답에 사용
-     * 
-     * @param memberId 회원 ID
-     * @return 작성한 댓글 개수
-     */
-    public Long getMemberCommentCount(Long memberId) {
-        return commentRepository.countByMemberIdAndDeletedAtIsNull(memberId);
-    }
 }

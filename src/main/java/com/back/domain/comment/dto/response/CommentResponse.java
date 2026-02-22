@@ -53,6 +53,7 @@ public class CommentResponse {
 
     /**
      * Entity -> DTO 변환 (대댓글 포함)
+     * 비로그인 혹은 isReacted 정보 없이 변환 시 사용 (대댓글 isReacted는 항상 false)
      */
     public static CommentResponse from(Comment comment) {
         return CommentResponse.builder()
@@ -69,21 +70,21 @@ public class CommentResponse {
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
-                // 대댓글 (최상위 댓글인 경우만)
-                .replies(comment.isTopLevelComment() 
+                // 대댓글 (최상위 댓글인 경우만, 대댓글의 isReacted는 false로 고정)
+                .replies(comment.isTopLevelComment()
                     ? comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
-                        .map(CommentResponse::from)
+                        .map(reply -> CommentResponse.fromWithoutReplies(reply, false))
                         .collect(Collectors.toList())
                     : null)
-                .replyCount(comment.isTopLevelComment() 
+                .replyCount(comment.isTopLevelComment()
                     ? (int) comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
                         .count()
                     : null)
                 // 카운트
                 .reactionCount(comment.getReactionCount())
-                .isReacted(false)  // Service에서 설정
+                .isReacted(false)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
@@ -91,7 +92,9 @@ public class CommentResponse {
 
     /**
      * Entity -> DTO 변환 (현재 사용자의 리액션 정보 포함)
-     * 비효율적인 객체 재생성 방지 - 직접 빌더로 생성
+     * Service에서 배치 조회한 reactedCommentIds.contains(id) 결과를 전달받아 사용
+     * 대댓글의 isReacted도 reactedSet을 받아야 하지만, 현재 구조상 Set을 인자로 받지 않으므로
+     * 대댓글 isReacted는 Service에서 별도로 getReplies() API를 통해 처리됨
      */
     public static CommentResponse from(Comment comment, boolean isReacted) {
         return CommentResponse.builder()
@@ -108,14 +111,14 @@ public class CommentResponse {
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
-                // 대댓글 (최상위 댓글인 경우만)
-                .replies(comment.isTopLevelComment() 
+                // 대댓글 (최상위 댓글인 경우만, 대댓글 isReacted는 false - getReplies() API에서 정확하게 처리)
+                .replies(comment.isTopLevelComment()
                     ? comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
-                        .map(CommentResponse::from)
+                        .map(reply -> CommentResponse.fromWithoutReplies(reply, false))
                         .collect(Collectors.toList())
                     : null)
-                .replyCount(comment.isTopLevelComment() 
+                .replyCount(comment.isTopLevelComment()
                     ? (int) comment.getReplies().stream()
                         .filter(reply -> !reply.isDeleted())
                         .count()
