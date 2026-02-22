@@ -231,7 +231,7 @@ public class CommentService {
      * 댓글 리액션 토글 (좋아요)
      */
     @Transactional
-    public boolean toggleReaction(Long commentId, Long currentMemberId) {
+    public com.back.domain.comment.dto.response.CommentReactionResponse toggleReaction(Long commentId, Long currentMemberId) {
         Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
@@ -240,11 +240,12 @@ public class CommentService {
 
         boolean exists = commentReactionRepository.existsByCommentIdAndMemberId(commentId, currentMemberId);
 
+        boolean isReacted;
         if (exists) {
             // 리액션 취소
             commentReactionRepository.deleteByCommentIdAndMemberId(commentId, currentMemberId);
             log.info("댓글 리액션 취소 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
-            return false;
+            isReacted = false;
         } else {
             // 리액션 생성
             CommentReaction reaction = CommentReaction.builder()
@@ -253,8 +254,14 @@ public class CommentService {
                     .build();
             commentReactionRepository.save(reaction);
             log.info("댓글 리액션 생성 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
-            return true;
+            isReacted = true;
         }
+
+        // 최신 reactionCount 조회
+        Comment updatedComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        return com.back.domain.comment.dto.response.CommentReactionResponse.of(isReacted, updatedComment.getReactionCount());
     }
 
     /**

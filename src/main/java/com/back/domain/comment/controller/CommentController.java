@@ -314,21 +314,21 @@ public class CommentController {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "토글 성공 (true: 좋아요 추가, false: 좋아요 취소)",
-                    content = @Content(schema = @Schema(implementation = Boolean.class))
+                    description = "토글 성공 (isReacted: 좋아요 상태, reactionCount: 현재 개수)",
+                    content = @Content(schema = @Schema(implementation = com.back.domain.comment.dto.response.CommentReactionResponse.class))
             ),
             @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
     })
     @PostMapping("/{commentId}/reactions")
-    public ResponseEntity<Boolean> toggleReaction(
+    public ResponseEntity<com.back.domain.comment.dto.response.CommentReactionResponse> toggleReaction(
             @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
     ) {
         Long currentMemberId = getCurrentMemberId();
 
-        boolean isReacted = commentService.toggleReaction(commentId, currentMemberId);
+        com.back.domain.comment.dto.response.CommentReactionResponse response = commentService.toggleReaction(commentId, currentMemberId);
 
-        return ResponseEntity.ok(isReacted);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(
