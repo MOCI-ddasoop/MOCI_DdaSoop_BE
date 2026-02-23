@@ -133,7 +133,7 @@ jobs:
             exec 2> >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG" >&2)
             
             source /etc/environment || true
-            OWNEr_LC="${{ github.repository_owner }}"
+            OWNER_LC="${{ github.repository_owner }}"
             OWNER_LC="${OWNER_LC,,}"
             IMAGE_TAG="${{ needs.makeTagAndRelease.outputs.tag_name }}"
             IMAGE_REPOSITORY="${{ env.IMAGE_REPOSITORY }}"
@@ -148,7 +148,7 @@ jobs:
             
             TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
               -H "Content-Type: application/json" \
-              -d "{\"identity\": \"admin@npm.com\", \"secret\": \"${PASSWORD_2:-}\"}" | jp -r '.token')
+              -d "{\"identity\": \"admin@npm.com\", \"secret\": \"${PASSWORD_2:-}\"}" | jq -r '.token')
             
             [[ -n "${TOKEN}" && "${TOKEN}" != "null" ]] || { echo "NPM token issue failed"; exit 1; }
             [[ -n "${APP_1_DOMAIN:-}" ]] || { echo "APP_1_DOMAIN is empty"; exit 1; }
