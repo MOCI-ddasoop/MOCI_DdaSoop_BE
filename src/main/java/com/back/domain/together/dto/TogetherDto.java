@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class TogetherDto {
 
@@ -16,10 +17,10 @@ public class TogetherDto {
 
     public record CreateRequest(
             @NotBlank String title,
-            @NotBlank String description,
+            String description,
             @NotNull TogetherCategory category,
             @NotNull TogetherMode mode,
-            @NotNull Long capacity,
+            Long capacity,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
             Long memberId
@@ -37,7 +38,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            Participants participants,
+            List<ParticipantsResponse> participants,
             String thumbnailImage,
             Long progress,
             Long dDay
@@ -56,13 +57,30 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null, // TODO: participants 정보 매핑
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
                     null, // TODO: thumbnailImage 정보 매핑
                     null, // TODO: progress 정보 매핑
                     dDay
             );
         }
+        public static ListResponse fakeCard() {
+            return new ListResponse(
+                    -1L,"새 함께하기 추가",null,null,0L,null,
+                    null,null,null,null,null,null
+            );
+        }
     }
+
+    public record PageResponse<T>(
+            List<T> content,
+            int page,
+            int size,
+            Long totalElements,
+            int totalPages
+    ) {}
+
+    // 함께하기 1페이지의 1번에 들어갈 가짜 카드
+
 
     public record DetailResponse(
             Long id,
@@ -73,7 +91,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             Long memberId,
-            Participants participants,
+            List<ParticipantsResponse> participants,
             String thumbnailImage,
             Long goal,
             Long progress
@@ -88,7 +106,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     together.getMember().getId(),
-                    null, //TODO: 추후에 participants 정보 매핑
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
                     null, // TODO: 추후에 thumbnailImage 정보 매핑
                     null, // TODO: 추후에 goal 정보 매핑
                     null // TODO: 추후에 progress 정보 매핑
@@ -96,12 +114,20 @@ public class TogetherDto {
         }
     }
 
-    public record DescriptionResponse(
-            String description
+    public record DescriptionResponse(String description) {}
+
+    public record ParticipantsResponse(
+            Long id,
+            Long memberId,
+            Long togetherId,
+            String participantsStatus
     ) {
-        public static DescriptionResponse from(Together together) {
-            return new DescriptionResponse(
-                    together.getDescription()
+        public static ParticipantsResponse from(Participants participants) {
+            return new ParticipantsResponse(
+                    participants.getId(),
+                    participants.getMember().getId(),
+                    participants.getTogether().getId(),
+                    participants.getParticipantsStatus().name()
             );
         }
     }

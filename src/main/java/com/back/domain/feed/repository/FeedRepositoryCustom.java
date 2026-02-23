@@ -77,9 +77,10 @@ public interface FeedRepositoryCustom {
      * @param togetherId Together ID
      * @param cursorId 마지막 피드 ID
      * @param limit 조회할 개수
+     * @param isFirstPage 첫 페이지 여부 (true이면 핀 고정 피드 포함)
      * @return 피드 리스트
      */
-    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit);
+    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage);
 
     /**
      * 태그 검색 무한 스크롤 조회
@@ -90,4 +91,35 @@ public interface FeedRepositoryCustom {
      * @return 피드 리스트
      */
     List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit);
+
+    /**
+     * 특정 태그들이 포함된 추천 피드 조회 (제외 ID 지원)
+     * 
+     * @param tags 추천 기준 태그 리스트
+     * @param excludeMemberId 제외할 회원 ID (본인 피드 제외)
+     * @param excludeFeedIds 제외할 피드 ID 리스트 (이미 본 피드 제외)
+     * @param limit 조회할 개수
+     * @return 추천 피드 리스트 (태그 매칭도 + 인기도 + 최신성 순)
+     */
+    List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit);
+
+    /**
+     * 무한 스크롤용 피드 조회 (제외 ID 지원)
+     * 
+     * @param cursorId 마지막 피드 ID
+     * @param excludeFeedIds 제외할 피드 ID 리스트
+     * @param limit 조회할 개수
+     * @return 피드 리스트
+     */
+    List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit);
+
+    /**
+     * 동적 조건으로 피드 검색 (무한 스크롤)
+     * 
+     * @param condition 검색 조건 (feedType, memberId, tags, keyword, sortBy 등)
+     * @param cursorId 마지막 피드 ID (이보다 작은 ID 조회)
+     * @param limit 조회할 개수 (requestedSize + 1)
+     * @return 피드 리스트
+     */
+    List<Feed> searchFeedsForInfiniteScroll(FeedSearchCondition condition, Long cursorId, int limit);
 }

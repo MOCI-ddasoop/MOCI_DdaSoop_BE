@@ -40,6 +40,8 @@ public class FeedService {
     private final FeedBookmarkRepository feedBookmarkRepository;
     private final MemberRepository memberRepository;
     private final TagService tagService;
+    private final com.back.domain.together.repository.TogetherRepository togetherRepository;
+    private final MemberTagStatisticsService memberTagStatisticsService;
 
     /**
      * 피드 생성
@@ -49,7 +51,28 @@ public class FeedService {
         // 1. 태그 검증 및 정제
         List<String> validatedTags = tagService.validateAndRefineTags(request.getTags());
 
-        // 2. Feed 엔티티 생성
+        // 2. Together 조회 (togetherId가 있는 경우)
+        com.back.domain.together.entity.Together together = null;
+        if (request.getTogetherId() != null) {
+            together = togetherRepository.findById(request.getTogetherId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 함께하기입니다. ID: " + request.getTogetherId()));
+        }
+
+        // 2-1. TOGETHER_VERIFICATION인 경우 하루 1회 체크
+        if (request.getFeedType() == com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION && together != null) {
+            java.time.LocalDateTime startOfDay = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).atStartOfDay();
+            Long todayVerificationCount = feedRepository.countTodayVerificationByMemberAndTogether(
+                    currentMemberId,
+                    request.getTogetherId(),
+                    startOfDay
+            );
+            
+            if (todayVerificationCount != null && todayVerificationCount > 0) {
+                throw new IllegalArgumentException("이미 오늘 인증을 완료했습니다. 하루에 1번만 인증할 수 있습니다.");
+            }
+        }
+
+        // 3. Feed 엔티티 생성
         Feed feed = Feed.builder()
                 .feedType(request.getFeedType())
                 .content(request.getContent())
@@ -59,10 +82,11 @@ public class FeedService {
                 .bookmarkCount(0)
                 .commentCount(0)
                 .reactionCount(0)
-                .member(memberRepository.findById(currentMemberId).orElseThrow())  // Member 연결 후
+                .member(memberRepository.findById(currentMemberId).orElseThrow())
+                .together(together)
                 .build();
 
-        // 3. 이미지 추가
+        // 4. 이미지 추가
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             request.getImages().forEach(imageReq -> {
                 FeedImage feedImage = FeedImage.builder()
@@ -79,7 +103,8 @@ public class FeedService {
         }
 
         Feed savedFeed = feedRepository.save(feed);
-        log.info("피드 생성 완료 - ID: {}", savedFeed.getId());
+        log.info("피드 생성 완료 - ID: {}, Together ID: {}", savedFeed.getId(), 
+                 together != null ? together.getId() : "null");
 
         return savedFeed.getId();
     }
@@ -101,23 +126,21 @@ public class FeedService {
     }
 
     /**
-     * 피드 목록 조회 (QueryDSL 동적 검색 + 페이징)
+     * 피드 목록 조회 (QueryDSL 동적 검색 + 무한 스크롤)
      */
-    public Page<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
-        // 1. 페이징 설정
-        Pageable pageable = PageRequest.of(
-                searchRequest.getPageOrDefault(),
-                searchRequest.getSizeOrDefault()
-        );
+    public InfiniteScrollResponse<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
+        // 1. 무한 스크롤 설정
+        Long cursorId = searchRequest.getLastFeedId() != null ? searchRequest.getLastFeedId() : Long.MAX_VALUE;
+        int requestedSize = searchRequest.getSizeOrDefault();
 
         // 2. FeedSearchRequest → FeedSearchCondition 변환
         FeedSearchCondition condition = FeedSearchCondition.from(searchRequest);
 
-        // 3. QueryDSL로 검색 (동적 쿼리 + Fetch Join)
-        Page<Feed> feedPage = feedRepository.searchFeeds(condition, pageable);
+        // 3. QueryDSL로 검색 (동적 쿼리, requestedSize + 1개 조회)
+        List<Feed> feeds = feedRepository.searchFeedsForInfiniteScroll(condition, cursorId, requestedSize + 1);
 
-        // 4. DTO 변환
-        return feedPage.map(FeedSummaryResponse::from);
+        // 4. 무한 스크롤 응답 생성
+        return createInfiniteScrollResponse(feeds, requestedSize);
     }
 
     /**
@@ -129,11 +152,36 @@ public class FeedService {
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
+        Long currentMemberId = getCurrentMemberIdOrNull();
 
-        // 동적 limit 지원 (requestedSize + 1)
-        List<Feed> feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
+        List<Feed> feeds;
+
+        // 첫 페이지만 추천 섞기
+        if (lastFeedId == null && currentMemberId != null) {
+            // 첫 페이지: 추천 3개 + 일반 17개 섞기
+            feeds = getMixedRecommendedAndRegularFeeds(currentMemberId, requestedSize);
+        } else {
+            // 두 번째 페이지부터: 기존 방식 (최신순)
+            feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
+        }
 
         return createInfiniteScrollResponse(feeds, requestedSize);
+    }
+
+    /**
+     * getCurrentMemberIdOrNull() 헬퍼 메서드 (로그인 안 한 경우 null 반환)
+     */
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            org.springframework.security.core.Authentication authentication = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+            return (Long) authentication.getPrincipal();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -154,7 +202,8 @@ public class FeedService {
     }
 
     /**
-     * 특정 Together의 인증 피드 무한 스크롤 (커서 기반)
+     * 특정 Together의 피드 무한 스크롤 (커서 기반)
+     * 첫 페이지일 때만 핀 고정 피드 포함, 이후 페이지에서는 일반 피드만 반환
      */
     public InfiniteScrollResponse<FeedSummaryResponse> getTogetherFeedsInfiniteScroll(
             Long togetherId,
@@ -162,11 +211,43 @@ public class FeedService {
             Integer size
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
+        boolean isFirstPage = (lastFeedId == null);
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        // 동적 limit 지원 (requestedSize + 1)
-        List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(togetherId, cursorId, requestedSize + 1);
+        List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(
+                togetherId, cursorId, requestedSize + 1, isFirstPage
+        );
 
+        // 첫 페이지일 때 핀 고정 피드와 일반 피드를 분리하여 nextCursor 계산
+        if (isFirstPage) {
+            List<Feed> unpinnedFeeds = feeds.stream().filter(f -> !f.getIsPinned()).toList();
+            List<Feed> pinnedFeeds = feeds.stream().filter(Feed::getIsPinned).toList();
+
+            boolean hasNext = unpinnedFeeds.size() > (requestedSize - pinnedFeeds.size());
+            int unpinnedSlotSize = requestedSize - pinnedFeeds.size();
+            List<Feed> actualUnpinned = hasNext ? unpinnedFeeds.subList(0, unpinnedSlotSize) : unpinnedFeeds;
+
+            List<Feed> actualFeeds = new ArrayList<>(pinnedFeeds);
+            actualFeeds.addAll(actualUnpinned);
+
+            List<FeedSummaryResponse> responses = actualFeeds.stream()
+                    .map(FeedSummaryResponse::from)
+                    .collect(Collectors.toList());
+
+            // nextCursor는 일반 피드 마지막 아이템의 ID
+            Long nextCursor = actualUnpinned.isEmpty() ? null :
+                    actualUnpinned.get(actualUnpinned.size() - 1).getId();
+
+            return InfiniteScrollResponse.<FeedSummaryResponse>builder()
+                    .content(responses)
+                    .nextCursor(nextCursor)
+                    .hasNext(hasNext)
+                    .size(responses.size())
+                    .requestedSize(requestedSize)
+                    .build();
+        }
+
+        // 두 번째 페이지 이후: 일반 피드만 반환되므로 공통 로직 사용
         return createInfiniteScrollResponse(feeds, requestedSize);
     }
 
@@ -174,7 +255,7 @@ public class FeedService {
      * 피드 수정
      */
     @Transactional
-    public void updateFeed(Long feedId, FeedUpdateRequest request, Long currentMemberId) {
+    public FeedResponse updateFeed(Long feedId, FeedUpdateRequest request, Long currentMemberId) {
         Feed feed = feedRepository.findByIdAndDeletedAtIsNull(feedId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
 
@@ -218,6 +299,12 @@ public class FeedService {
         }
 
         log.info("피드 수정 완료 - ID: {}", feedId);
+
+        // 수정된 피드의 리액션/북마크 여부 확인 후 FeedResponse 반환
+        boolean isReacted = feedReactionRepository.existsByFeedIdAndMemberId(feedId, currentMemberId);
+        boolean isBookmarked = feedBookmarkRepository.existsByFeedIdAndMemberId(feedId, currentMemberId);
+
+        return FeedResponse.from(feed, isReacted, isBookmarked);
     }
 
     /**
@@ -251,6 +338,10 @@ public class FeedService {
             // 리액션 취소
             feedReactionRepository.deleteByFeedIdAndMemberId(feedId, currentMemberId);
             log.info("피드 리액션 취소 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return false;
         } else {
             // 리액션 생성
@@ -260,6 +351,10 @@ public class FeedService {
                     .build();
             feedReactionRepository.save(reaction);
             log.info("피드 리액션 생성 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
+            
+            // 통계 비동기 업데이트
+            memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
+            
             return true;
         }
     }
@@ -454,13 +549,114 @@ public class FeedService {
             log.info("공지 피드 고정 해제 - Feed ID: {}", feedId);
             return false;
         } else {
-            feed.pin();
-            log.info("공지 피드 고정 - Feed ID: {}", feedId);
+            // 다음 pinOrder 계산 (기존 최대값 + 1)
+            Integer maxPinOrder = feedRepository.findMaxPinOrderByTogetherId(feed.getTogether().getId());
+            Integer nextPinOrder = maxPinOrder + 1;
+            
+            feed.pin(nextPinOrder);
+            log.info("공지 피드 고정 - Feed ID: {}, pinOrder: {}", feedId, nextPinOrder);
             return true;
         }
     }
 
     // ========== Private 헬퍼 메서드 ==========
+
+    /**
+     * 추천 피드와 일반 피드를 섞어서 반환 (첫 페이지용)
+     * 
+     * @param memberId 회원 ID
+     * @param totalSize 총 반환할 개수
+     * @return 섞인 피드 리스트
+     */
+    private List<Feed> getMixedRecommendedAndRegularFeeds(Long memberId, int totalSize) {
+        // 1. 태그 기반 추천 피드 조회 (3개)
+        List<Feed> recommendedFeeds = getTagBasedRecommendations(memberId, 3);
+        
+        // 2. 추천된 피드 ID 수집 (중복 방지용)
+        List<Long> excludeFeedIds = recommendedFeeds.stream()
+                .map(Feed::getId)
+                .collect(Collectors.toList());
+        
+        // 3. 일반 피드 조회 (totalSize - 추천개수 + 1)
+        int regularFeedCount = totalSize - recommendedFeeds.size() + 1; // hasNext 체크용 +1
+        List<Feed> regularFeeds = feedRepository.findFeedsForInfiniteScrollExcluding(
+            Long.MAX_VALUE, 
+            excludeFeedIds, 
+            regularFeedCount
+        );
+        
+        // 4. 섞기 (추천 피드를 상위에 배치: 위치 0, 2, 5)
+        return mixFeedsWithTopFocus(recommendedFeeds, regularFeeds, totalSize);
+    }
+
+    /**
+     * 태그 기반 추천 피드 조회
+     * 
+     * @param memberId 회원 ID
+     * @param count 추천 개수
+     * @return 추천 피드 리스트
+     */
+    private List<Feed> getTagBasedRecommendations(Long memberId, int count) {
+        // 1. 사용자가 좋아요 누른 피드의 자주 사용된 태그 조회 (캐싱된 통계에서)
+        List<String> frequentTags = memberTagStatisticsService.getFrequentTags(memberId);
+        
+        if (frequentTags.isEmpty()) {
+            // 태그가 없으면 빈 리스트 반환
+            return List.of();
+        }
+        
+        // 최대 5개만 사용
+        List<String> topTags = frequentTags.stream()
+                .limit(5)
+                .collect(Collectors.toList());
+        
+        // 2. 이미 좋아요 누른 피드 ID 조회 (제외용)
+        List<Long> reactedFeedIds = feedReactionRepository.findReactedFeedIdsByMemberId(memberId);
+        
+        // 3. 추천 피드 조회 (태그 매칭 + 인기도 + 최신성)
+        return feedRepository.findRecommendedFeedsByTags(topTags, memberId, reactedFeedIds, count);
+    }
+
+    /**
+     * 추천 피드와 일반 피드 섞기 (상위 집중 배치)
+     * 
+     * @param recommended 추천 피드 리스트
+     * @param regular 일반 피드 리스트
+     * @param totalSize 총 반환할 개수
+     * @return 섞인 피드 리스트
+     */
+    private List<Feed> mixFeedsWithTopFocus(List<Feed> recommended, List<Feed> regular, int totalSize) {
+        List<Feed> result = new ArrayList<>();
+        
+        // 추천 피드 배치 위치 (0, 2, 5)
+        int[] recommendedPositions = {0, 2, 5};
+        int recIndex = 0;
+        int regIndex = 0;
+        
+        for (int i = 0; i < totalSize + 1; i++) { // +1은 hasNext 체크용
+            // 현재 위치가 추천 피드 배치 위치인지 확인
+            boolean isRecommendedPosition = false;
+            for (int pos : recommendedPositions) {
+                if (i == pos) {
+                    isRecommendedPosition = true;
+                    break;
+                }
+            }
+            
+            if (isRecommendedPosition && recIndex < recommended.size()) {
+                // 추천 피드 배치
+                result.add(recommended.get(recIndex++));
+            } else if (regIndex < regular.size()) {
+                // 일반 피드 배치
+                result.add(regular.get(regIndex++));
+            } else {
+                // 더 이상 피드가 없으면 종료
+                break;
+            }
+        }
+        
+        return result;
+    }
 
     /**
      * 무한 스크롤 응답 생성 (공통 로직)

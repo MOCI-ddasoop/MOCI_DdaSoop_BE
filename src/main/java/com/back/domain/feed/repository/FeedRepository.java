@@ -2,6 +2,8 @@ package com.back.domain.feed.repository;
 
 import com.back.domain.feed.entity.Feed;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +62,16 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
             com.back.domain.feed.entity.FeedType feedType
     );
     
+    /**
+     * 특정 Together의 최대 pinOrder 값 조회 (다음 순서 계산용)
+     * 
+     * @param togetherId Together ID
+     * @return 최대 pinOrder 값 (없으면 0)
+     */
+    @Query("SELECT COALESCE(MAX(f.pinOrder), 0) FROM Feed f " +
+           "WHERE f.together.id = :togetherId AND f.isPinned = true AND f.deletedAt IS NULL")
+    Integer findMaxPinOrderByTogetherId(@Param("togetherId") Long togetherId);
+    
     // ========== 통계 ==========
     
     /**
@@ -74,4 +86,26 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
      * @return 작성한 피드 개수
      */
     Long countByMemberIdAndDeletedAtIsNull(Long memberId);
+    
+    // ========== 하루 1회 인증 체크 ==========
+    
+    /**
+     * 특정 회원이 특정 함께하기에 오늘 인증한 피드 개수
+     * 
+     * @param memberId 회원 ID
+     * @param togetherId 함께하기 ID
+     * @param startOfDay 오늘 시작 시간 (00:00:00)
+     * @return 오늘 인증한 피드 개수
+     */
+    @Query("SELECT COUNT(f) FROM Feed f " +
+           "WHERE f.member.id = :memberId " +
+           "AND f.together.id = :togetherId " +
+           "AND f.feedType = 'TOGETHER_VERIFICATION' " +
+           "AND f.createdAt >= :startOfDay " +
+           "AND f.deletedAt IS NULL")
+    Long countTodayVerificationByMemberAndTogether(
+            @Param("memberId") Long memberId,
+            @Param("togetherId") Long togetherId,
+            @Param("startOfDay") java.time.LocalDateTime startOfDay
+    );
 }

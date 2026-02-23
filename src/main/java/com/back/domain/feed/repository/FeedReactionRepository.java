@@ -52,4 +52,29 @@ public interface FeedReactionRepository extends JpaRepository<FeedReaction, Long
      * @return 누른 좋아요 개수
      */
     Long countByMemberId(Long memberId);
+
+    /**
+     * 특정 회원이 좋아요 누른 피드들의 자주 사용된 태그 조회
+     * 
+     * @param memberId 회원 ID
+     * @return 태그 리스트 (사용 빈도 높은 순, 최대 10개)
+     */
+    @Query("SELECT ft " +
+           "FROM FeedReaction fr " +
+           "JOIN fr.feed f " +
+           "JOIN f.tags ft " +
+           "WHERE fr.member.id = :memberId " +
+           "AND f.deletedAt IS NULL " +
+           "GROUP BY ft " +
+           "ORDER BY COUNT(ft) DESC")
+    List<String> findFrequentTagsByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 회원이 좋아요 누른 피드 ID 목록 조회 (중복 방지용)
+     * 
+     * @param memberId 회원 ID
+     * @return 피드 ID 리스트
+     */
+    @Query("SELECT fr.feed.id FROM FeedReaction fr WHERE fr.member.id = :memberId")
+    List<Long> findReactedFeedIdsByMemberId(@Param("memberId") Long memberId);
 }

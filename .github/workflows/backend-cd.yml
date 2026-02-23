@@ -95,3 +95,127 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
             ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:latest
+
+  deploy:
+    name: 배포
+    runs-on: ubuntu-latest
+    needs: [makeTagAndRelease, buildImageAndPush]
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: 인스턴스 ID 가져오기
+        id: get_instance_id
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${{ env.EC2_INSTANCE_TAG_NAME }}" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          [[ -n "${INSTANCE_ID}" && "${INSTANCE_ID}" != "None" ]] || { echo "No running instance found"; exit 1; }
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> "${GITHUB_ENV}"
+
+      - name: AWS SSM Send-Command
+        uses: peterkimzz/aws-ssm-send-command@master
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          instance-ids: ${{ env.INSTANCE_ID }}
+          working-directory: /
+          comment: Deploy
+          command: |
+            set -Eeuo pipefail
+            
+            LOG="/tmp/ssm-$(date +%Y%m%d_%H%M%S).log"
+            exec > >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG")
+            exec 2> >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG" >&2)
+            
+            source /etc/environment || true
+            OWNEr_LC="${{ github.repository_owner }}"
+            OWNER_LC="${OWNER_LC,,}"
+            IMAGE_TAG="${{ needs.makeTagAndRelease.outputs.tag_name }}"
+            IMAGE_REPOSITORY="${{ env.IMAGE_REPOSITORY }}"
+            IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+            SLOT1="${{ env.CONTAINER_1_NAME }}"
+            SLOT2="${{ env.CONTAINER_2_NAME }}"
+            PORT_IN="${{ env.CONTAINER_PORT }}"
+            NET="${{ env.DOCKER_NETWORK }}"
+            
+            echo "Use image: ${IMAGE}"
+            docker pull "${IMAGE}"
+            
+            TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\": \"admin@npm.com\", \"secret\": \"${PASSWORD_2:-}\"}" | jp -r '.token')
+            
+            [[ -n "${TOKEN}" && "${TOKEN}" != "null" ]] || { echo "NPM token issue failed"; exit 1; }
+            [[ -n "${APP_1_DOMAIN:-}" ]] || { echo "APP_1_DOMAIN is empty"; exit 1; }
+
+            PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              | jq ".[] | select(.domain_names[]==\"${APP_1_DOMAIN}\") | .id")
+            
+            [[ -n "${PROXY_ID}" && "${PROXY_ID}" != "null" ]] || { echo "Proxy host not found for ${APP_1_DOMAIN}"; exit 1; }
+
+            CURRENT_HOST=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              | jq -r '.forward_host')
+            
+            echo "CURRENT_HOST: ${CURRENT_HOST:-none}"
+
+            if [[ "${CURRENT_HOST:-}" == "${SLOT1}" ]]; then
+              BLUE="${SLOT1}"
+              GREEN="${SLOT2}"
+            elif [[ "${CURRENT_HOST:-}" == "${SLOT2}" ]]; then
+              BLUE="${SLOT2}"
+              GREEN="${SLOT1}"
+            else
+              BLUE="none"
+              GREEN="${SLOT1}"
+            fi
+            echo "role -> blue(now): ${BLUE}, green(next): ${GREEN}"
+
+            docker rm -f "${GREEN}" >/dev/null 2>&1 || true
+            echo "run new container -> ${GREEN}"
+            docker run -d --name "${GREEN}" \
+              --network "${NET}" \
+              -e TZ=Asia/Seoul \
+              "${IMAGE}"
+            
+            echo "health-check: ${GREEN}"
+            TIMEOUT=120
+            INTERVAL=3
+            ELAPSED=0
+            sleep 8
+
+            while (( ELAPSED < TIMEOUT )); do
+              CODE=$(docker exec "${GREEN}" curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT_IN}/actuator/health" || echo 000)
+              [[ "${CODE}" == "200" ]] && { echo "${GREEN} healthy"; break; }
+              sleep "${INTERVAL}"
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+            [[ "${CODE:-000}" == "200" ]] || { echo "${GREEN} health failed"; docker logs --tail=200 "${GREEN}" || true; docker rm -f "${GREEN}" || true; exit 1; }
+            
+            NEW_CFG=$(jq -n --arg host "${GREEN}" --argjson port ${PORT_IN} '{forward_host:$host, forward_port:$port}')
+            curl -s -X PUT "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "${NEW_CFG}" >/dev/null
+            echo "switch upstream -> ${GREEN}:${PORT_IN}"
+
+            if [[ "${BLUE}" != "none" ]]; then
+              docker rm -f "${BLUE}" >/dev/null 2>&1 || true
+              echo "removed old blue: ${BLUE}"
+            fi
+
+            {
+              docker images --format '{{.Repository}}:{{.Tag}}' \
+                | grep -F "ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:" \
+                | grep -v -F ":${IMAGE_TAG}" \
+                | grep -v -F ":latest" \
+                | xargs -r docker rmi
+            } || true
+
+            echo "Blue/Green switch complete. now blue = ${GREEN}"

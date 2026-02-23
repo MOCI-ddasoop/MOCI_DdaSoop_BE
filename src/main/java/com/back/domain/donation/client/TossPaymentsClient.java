@@ -1,8 +1,6 @@
 package com.back.domain.donation.client;
 
-import com.back.domain.donation.dto.request.DonationTossRequest;
-import com.back.domain.donation.dto.response.DonationPaymentResponse;
-import com.back.domain.donation.dto.response.DonationTossResponse;
+import com.back.domain.donation.dto.DonationTossDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,20 +17,20 @@ public class TossPaymentsClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public DonationTossResponse confirm(DonationTossRequest request) {
+    public DonationTossDto.DonationTossResponse confirm(DonationTossDto.DonationTossRequest request) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBasicAuth(secretKey, "");
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<DonationTossRequest> entity =
+        HttpEntity<DonationTossDto.DonationTossRequest> entity =
                 new HttpEntity<>(request, headers);
 
-        ResponseEntity<DonationTossResponse> response =
+        ResponseEntity<DonationTossDto.DonationTossResponse> response =
                 restTemplate.postForEntity(
                         "https://api.tosspayments.com/v1/payments/confirm",
                         entity,
-                        DonationTossResponse.class
+                        DonationTossDto.DonationTossResponse.class
                 );
 
         return response.getBody();

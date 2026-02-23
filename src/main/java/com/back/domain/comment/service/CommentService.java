@@ -243,7 +243,6 @@ public class CommentService {
         if (exists) {
             // 리액션 취소
             commentReactionRepository.deleteByCommentIdAndMemberId(commentId, currentMemberId);
-            comment.decrementReactionCount();
             log.info("댓글 리액션 취소 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
             return false;
         } else {
@@ -253,7 +252,6 @@ public class CommentService {
                     .member(member)
                     .build();
             commentReactionRepository.save(reaction);
-            comment.incrementReactionCount();
             log.info("댓글 리액션 생성 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
             return true;
         }
