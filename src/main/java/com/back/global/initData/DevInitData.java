@@ -520,7 +520,7 @@ public class DevInitData {
                 .currentAmount(0L)
                 .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
                 .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
-                .imageUrls(java.util.List.of(img[0]))
+                .imageUrls(new ArrayList<>(List.of(img[0])))
                 .status(DonationStatus.RECRUITING)
                 .member(organizer)
                 .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])

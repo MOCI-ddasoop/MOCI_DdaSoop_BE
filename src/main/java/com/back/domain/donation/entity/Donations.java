@@ -41,11 +41,12 @@ public class Donations extends BaseEntity {
 //    @Column(name = "thumbnail_image_url")
 //    private String thumbnailImageUrl;
 
-//    @ElementCollection
-//    @CollectionTable(
-//            name = "donation_images",
-//            joinColumns = @JoinColumn(name = "donation_id")
-//    )
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(
+            name = "donation_images",
+            joinColumns = @JoinColumn(name = "donation_id")
+    )
     @Column(name = "image_url")
     private List<String> imageUrls = new ArrayList<>();
 

@@ -175,6 +175,8 @@ public class DonationDto {
             Long memberId
     ) {
         public static CreateResponse from(Donations donations){
+            String thumbnail = (donations.getImageUrls() != null && !donations.getImageUrls().isEmpty())
+                    ? donations.getImageUrls().getFirst() : null;
             return new CreateResponse(
                     donations.getId(),
                     donations.getTitle(),
@@ -182,7 +184,7 @@ public class DonationDto {
                     donations.getGoalAmount(),
                     donations.getStartDate(),
                     donations.getEndDate(),
-                    donations.getImageUrls().getFirst(),
+                    thumbnail,
                     donations.getStatus(),
                     donations.getDonationCategory(),
                     donations.getMember().getId()
