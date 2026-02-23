@@ -58,6 +58,7 @@ public class FeedResponse {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime contentUpdatedAt; // 내용/태그/이미지/공개범위 수정 시점 (최초엔 createdAt과 동일)
 
     /**
      * Entity -> DTO 변환 (비로그인 또는 isReacted/isBookmarked 불필요 시)
@@ -111,6 +112,7 @@ public class FeedResponse {
                 .isBookmarked(isBookmarked)
                 .createdAt(feed.getCreatedAt())
                 .updatedAt(feed.getUpdatedAt())
+                .contentUpdatedAt(feed.getContentUpdatedAt())
                 .build();
     }
 }

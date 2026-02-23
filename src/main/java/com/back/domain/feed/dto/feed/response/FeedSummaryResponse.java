@@ -54,6 +54,7 @@ public class FeedSummaryResponse {
     private Boolean isPinned;
     
     private LocalDateTime createdAt;
+    private LocalDateTime contentUpdatedAt; // 내용/태그/이미지/공개범위 수정 시점 (최초엔 createdAt과 동일)
 
     /**
      * Entity -> DTO 변환 (비로그인 또는 isReacted/isBookmarked 불필요 시)
@@ -103,6 +104,7 @@ public class FeedSummaryResponse {
                         feed.getTogether().getMode().name() : null)
                 .isPinned(feed.getIsPinned())
                 .createdAt(feed.getCreatedAt())
+                .contentUpdatedAt(feed.getContentUpdatedAt())
                 .build();
     }
 }

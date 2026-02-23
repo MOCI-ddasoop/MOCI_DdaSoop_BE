@@ -51,6 +51,7 @@ public class CommentResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime contentUpdatedAt; // 내용 수정 시점 (최초엔 createdAt과 동일)
 
     /**
      * Entity -> DTO 변환 (대댓글 포함)
@@ -88,6 +89,7 @@ public class CommentResponse {
                 .isReacted(false)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 
@@ -127,6 +129,7 @@ public class CommentResponse {
                 .isReacted(reactedCommentIds.contains(comment.getId()))
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 
@@ -156,6 +159,7 @@ public class CommentResponse {
                 .isReacted(isReacted)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 }
