@@ -94,7 +94,8 @@ public class TogetherDto {
             List<ParticipantsResponse> participants,
             String thumbnailImage,
             Long goal,
-            Long progress
+            Long progress,
+            boolean verifiedToday
     ) {
         public static DetailResponse from(Together together) {
             return new DetailResponse(
@@ -109,7 +110,25 @@ public class TogetherDto {
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
                     null, // TODO: 추후에 thumbnailImage 정보 매핑
                     null, // TODO: 추후에 goal 정보 매핑
-                    null // TODO: 추후에 progress 정보 매핑
+                    null, // TODO: 추후에 progress 정보 매핑
+                    false
+            );
+        }
+        public static DetailResponse of(Together together, boolean verifiedToday) {
+            return new DetailResponse(
+                    together.getId(),
+                    together.getTitle(),
+                    together.getCategory(),
+                    together.getMode(),
+                    together.getCapacity(),
+                    together.getStartDate(),
+                    together.getEndDate(),
+                    together.getMember().getId(),
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
+                    null, // TODO: 추후에 thumbnailImage 정보 매핑
+                    null, // TODO: 추후에 goal 정보 매핑
+                    null, // TODO: 추후에 progress 정보 매핑
+                    verifiedToday
             );
         }
     }

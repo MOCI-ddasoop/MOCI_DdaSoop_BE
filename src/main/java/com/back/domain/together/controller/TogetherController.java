@@ -88,7 +88,16 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogether(
             @PathVariable Long id
     ) {
-        TogetherDto.DetailResponse response = togetherService.getTogether(id);
+        Long memberId = getCurrentMemberId();
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !(authentication.getPrincipal() instanceof String)) {
+            memberId = (Long) authentication.getPrincipal();
+        }
+
+        TogetherDto.DetailResponse response = togetherService.getTogether(id, memberId);
+
         return ResponseEntity.ok().body(RsData.success("함께하기 상세 조회 성공", response));
     }
 
