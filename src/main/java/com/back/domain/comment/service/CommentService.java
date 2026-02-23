@@ -12,6 +12,9 @@ import com.back.domain.feed.entity.Feed;
 import com.back.domain.feed.repository.FeedRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.domain.together.entity.Together;
 import com.back.domain.together.repository.TogetherRepository;
 import com.back.global.exception.ErrorCode;
@@ -40,6 +43,7 @@ public class CommentService {
     private final FeedRepository feedRepository;
     private final TogetherRepository togetherRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     /**
      * 댓글 생성
@@ -92,7 +96,30 @@ public class CommentService {
             comment.notifyFeedCommentCreated();
         }
 
-        log.info("댓글 생성 완료 - ID: {}, Type: {}, TargetId: {}", 
+        // 알림 발송
+        if (parent == null) {
+            // 최상위 댓글: 피드/함께하기 작성자에게 알림
+            if (comment.isFeedComment() && comment.getFeed() != null) {
+                notificationService.createNotification(
+                        comment.getFeed().getMember().getId(),
+                        currentMemberId,
+                        NotificationType.FEED_COMMENT,
+                        NotificationTargetType.FEED,
+                        comment.getFeed().getId()
+                );
+            }
+        } else {
+            // 대댓글: 부모 댓글 작성자에게 알림
+            notificationService.createNotification(
+                    parent.getMember().getId(),
+                    currentMemberId,
+                    NotificationType.FEED_COMMENT_REPLY,
+                    NotificationTargetType.COMMENT,
+                    parent.getId()
+            );
+        }
+
+        log.info("댓글 생성 완료 - ID: {}, Type: {}, TargetId: {}",
                 savedComment.getId(), request.getCommentType(), request.getTargetId());
 
         return savedComment.getId();
@@ -273,6 +300,16 @@ public class CommentService {
                     .build();
             commentReactionRepository.save(reaction);
             log.info("댓글 리액션 생성 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
+
+            // 알림 발송 (댓글 작성자에게)
+            notificationService.createNotification(
+                    comment.getMember().getId(),
+                    currentMemberId,
+                    NotificationType.COMMENT_REACTION,
+                    NotificationTargetType.COMMENT,
+                    commentId
+            );
+
             isReacted = true;
         }
 

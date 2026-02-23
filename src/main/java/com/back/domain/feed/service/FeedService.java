@@ -15,6 +15,9 @@ import com.back.domain.feed.repository.FeedBookmarkRepository;
 import com.back.domain.feed.repository.FeedReactionRepository;
 import com.back.domain.feed.repository.FeedRepository;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +47,7 @@ public class FeedService {
     private final TagService tagService;
     private final com.back.domain.together.repository.TogetherRepository togetherRepository;
     private final MemberTagStatisticsService memberTagStatisticsService;
+    private final NotificationService notificationService;
 
     /**
      * 피드 생성
@@ -346,10 +350,19 @@ public class FeedService {
                     .build();
             feedReactionRepository.save(reaction);
             log.info("피드 리액션 생성 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
-            
+
+            // 알림 발송 (피드 작성자에게)
+            notificationService.createNotification(
+                    feed.getMember().getId(),
+                    currentMemberId,
+                    NotificationType.FEED_REACTION,
+                    NotificationTargetType.FEED,
+                    feedId
+            );
+
             // 통계 비동기 업데이트
             memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
-            
+
             return true;
         }
     }
