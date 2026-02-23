@@ -77,4 +77,15 @@ public interface FeedReactionRepository extends JpaRepository<FeedReaction, Long
      */
     @Query("SELECT fr.feed.id FROM FeedReaction fr WHERE fr.member.id = :memberId")
     List<Long> findReactedFeedIdsByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 회원이 좋아요 누른 피드 ID 목록 (배치 조회 - N+1 방지)
+     * 피드 ID 목록 중 현재 사용자가 좋아요한 것만 필터링해서 반환
+     */
+    @Query("SELECT fr.feed.id FROM FeedReaction fr " +
+           "WHERE fr.member.id = :memberId AND fr.feed.id IN :feedIds")
+    List<Long> findReactedFeedIdsByMemberIdAndFeedIdIn(
+            @Param("memberId") Long memberId,
+            @Param("feedIds") List<Long> feedIds
+    );
 }
