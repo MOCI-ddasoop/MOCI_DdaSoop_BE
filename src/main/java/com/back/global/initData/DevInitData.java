@@ -606,7 +606,7 @@ public class DevInitData {
                 .participantsStatus(DonationParticipantStatus.PARTICIPATING)
                 .participantRole(DonationParticipantRole.MEMBER)
                 .build();
-    };
+    }
 
     private List<DonationParticipants> initDonationParticipants(
             List<Donations> donations, List<Member> members
