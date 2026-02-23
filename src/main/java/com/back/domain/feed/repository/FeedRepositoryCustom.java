@@ -30,16 +30,13 @@ public interface FeedRepositoryCustom {
     
     /**
      * 인기 피드 조회 (조건부)
-     * 
-     * @param condition 검색 조건 (기간, 타입 등)
-     * @param limit 최대 개수
+     *
+     * @param condition       검색 조건 (기간, 타입 등)
+     * @param limit           최대 개수
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 인기 피드 리스트 (리액션 많은 순)
-     * 
-     * 사용 예:
-     * - condition.startDate: 7일 전 → 최근 7일 인기 피드
-     * - condition.feedType: GENERAL → 일반 피드 중 인기 피드
      */
-    List<Feed> findPopularFeedsWithCondition(FeedSearchCondition condition, int limit);
+    List<Feed> findPopularFeedsWithCondition(FeedSearchCondition condition, int limit, Long currentMemberId);
     
     /**
      * 조건별 피드 개수
@@ -54,64 +51,70 @@ public interface FeedRepositoryCustom {
 
     /**
      * 무한 스크롤용 피드 조회 (동적 limit 지원)
-     * 
-     * @param cursorId 마지막 피드 ID (이보다 작은 ID 조회)
-     * @param limit 조회할 개수 (requestedSize + 1)
+     *
+     * @param cursorId        마지막 피드 ID (이보다 작은 ID 조회)
+     * @param limit           조회할 개수 (requestedSize + 1)
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 피드 리스트
      */
-    List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit);
+    List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit, Long currentMemberId);
 
     /**
      * 특정 회원의 무한 스크롤용 피드 조회 (동적 limit 지원)
-     * 
-     * @param memberId 회원 ID
-     * @param cursorId 마지막 피드 ID
-     * @param limit 조회할 개수
+     *
+     * @param memberId        회원 ID
+     * @param cursorId        마지막 피드 ID
+     * @param limit           조회할 개수
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 피드 리스트
      */
-    List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit);
+    List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit, Long currentMemberId);
 
     /**
      * 특정 Together의 무한 스크롤용 피드 조회 (동적 limit 지원)
-     * 
-     * @param togetherId Together ID
-     * @param cursorId 마지막 피드 ID
-     * @param limit 조회할 개수
-     * @param isFirstPage 첫 페이지 여부 (true이면 핀 고정 피드 포함)
+     *
+     * @param togetherId      Together ID
+     * @param cursorId        마지막 피드 ID
+     * @param limit           조회할 개수
+     * @param isFirstPage     첫 페이지 여부 (true이면 핀 고정 피드 포함)
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 피드 리스트
      */
-    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage);
+    List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage, Long currentMemberId);
 
     /**
      * 태그 검색 무한 스크롤 조회
-     * 
-     * @param tag 검색할 태그
-     * @param cursorId 마지막 피드 ID
-     * @param limit 조회할 개수
+     *
+     * @param tag             검색할 태그
+     * @param cursorId        마지막 피드 ID
+     * @param limit           조회할 개수
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 피드 리스트
      */
-    List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit);
+    List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit, Long currentMemberId);
 
     /**
      * 특정 태그들이 포함된 추천 피드 조회 (제외 ID 지원)
-     * 
-     * @param tags 추천 기준 태그 리스트
+     *
+     * @param tags            추천 기준 태그 리스트
      * @param excludeMemberId 제외할 회원 ID (본인 피드 제외)
-     * @param excludeFeedIds 제외할 피드 ID 리스트 (이미 본 피드 제외)
-     * @param limit 조회할 개수
+     * @param excludeFeedIds  제외할 피드 ID 리스트 (이미 본 피드 제외)
+     * @param limit           조회할 개수
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 추천 피드 리스트 (태그 매칭도 + 인기도 + 최신성 순)
      */
-    List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit);
+    List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit, Long currentMemberId);
 
     /**
      * 무한 스크롤용 피드 조회 (제외 ID 지원)
-     * 
-     * @param cursorId 마지막 피드 ID
-     * @param excludeFeedIds 제외할 피드 ID 리스트
-     * @param limit 조회할 개수
+     *
+     * @param cursorId        마지막 피드 ID
+     * @param excludeFeedIds  제외할 피드 ID 리스트
+     * @param limit           조회할 개수
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인)
      * @return 피드 리스트
      */
-    List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit);
+    List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit, Long currentMemberId);
 
     /**
      * 동적 조건으로 피드 검색 (무한 스크롤)

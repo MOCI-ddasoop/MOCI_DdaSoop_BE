@@ -46,6 +46,7 @@ public class FeedService {
     private final MemberRepository memberRepository;
     private final TagService tagService;
     private final com.back.domain.together.repository.TogetherRepository togetherRepository;
+    private final com.back.domain.together.repository.ParticipantsRepository participantsRepository;
     private final MemberTagStatisticsService memberTagStatisticsService;
     private final NotificationService notificationService;
 
@@ -117,10 +118,15 @@ public class FeedService {
 
     /**
      * 피드 상세 조회
+     * PRIVATE 피드는 작성자 본인만, MEMBERS 피드는 해당 Together 멤버만 조회 가능
+     * 권한 없으면 404 (존재 자체를 숨김)
      */
     public FeedResponse getFeed(Long feedId, Long currentMemberId) {
         Feed feed = feedRepository.findByIdAndDeletedAtIsNull(feedId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage()));
+
+        // visibility 접근 권한 체크
+        checkVisibilityAccess(feed, currentMemberId);
 
         // 현재 사용자의 리액션/북마크 여부 확인
         boolean isReacted = currentMemberId != null &&
@@ -129,6 +135,44 @@ public class FeedService {
                 feedBookmarkRepository.existsByFeedIdAndMemberId(feedId, currentMemberId);
 
         return FeedResponse.from(feed, isReacted, isBookmarked);
+    }
+
+    /**
+     * 피드 visibility 접근 권한 체크
+     * 권한 없으면 FEED_NOT_FOUND (404) — 해당 피드가 있다는 사실을 아예 숨기는 용도로 구현? 해보았음
+     */
+    private void checkVisibilityAccess(Feed feed, Long currentMemberId) {
+        switch (feed.getVisibility()) {
+            case PUBLIC, FOLLOWERS -> {
+                // 누구나 접근 가능 (FOLLOWERS는 팔로우 기능 미구현으로 PUBLIC 동일 처리)
+            }
+            case PRIVATE -> {
+                // 작성자 본인만
+                if (currentMemberId == null || !feed.getMember().getId().equals(currentMemberId)) {
+                    throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
+                }
+            }
+            case MEMBERS -> {
+                // 작성자 본인 또는 해당 Together PARTICIPATING 멤버
+                if (currentMemberId == null) {
+                    throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
+                }
+                boolean isOwner = feed.getMember().getId().equals(currentMemberId);
+                if (!isOwner) {
+                    if (feed.getTogether() == null) {
+                        throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
+                    }
+                    boolean isMember = participantsRepository.existsByTogetherIdAndMemberIdAndParticipantsStatus(
+                            feed.getTogether().getId(),
+                            currentMemberId,
+                            com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING
+                    );
+                    if (!isMember) {
+                        throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -161,7 +205,7 @@ public class FeedService {
         if (lastFeedId == null && currentMemberId != null) {
             feeds = getMixedRecommendedAndRegularFeeds(currentMemberId, requestedSize);
         } else {
-            feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
+            feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1, currentMemberId);
         }
 
         return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
@@ -195,7 +239,7 @@ public class FeedService {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        List<Feed> feeds = feedRepository.findMemberFeedsForInfiniteScroll(memberId, cursorId, requestedSize + 1);
+        List<Feed> feeds = feedRepository.findMemberFeedsForInfiniteScroll(memberId, cursorId, requestedSize + 1, currentMemberId);
 
         return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
@@ -214,7 +258,7 @@ public class FeedService {
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
         List<Feed> feeds = feedRepository.findTogetherFeedsForInfiniteScroll(
-                togetherId, cursorId, requestedSize + 1, isFirstPage
+                togetherId, cursorId, requestedSize + 1, isFirstPage, currentMemberId
         );
 
         if (isFirstPage) {
@@ -406,7 +450,7 @@ public class FeedService {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        List<Feed> feeds = feedRepository.findByTagForInfiniteScroll(tag, cursorId, requestedSize + 1);
+        List<Feed> feeds = feedRepository.findByTagForInfiniteScroll(tag, cursorId, requestedSize + 1, currentMemberId);
 
         return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
@@ -443,7 +487,7 @@ public class FeedService {
                 .startDate(LocalDateTime.now().minusDays(7))
                 .build();
 
-        List<Feed> feeds = feedRepository.findPopularFeedsWithCondition(condition, validatedSize);
+        List<Feed> feeds = feedRepository.findPopularFeedsWithCondition(condition, validatedSize, currentMemberId);
 
         Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
         Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
@@ -459,7 +503,7 @@ public class FeedService {
     public List<FeedSummaryResponse> getMostCommentedFeeds(int size, Long currentMemberId) {
         int validatedSize = Math.min(Math.max(size, 1), 50);
 
-        List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByCommentCountDescCreatedAtDesc();
+        List<Feed> feeds = feedRepository.findTopByCommentCountWithVisibility(currentMemberId, 20);
 
         Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
         Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
@@ -476,7 +520,7 @@ public class FeedService {
     public List<FeedSummaryResponse> getMostBookmarkedFeeds(int size, Long currentMemberId) {
         int validatedSize = Math.min(Math.max(size, 1), 50);
 
-        List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByBookmarkCountDescCreatedAtDesc();
+        List<Feed> feeds = feedRepository.findTopByBookmarkCountWithVisibility(currentMemberId, 20);
 
         Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
         Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
@@ -595,7 +639,8 @@ public class FeedService {
         List<Feed> regularFeeds = feedRepository.findFeedsForInfiniteScrollExcluding(
             Long.MAX_VALUE, 
             excludeFeedIds, 
-            regularFeedCount
+            regularFeedCount,
+            memberId
         );
         
         // 4. 섞기 (추천 피드를 상위에 배치: 위치 0, 2, 5)
@@ -627,7 +672,7 @@ public class FeedService {
         List<Long> reactedFeedIds = feedReactionRepository.findReactedFeedIdsByMemberId(memberId);
         
         // 3. 추천 피드 조회 (태그 매칭 + 인기도 + 최신성)
-        return feedRepository.findRecommendedFeedsByTags(topTags, memberId, reactedFeedIds, count);
+        return feedRepository.findRecommendedFeedsByTags(topTags, memberId, reactedFeedIds, count, memberId);
     }
 
     /**

@@ -70,11 +70,12 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     // ========== Public 메서드 ==========
 
     @Override
-    public List<Feed> findPopularFeedsWithCondition(FeedSearchCondition condition, int limit) {
+    public List<Feed> findPopularFeedsWithCondition(FeedSearchCondition condition, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
         BooleanBuilder builder = createBaseCondition(condition);
-        
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         return queryFactory
                 .selectFrom(feed)
                 .where(builder)
@@ -97,38 +98,42 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     @Override
-    public List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit) {
+    public List<Feed> findFeedsForInfiniteScroll(Long cursorId, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.id.lt(cursorId));
+        builder.and(feed.deletedAt.isNull());
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         return queryFactory
                 .selectFrom(feed)
-                .where(
-                    feed.id.lt(cursorId)
-                    .and(feed.deletedAt.isNull())
-                )
+                .where(builder)
                 .orderBy(feed.id.desc())
                 .limit(limit)
                 .fetch();
     }
 
     @Override
-    public List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit) {
+    public List<Feed> findMemberFeedsForInfiniteScroll(Long memberId, Long cursorId, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.member.id.eq(memberId));
+        builder.and(feed.id.lt(cursorId));
+        builder.and(feed.deletedAt.isNull());
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         return queryFactory
                 .selectFrom(feed)
-                .where(
-                    feed.member.id.eq(memberId)
-                    .and(feed.id.lt(cursorId))
-                    .and(feed.deletedAt.isNull())
-                )
+                .where(builder)
                 .orderBy(feed.id.desc())
                 .limit(limit)
                 .fetch();
     }
 
     @Override
-    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage) {
+    public List<Feed> findTogetherFeedsForInfiniteScroll(Long togetherId, Long cursorId, int limit, boolean isFirstPage, Long currentMemberId) {
         QFeed feed = QFeed.feed;
 
         List<Feed> result = new java.util.ArrayList<>();
@@ -141,13 +146,15 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                     .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION)).then(2)
                     .otherwise(0);
 
+            BooleanBuilder pinnedBuilder = new BooleanBuilder();
+            pinnedBuilder.and(feed.together.id.eq(togetherId));
+            pinnedBuilder.and(feed.isPinned.isTrue());
+            pinnedBuilder.and(feed.deletedAt.isNull());
+            pinnedBuilder.and(createVisibilityCondition(feed, currentMemberId));
+
             List<Feed> pinnedFeeds = queryFactory
                     .selectFrom(feed)
-                    .where(
-                        feed.together.id.eq(togetherId)
-                        .and(feed.isPinned.isTrue())
-                        .and(feed.deletedAt.isNull())
-                    )
+                    .where(pinnedBuilder)
                     .orderBy(
                         priority.desc(),
                         feed.pinOrder.asc().nullsLast()
@@ -158,15 +165,16 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             limit = Math.max(limit - pinnedFeeds.size(), 1);
         }
 
-        // 핀 미고정 피드: 커서 기반 페이지네이션
+        BooleanBuilder unpinnedBuilder = new BooleanBuilder();
+        unpinnedBuilder.and(feed.together.id.eq(togetherId));
+        unpinnedBuilder.and(feed.isPinned.isFalse());
+        unpinnedBuilder.and(feed.id.lt(cursorId));
+        unpinnedBuilder.and(feed.deletedAt.isNull());
+        unpinnedBuilder.and(createVisibilityCondition(feed, currentMemberId));
+
         List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
-                .where(
-                    feed.together.id.eq(togetherId)
-                    .and(feed.isPinned.isFalse())
-                    .and(feed.id.lt(cursorId))
-                    .and(feed.deletedAt.isNull())
-                )
+                .where(unpinnedBuilder)
                 .orderBy(feed.createdAt.desc())
                 .limit(limit)
                 .fetch();
@@ -176,43 +184,46 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     @Override
-    public List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit) {
+    public List<Feed> findByTagForInfiniteScroll(String tag, Long cursorId, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(feed.tags.any().eq(tag));
+        builder.and(feed.id.lt(cursorId));
+        builder.and(feed.deletedAt.isNull());
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         return queryFactory
                 .selectFrom(feed)
-                .where(
-                    feed.tags.any().eq(tag)
-                    .and(feed.id.lt(cursorId))
-                    .and(feed.deletedAt.isNull())
-                )
+                .where(builder)
                 .orderBy(feed.id.desc())
                 .limit(limit)
                 .fetch();
     }
 
     @Override
-    public List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit) {
+    public List<Feed> findRecommendedFeedsByTags(List<String> tags, Long excludeMemberId, List<Long> excludeFeedIds, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(feed.deletedAt.isNull());
-        
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         // 추천 태그 중 하나라도 포함된 피드
         if (tags != null && !tags.isEmpty()) {
             builder.and(feed.tags.any().in(tags));
         }
-        
+
         // 본인이 작성한 피드 제외
         if (excludeMemberId != null) {
             builder.and(feed.member.id.ne(excludeMemberId));
         }
-        
+
         // 이미 조회된 피드 제외
         if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
             builder.and(feed.id.notIn(excludeFeedIds));
         }
-        
+
         return queryFactory
                 .selectFrom(feed)
                 .where(builder)
@@ -225,18 +236,19 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
     }
 
     @Override
-    public List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit) {
+    public List<Feed> findFeedsForInfiniteScrollExcluding(Long cursorId, List<Long> excludeFeedIds, int limit, Long currentMemberId) {
         QFeed feed = QFeed.feed;
-        
+
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(feed.id.lt(cursorId));
         builder.and(feed.deletedAt.isNull());
-        
+        builder.and(createVisibilityCondition(feed, currentMemberId));
+
         // 제외할 피드 ID 목록
         if (excludeFeedIds != null && !excludeFeedIds.isEmpty()) {
             builder.and(feed.id.notIn(excludeFeedIds));
         }
-        
+
         return queryFactory
                 .selectFrom(feed)
                 .where(builder)
@@ -337,6 +349,60 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         }
         
         return builder;
+    }
+
+    /**
+     * Visibility 접근 권한 조건 생성
+     *
+     * - PUBLIC    : 모든 사람
+     * - FOLLOWERS : 팔로우 기능 미구현 → PUBLIC과 동일하게 처리
+     * - PRIVATE   : 작성자 본인만
+     * - MEMBERS   : 해당 Together에 PARTICIPATING 상태로 참여 중인 멤버 + 작성자 본인
+     *
+     * 비로그인(currentMemberId == null)이면 PUBLIC / FOLLOWERS 만 노출
+     */
+    private com.querydsl.core.types.Predicate createVisibilityCondition(QFeed feed, Long currentMemberId) {
+        com.querydsl.core.types.dsl.BooleanExpression isPublicOrFollowers =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.PUBLIC)
+                .or(feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.FOLLOWERS));
+
+        if (currentMemberId == null) {
+            // 비로그인: PUBLIC / FOLLOWERS 만
+            return isPublicOrFollowers;
+        }
+
+        com.querydsl.core.types.dsl.BooleanExpression isOwner =
+                feed.member.id.eq(currentMemberId);
+
+        // PRIVATE: 본인만
+        com.querydsl.core.types.dsl.BooleanExpression privateCondition =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.PRIVATE)
+                .and(isOwner);
+
+        // MEMBERS: 본인이거나, 해당 together에 PARTICIPATING 상태로 참여 중인 경우
+        com.back.domain.together.entity.QParticipants qParticipants =
+                com.back.domain.together.entity.QParticipants.participants;
+
+        com.querydsl.jpa.JPAExpressions.selectOne();
+        com.querydsl.core.types.dsl.BooleanExpression isMember =
+                com.querydsl.jpa.JPAExpressions
+                        .selectOne()
+                        .from(qParticipants)
+                        .where(
+                                qParticipants.together.id.eq(feed.together.id)
+                                .and(qParticipants.member.id.eq(currentMemberId))
+                                .and(qParticipants.participantsStatus.eq(
+                                        com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING))
+                        )
+                        .exists();
+
+        com.querydsl.core.types.dsl.BooleanExpression membersCondition =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.MEMBERS)
+                .and(isOwner.or(isMember));
+
+        return isPublicOrFollowers
+                .or(privateCondition)
+                .or(membersCondition);
     }
 
     /**
