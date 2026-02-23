@@ -34,6 +34,10 @@ public class FeedSummaryResponse {
     private Integer commentCount;
     private Integer bookmarkCount;
 
+    // 현재 사용자의 리액션/북마크 여부
+    private Boolean isReacted;
+    private Boolean isBookmarked;
+
     // 작성자 정보
     private Long authorId;
     private String authorName;
@@ -52,20 +56,27 @@ public class FeedSummaryResponse {
     private LocalDateTime createdAt;
 
     /**
-     * Entity -> DTO 변환
+     * Entity -> DTO 변환 (비로그인 또는 isReacted/isBookmarked 불필요 시)
      */
     public static FeedSummaryResponse from(Feed feed) {
-        // 첫 번째 이미지 정보 추출
+        return from(feed, java.util.Set.of(), java.util.Set.of());
+    }
+
+    /**
+     * Entity -> DTO 변환 (현재 사용자의 리액션/북마크 정보 포함)
+     * Service에서 배치 조회한 reactedFeedIds, bookmarkedFeedIds Set을 전달받아 사용
+     */
+    public static FeedSummaryResponse from(Feed feed, java.util.Set<Long> reactedFeedIds, java.util.Set<Long> bookmarkedFeedIds) {
         String thumbnailUrl = null;
         Integer thumbnailWidth = null;
         Integer thumbnailHeight = null;
-        
+
         if (feed.getFirstImage() != null) {
             thumbnailUrl = feed.getFirstImage().getImageUrl();
             thumbnailWidth = feed.getFirstImage().getWidth();
             thumbnailHeight = feed.getFirstImage().getHeight();
         }
-        
+
         return FeedSummaryResponse.builder()
                 .id(feed.getId())
                 .feedType(feed.getFeedType())
@@ -78,15 +89,17 @@ public class FeedSummaryResponse {
                 .reactionCount(feed.getReactionCount())
                 .commentCount(feed.getCommentCount())
                 .bookmarkCount(feed.getBookmarkCount())
+                .isReacted(reactedFeedIds.contains(feed.getId()))
+                .isBookmarked(bookmarkedFeedIds.contains(feed.getId()))
                 .authorId(feed.getMember().getId())
                 .authorName(feed.getMember().getName())
                 .authorNickname(feed.getMember().getNickname())
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
-                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ? 
+                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ?
                         feed.getTogether().getCategory().name() : null)
-                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ? 
+                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ?
                         feed.getTogether().getMode().name() : null)
                 .isPinned(feed.getIsPinned())
                 .createdAt(feed.getCreatedAt())

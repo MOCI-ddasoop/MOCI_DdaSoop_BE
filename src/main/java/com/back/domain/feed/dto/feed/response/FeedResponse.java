@@ -60,20 +60,26 @@ public class FeedResponse {
     private LocalDateTime updatedAt;
 
     /**
-     * Entity -> DTO 변환 (정적 팩토리 메서드)
+     * Entity -> DTO 변환 (비로그인 또는 isReacted/isBookmarked 불필요 시)
      */
     public static FeedResponse from(Feed feed) {
-        // 첫 번째 이미지 정보 추출 (썸네일)
+        return from(feed, false, false);
+    }
+
+    /**
+     * Entity -> DTO 변환 (현재 사용자의 리액션/북마크 정보 포함)
+     */
+    public static FeedResponse from(Feed feed, boolean isReacted, boolean isBookmarked) {
         String thumbnailUrl = null;
         Integer thumbnailWidth = null;
         Integer thumbnailHeight = null;
-        
+
         if (feed.getFirstImage() != null) {
             thumbnailUrl = feed.getFirstImage().getImageUrl();
             thumbnailWidth = feed.getFirstImage().getWidth();
             thumbnailHeight = feed.getFirstImage().getHeight();
         }
-        
+
         return FeedResponse.builder()
                 .id(feed.getId())
                 .feedType(feed.getFeedType())
@@ -96,50 +102,15 @@ public class FeedResponse {
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
-                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ? 
+                .togetherCategory(feed.getTogether() != null && feed.getTogether().getCategory() != null ?
                         feed.getTogether().getCategory().name() : null)
-                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ? 
+                .togetherMode(feed.getTogether() != null && feed.getTogether().getMode() != null ?
                         feed.getTogether().getMode().name() : null)
                 .isPinned(feed.getIsPinned())
-                .isReacted(false)
-                .isBookmarked(false)
-                .createdAt(feed.getCreatedAt())
-                .updatedAt(feed.getUpdatedAt())
-                .build();
-    }
-
-    /**
-     * Entity -> DTO 변환 (현재 사용자의 리액션/북마크 정보 포함)
-     */
-    public static FeedResponse from(Feed feed, boolean isReacted, boolean isBookmarked) {
-        FeedResponse response = from(feed);
-        return FeedResponse.builder()
-                .id(response.getId())
-                .feedType(response.getFeedType())
-                .content(response.getContent())
-                .images(response.getImages())
-                .thumbnailUrl(response.getThumbnailUrl())
-                .thumbnailWidth(response.getThumbnailWidth())
-                .thumbnailHeight(response.getThumbnailHeight())
-                .imageCount(response.getImageCount())
-                .tags(response.getTags())
-                .visibility(response.getVisibility())
-                .reactionCount(response.getReactionCount())
-                .commentCount(response.getCommentCount())
-                .bookmarkCount(response.getBookmarkCount())
-                .authorId(response.getAuthorId())
-                .authorName(response.getAuthorName())
-                .authorNickname(response.getAuthorNickname())
-                .authorProfileImage(response.getAuthorProfileImage())
-                .togetherId(response.getTogetherId())
-                .togetherTitle(response.getTogetherTitle())
-                .togetherCategory(response.getTogetherCategory())
-                .togetherMode(response.getTogetherMode())
-                .isPinned(response.getIsPinned())
                 .isReacted(isReacted)
                 .isBookmarked(isBookmarked)
-                .createdAt(response.getCreatedAt())
-                .updatedAt(response.getUpdatedAt())
+                .createdAt(feed.getCreatedAt())
+                .updatedAt(feed.getUpdatedAt())
                 .build();
     }
 }

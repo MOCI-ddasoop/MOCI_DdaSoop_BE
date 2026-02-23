@@ -23,8 +23,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -102,88 +105,104 @@ public class CommentService {
         Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        // 현재 사용자의 리액션 여부 확인
-        boolean isReacted = currentMemberId != null &&
-                commentReactionRepository.existsByCommentIdAndMemberId(commentId, currentMemberId);
+        Set<Long> reactedCommentIds = extractReactedCommentIds(List.of(comment), currentMemberId);
 
-        return CommentResponse.from(comment, isReacted);
+        return CommentResponse.from(comment, reactedCommentIds);
     }
 
     /**
      * Feed의 댓글 목록 조회 (페이징)
      */
-    public Page<CommentResponse> getFeedComments(Long feedId, int page, int size) {
+    public Page<CommentResponse> getFeedComments(Long feedId, int page, int size, Long currentMemberId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Comment> comments = commentRepository.findByFeedIdAndParentIsNullAndDeletedAtIsNull(feedId, pageable);
 
-        return comments.map(CommentResponse::from);
+        // 배치 조회: 최상위 댓글 + 대댓글 ID를 한 번에 수집
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments.getContent(), currentMemberId);
+
+        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds));
     }
 
     /**
      * Feed의 댓글 목록 조회 (전체 - 대댓글 포함)
      */
-    public List<CommentResponse> getFeedCommentsAll(Long feedId) {
+    public List<CommentResponse> getFeedCommentsAll(Long feedId, Long currentMemberId) {
         List<Comment> comments = commentRepository
                 .findByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(feedId);
 
+        // 배치 조회: 최상위 댓글 + 대댓글 ID를 한 번에 수집
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments, currentMemberId);
+
         return comments.stream()
-                .map(CommentResponse::from)
+                .map(comment -> CommentResponse.from(comment, reactedCommentIds))
                 .collect(Collectors.toList());
     }
 
     /**
      * Together의 댓글 목록 조회 (페이징)
      */
-    public Page<CommentResponse> getTogetherComments(Long togetherId, int page, int size) {
+    public Page<CommentResponse> getTogetherComments(Long togetherId, int page, int size, Long currentMemberId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Comment> comments = commentRepository.findByTogetherIdAndParentIsNullAndDeletedAtIsNull(togetherId, pageable);
 
-        return comments.map(CommentResponse::from);
+        // 배치 조회: 최상위 댓글 + 대댓글 ID를 한 번에 수집
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments.getContent(), currentMemberId);
+
+        return comments.map(comment -> CommentResponse.from(comment, reactedCommentIds));
     }
 
     /**
      * 대댓글 목록 조회
      */
-    public List<CommentResponse> getReplies(Long parentId) {
+    public List<CommentResponse> getReplies(Long parentId, Long currentMemberId) {
         List<Comment> replies = commentRepository.findByParentIdAndDeletedAtIsNullOrderByCreatedAtAsc(parentId);
 
+        // 배치 조회 (대댓글은 자식이 없으므로 replies만 수집)
+        Set<Long> reactedCommentIds = extractReactedCommentIds(replies, currentMemberId);
+
         return replies.stream()
-                .map(CommentResponse::fromWithoutReplies)
+                .map(reply -> CommentResponse.fromWithoutReplies(reply, reactedCommentIds.contains(reply.getId())))
                 .collect(Collectors.toList());
     }
 
     /**
      * 인기 댓글 조회 (Feed)
      */
-    public List<CommentResponse> getPopularFeedComments(Long feedId, int size) {
+    public List<CommentResponse> getPopularFeedComments(Long feedId, int size, Long currentMemberId) {
         Pageable pageable = PageRequest.of(0, size);
         List<Comment> comments = commentRepository.findPopularCommentsByFeedId(feedId, pageable);
 
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments, currentMemberId);
+
         return comments.stream()
-                .map(CommentResponse::fromWithoutReplies)
+                .map(comment -> CommentResponse.fromWithoutReplies(comment, reactedCommentIds.contains(comment.getId())))
                 .collect(Collectors.toList());
     }
 
     /**
      * 최신 댓글 조회 (Feed)
      */
-    public List<CommentResponse> getRecentFeedComments(Long feedId) {
+    public List<CommentResponse> getRecentFeedComments(Long feedId, Long currentMemberId) {
         List<Comment> comments = commentRepository
                 .findTop10ByFeedIdAndParentIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(feedId);
 
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments, currentMemberId);
+
         return comments.stream()
-                .map(CommentResponse::fromWithoutReplies)
+                .map(comment -> CommentResponse.fromWithoutReplies(comment, reactedCommentIds.contains(comment.getId())))
                 .collect(Collectors.toList());
     }
 
     /**
      * 특정 회원이 작성한 댓글 조회
      */
-    public Page<CommentResponse> getMemberComments(Long memberId, int page, int size) {
+    public Page<CommentResponse> getMemberComments(Long memberId, int page, int size, Long currentMemberId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Comment> comments = commentRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(memberId, pageable);
 
-        return comments.map(CommentResponse::fromWithoutReplies);
+        Set<Long> reactedCommentIds = extractReactedCommentIds(comments.getContent(), currentMemberId);
+
+        return comments.map(comment -> CommentResponse.fromWithoutReplies(comment, reactedCommentIds.contains(comment.getId())));
     }
 
     /**
@@ -231,7 +250,7 @@ public class CommentService {
      * 댓글 리액션 토글 (좋아요)
      */
     @Transactional
-    public boolean toggleReaction(Long commentId, Long currentMemberId) {
+    public com.back.domain.comment.dto.response.CommentReactionResponse toggleReaction(Long commentId, Long currentMemberId) {
         Comment comment = commentRepository.findByIdAndDeletedAtIsNull(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
@@ -240,11 +259,12 @@ public class CommentService {
 
         boolean exists = commentReactionRepository.existsByCommentIdAndMemberId(commentId, currentMemberId);
 
+        boolean isReacted;
         if (exists) {
             // 리액션 취소
             commentReactionRepository.deleteByCommentIdAndMemberId(commentId, currentMemberId);
             log.info("댓글 리액션 취소 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
-            return false;
+            isReacted = false;
         } else {
             // 리액션 생성
             CommentReaction reaction = CommentReaction.builder()
@@ -253,8 +273,14 @@ public class CommentService {
                     .build();
             commentReactionRepository.save(reaction);
             log.info("댓글 리액션 생성 - 댓글 ID: {}, 회원 ID: {}", commentId, currentMemberId);
-            return true;
+            isReacted = true;
         }
+
+        // 최신 reactionCount 조회
+        Comment updatedComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        return com.back.domain.comment.dto.response.CommentReactionResponse.of(isReacted, updatedComment.getReactionCount());
     }
 
     /**
@@ -271,16 +297,37 @@ public class CommentService {
         return commentRepository.countByTogetherId(togetherId);
     }
 
-    // ========== 회원 통계 (Member 도메인 연동용) ==========
+    // ========== Private 헬퍼 메서드 ==========
 
     /**
-     * 특정 회원이 작성한 댓글 개수
-     * Member 도메인의 GET /api/members/me 응답에 사용
-     * 
-     * @param memberId 회원 ID
-     * @return 작성한 댓글 개수
+     * 배치 조회로 현재 사용자가 리액션한 댓글 ID Set을 반환 (N+1 방지)
+     *
+     * 최상위 댓글 목록을 받아서 대댓글(replies)까지 포함한 전체 ID를 수집한 뒤,
+     * 쿼리 1번으로 현재 사용자가 리액션한 ID만 필터링해 반환한다.
+     *
+     * 비로그인 처리는 currentMemberId가 null이면 빈 Set을 반환하는 식으로
      */
-    public Long getMemberCommentCount(Long memberId) {
-        return commentRepository.countByMemberIdAndDeletedAtIsNull(memberId);
+    private Set<Long> extractReactedCommentIds(List<Comment> topLevelComments, Long currentMemberId) {
+        if (currentMemberId == null || topLevelComments.isEmpty()) {
+            return Set.of();
+        }
+
+        // 최상위 댓글 ID + 대댓글 ID를 한 번에 수집
+        List<Long> allCommentIds = topLevelComments.stream()
+                .flatMap(comment -> Stream.concat(
+                        Stream.of(comment.getId()),
+                        comment.getReplies().stream()
+                                .filter(reply -> !reply.isDeleted())
+                                .map(Comment::getId)
+                ))
+                .collect(Collectors.toList());
+
+        // 배치 조회 (쿼리 1번)
+        return new HashSet<>(
+                commentReactionRepository.findReactedCommentIdsByMemberIdAndCommentIdIn(
+                        currentMemberId, allCommentIds
+                )
+        );
     }
+
 }
