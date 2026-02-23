@@ -58,7 +58,7 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
-                    null, // TODO: thumbnailImage 정보 매핑
+                    together.getThumbnailImageUrl(),
                     null, // TODO: progress 정보 매핑
                     dDay
             );
@@ -120,14 +120,16 @@ public class TogetherDto {
             Long id,
             Long memberId,
             Long togetherId,
-            String participantsStatus
+            String participantsStatus,
+            String participantRole
     ) {
         public static ParticipantsResponse from(Participants participants) {
             return new ParticipantsResponse(
                     participants.getId(),
                     participants.getMember().getId(),
                     participants.getTogether().getId(),
-                    participants.getParticipantsStatus().name()
+                    participants.getParticipantsStatus().name(),
+                    participants.getParticipantRole().name()
             );
         }
     }

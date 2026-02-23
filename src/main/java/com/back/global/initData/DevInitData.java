@@ -5,8 +5,11 @@ import com.back.domain.comment.entity.CommentReaction;
 import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentReactionRepository;
 import com.back.domain.comment.repository.CommentRepository;
-import com.back.domain.donation.entity.DonationCategory;
-import com.back.domain.donation.entity.Donations;
+import com.back.domain.donation.dto.DonationNoticeDto;
+import com.back.domain.donation.entity.*;
+import com.back.domain.donation.repository.DonationNoticeRepository;
+import com.back.domain.donation.repository.DonationParticipantsRepository;
+import com.back.domain.donation.repository.DonationPaymentsRepository;
 import com.back.domain.donation.repository.DonationRepository;
 import com.back.domain.donation.service.DonationService;
 import com.back.domain.feed.entity.*;
@@ -31,6 +34,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -52,6 +56,9 @@ public class DevInitData {
     private final TogetherRepository togetherRepository;
     private final TogetherService togetherService;
     private final DonationRepository donationRepository;
+    private final DonationParticipantsRepository donationParticipantsRepository;
+    private final DonationNoticeRepository donationNoticeRepository;
+    private final DonationPaymentsRepository donationPaymentsRepository;
     private final DonationService donationService;
     private final ParticipantsRepository participantsRepository;
 
@@ -105,9 +112,23 @@ public class DevInitData {
         List<Donations> donationsList = initDonations(members);
         log.info(" Donation {} 개 생성 완료", donationsList.size());
 
+        // 23. DonationNotice 생성
+        List<DonationNotice> donationNotices = initDonationNotices(donationsList);
+        log.info(" DonationNotice {} 개 생성 완료", donationNotices.size());
+
+        // 24. DonationParticipants 생성
+        List<DonationParticipants> donationParticipants = initDonationParticipants(donationsList, members);
+        log.info(" DonationParticipants {} 개 생성 완료", donationParticipants.size());
+
+        // 25. DonationPayments 생성
+        List<DonationPayments> donationPayments = initDonationPayments(donationsList);
+        log.info(" DonationPayments {}", donationPayments.size());
+
         log.info("========== 초기 데이터 생성 완료 ==========");
-        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}", members.size(), feeds.size(), comments.size(),
-                togethers.size(), participantsList.size(), donationsList.size());
+        log.info("총 생성: Member {}, Feed {}, Comment {}, Together {}, Participants {}, Donation {}, DonationNotice {}" +
+                ", DonationParticipants {}, DonationPayments {}",
+                members.size(), feeds.size(), comments.size(), togethers.size(), participantsList.size()
+                , donationsList.size(), donationNotices.size(), donationParticipants.size(), donationPayments.size());
     }
 
 
@@ -486,8 +507,27 @@ public class DevInitData {
     }
 
     // ========== 22. Donation 샘플 데이터 생성 ==========
+    private Donations createDonation(
+            String[] template,
+            String[] img,
+            Member organizer,
+            int startDayRange
+    ){
+        return Donations.builder()
+                .title(template[0])
+                .description(template[1])
+                .goalAmount(100000L)
+                .currentAmount(0L)
+                .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
+                .endDate(LocalDate.now().plusDays(random.nextInt(60, 121)))
+                .imageUrls(new ArrayList<>(List.of(img[0])))
+                .status(DonationStatus.RECRUITING)
+                .member(organizer)
+                .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
+                .build();
+    }
     private List<Donations> initDonations(List<Member> members) {
-        List<Donations> donationsList = new ArrayList<>();
+        List<Donations> donations = new ArrayList<>();
 
         String[][] templates = {
                 {"환경 보호를 위한 후원", "우리 지구를 지키기 위한 작은 실천에 동참해주세요!"},
@@ -497,28 +537,127 @@ public class DevInitData {
                 {"깨끗한 물 공급", "모든 이에게 깨끗한 물을 제공하기 위한 후원입니다."}
         };
 
-        // 처음 5개는 1~5번 멤버가 각각 주최
-        for (int i = 0; i < templates.length; i++){
-            String[] template = templates[i];
-            Member organizer = members.get(i % members.size());
+        String[][] imgs = {
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)},
+                {"https://picsum.photos/200/300?random=" + random.nextInt(100)}
+        };
 
-            Donations donation = Donations.builder()
-                    .title(template[0])
-                    .description(template[1])
-                    .goalAmount(100000L)
-                    .currentAmount(0L)
-                    .startDate(LocalDate.now())
-                    .endDate(LocalDate.now().plusDays(60))
-                    .status("ONGOING")
-                    .member(organizer)
-                    .donationCategory(DonationCategory.values()[random.nextInt(DonationCategory.values().length)])
-                    .build();
-
-            donationsList.add(donationRepository.save(donation));
+        // 처음 5개는 1~4번 멤버가 각각 주최
+        for (int i = 0; i < 4; i++){
+            String[] template = templates[i%templates.length];
+            String[] img = imgs[i%imgs.length];
+            donations.add(donationRepository.save(createDonation(template, img, members.get(i), 5)));
         }
 
-        return donationsList;
+        for (int i = 4; i < 30; i++){
+            String[] template = templates[i%templates.length];
+            String[] img = imgs[i%imgs.length];
+            Member organizer = members.get(random.nextInt(members.size()));
+            donations.add(donationRepository.save(createDonation(template, img, organizer, 10)));
+        }
+
+        return donations;
     }
+
+    // ========== 23. DonationNotice 샘플 데이터 생성 ==========
+    private DonationNotice createDonationNotice(
+            String[] template,
+            Donations donations
+    ) {
+        return DonationNotice.builder()
+                .title(template[0])
+                .description(template[1])
+                .progressNews(template[2])
+                .reviews(template[3])
+                .donations(donations)
+                .build();
+    }
+    private List<DonationNotice> initDonationNotices(List<Donations> donationsList) {
+        List<DonationNotice> notices = new ArrayList<>();
+
+        String[][] templates = {
+                {"첫 번째 소식", "후원해주셔서 감사합니다!", "현재 목표 금액의 30% 달성!", "후원자 여러분께 감사드립니다."},
+                {"두 번째 소식", "더 많은 참여 부탁드려요!", "새로운 후원자가 늘고 있습니다.", "함께 해주셔서 감사합니다."},
+                {"세 번째 소식", "목표 금액에 가까워지고 있어요!", "지금까지의 성과를 공유합니다.", "여러분의 후원이 큰 힘이 됩니다."}
+        };
+
+        for (int i = 0; i < 11; i++){
+            String[] template = templates[i%templates.length];
+            notices.add(donationNoticeRepository.save(createDonationNotice(template, donationsList.get(i))));
+        }
+
+        return notices;
+    }
+
+    // ========== 24. DonationParticipation 샘플 데이터 생성 ==========
+
+    private DonationParticipants createDonationParticipants(
+            Member member,
+            Donations donations
+    ){
+        return DonationParticipants.builder()
+                .member(member)
+                .donations(donations)
+                .joinAt(LocalDateTime.now())
+                .amount(random.nextLong(1000, 10000))
+                .participantsStatus(DonationParticipantStatus.PARTICIPATING)
+                .participantRole(DonationParticipantRole.MEMBER)
+                .build();
+    };
+
+    private List<DonationParticipants> initDonationParticipants(
+            List<Donations> donations, List<Member> members
+    ) {
+        List<DonationParticipants> participants = new ArrayList<>();
+
+        for(int i = 0; i < 4; i++){
+            participants.add(donationParticipantsRepository.save(
+                    createDonationParticipants(members.get(i), donations.get(i))));
+        }
+        for(int i = 4; i < 30; i++){
+            Member organizer = members.get(random.nextInt(members.size()));
+            participants.add(donationParticipantsRepository.save(
+                    createDonationParticipants(organizer, donations.get(i))));
+        }
+
+        return participants;
+    }
+
+    // ========== 25. DonationPayments 샘플 데이터 생성 ==========
+    private List<DonationPayments> initDonationPayments(List<Donations> donations) {
+        List<DonationPayments> payments = new ArrayList<>();
+        int memberCnt = memberRepository.findAll().size();
+        List<Member> members = memberRepository.findAll();
+
+
+        // 10개 이하의 후원하기
+        int limit_donation = Math.min(10, donations.size());
+        for(int j = 0; j < limit_donation; j++){
+            Donations donation = donations.get(j);
+            int randomParticipantCnt = random.nextInt(memberCnt + 1);
+            List<Member> shuffledMembers = new ArrayList<>(members);
+            java.util.Collections.shuffle(shuffledMembers);
+
+            for(int i = 0; i < randomParticipantCnt; i++){
+                Member member = shuffledMembers.get(i);
+                DonationPayments payment = DonationPayments.builder()
+                        .donations(donation)
+                        .member(member)
+                        .amount(random.nextLong(1000, 10000))
+                        .paymentMethod("TOSS")
+                        .build();
+                payments.add(donationPaymentsRepository.save(payment));
+                donation.setCurrentAmount(donation.getCurrentAmount() + payment.getAmount());
+            }
+            donationRepository.save(donation);
+        }
+        return payments;
+    }
+
+
 
     // ========== 헬퍼 메서드 ==========
 

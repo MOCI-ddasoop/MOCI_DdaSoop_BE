@@ -1,17 +1,20 @@
 package com.back.domain.donation.controller;
 
-import com.back.domain.donation.dto.DonationDto;
-import com.back.domain.donation.dto.DonationPaymentDto;
-import com.back.domain.donation.dto.DonationTossDto;
-import com.back.domain.donation.dto.DonorListResponse;
+import com.back.domain.donation.dto.*;
+import com.back.domain.donation.entity.DonationCategory;
+import com.back.domain.donation.entity.DonationSortType;
 import com.back.domain.donation.service.DonationService;
 import com.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Ddonations", description = "후원하기 API")
 @RestController
 @RequestMapping("/api/v1/donation")
 @RequiredArgsConstructor
@@ -44,9 +48,50 @@ public class DonationController {
             content = @Content(schema = @Schema(implementation = DonationDto.ListResponse.class))
     )
     @GetMapping("/list")
-    public ResponseEntity<RsData<List<DonationDto.ListResponse>>> getAllDonations() {
-        List<DonationDto.ListResponse> donationList = donationService.getAllDonations();
-        return ResponseEntity.ok().body(RsData.success("전체 후원 조회 성공", donationList));
+    public ResponseEntity<RsData<DonationDto.PageResponse<DonationDto.ListResponse>>> getAllDonations(
+            @RequestParam(required = false) List<DonationCategory> categories,
+            @RequestParam(defaultValue = "LATEST") DonationSortType sortType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+            ) {
+        Pageable pageable = PageRequest.of(
+                page, size,
+                switch (sortType) {
+                    case CATEGORY ->  Sort.by("donationCategory").ascending();
+                    default ->  Sort.by("createdAt").descending();
+                }
+        );
+
+        DonationDto.PageResponse<DonationDto.ListResponse> donationPage = donationService.getAllDonations(categories, sortType, pageable);
+        return ResponseEntity.ok().body(RsData.success("전체 후원 조회 성공", donationPage));
+    }
+
+    @Operation(summary = "후원하기 공지 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "후원하기 공지 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationNoticeDto.ListResponse.class))
+    )
+    @GetMapping("/notice/list")
+    public ResponseEntity<RsData<List<DonationNoticeDto.ListResponse>>> getAllDonationNotices() {
+        List<DonationNoticeDto.ListResponse> response = donationService.getAllDonationNotices();
+
+        return ResponseEntity.ok().body(RsData.success("후원하기 공지 조회 성공", response));
+    }
+
+    @Operation(summary = "후원하기 공지 개별 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "후원하기 공지 개별 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationNoticeDto.ListResponse.class))
+    )
+    @GetMapping("/notice/{id}")
+    public ResponseEntity<RsData<DonationNoticeDto.ListResponse>> getDonationNotice(
+            @PathVariable Long id
+    ) {
+        DonationNoticeDto.ListResponse response = donationService.getDonationNoticesByDonationId(id);
+
+        return ResponseEntity.ok().body(RsData.success("후원하기 공지 개별 조회 성공", response));
     }
 
 
@@ -61,6 +106,7 @@ public class DonationController {
             @PathVariable Long id
     ) {
         DonationDto.DetailResponse response = donationService.getDonation(id);
+
         return ResponseEntity.ok().body(RsData.success("후원 상세 조회 성공", response));
     }
 
@@ -83,14 +129,101 @@ public class DonationController {
     @ApiResponse(
             responseCode = "200",
             description = "상세보기별 후원 현황 조회 성공",
-            content = @Content(schema = @Schema(implementation = DonorListResponse.class))
+            content = @Content(schema = @Schema(implementation = DonorDto.ListResponse.class))
     )
     @GetMapping("/list/{id}/donorList")
-    public ResponseEntity<RsData<List<DonorListResponse>>> getDonationStatusById(
+    public ResponseEntity<RsData<List<DonorDto.ListResponse>>> getDonationStatusById(
             @PathVariable Long id
     ) {
-        List<DonorListResponse> donorList = donationService.getAllDonorList(id);
+        List<DonorDto.ListResponse> donorList = donationService.getAllDonorList(id);
         return ResponseEntity.ok(RsData.success("상세보기별 후원 현황 조회 성공", donorList));
+    }
+
+    @Operation(summary = "개설자 확인 API")
+    @ApiResponse(
+            responseCode = "200",
+            description = "개설자 확인 성공",
+            content = @Content(schema = @Schema(implementation = RsData.class))
+    )
+    @GetMapping("/{donationId}/{memberId}")
+    public ResponseEntity<RsData<Boolean>> isDonationCreator(
+            @PathVariable Long donationId,
+            @PathVariable Long memberId
+    ) {
+        Boolean isCreator = donationService.isDonationCreator(donationId,  memberId);
+        return ResponseEntity.ok(RsData.success("개설자 확인 성공", isCreator));
+    }
+
+    @Operation(summary = "개설한 후원 리스트 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "개설한 후원 리스트 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationDto.MyDonationListResponse.class))
+    )
+    @GetMapping("/member/{memberId}/create")
+    public ResponseEntity<RsData<List<DonationDto.MyDonationListResponse>>> createDonationList(
+            @PathVariable Long memberId
+    ) {
+        List<DonationDto.MyDonationListResponse> createList = donationService.getMyDonationList(memberId);
+        return ResponseEntity.ok(RsData.success("개설한 후원 리스트 조회 성공", createList));
+    }
+
+    @Operation(summary = "나의 후원하기 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "나의 후원하기 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationPaymentDto.DonationPaymentListResponse.class))
+    )
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<RsData<List<DonationPaymentDto.DonationPaymentListResponse>>> getMyDonationPaymentList(
+            @PathVariable Long memberId
+    ) {
+        List<DonationPaymentDto.DonationPaymentListResponse> response = donationService.getDonationPaymentList(memberId);
+
+        return ResponseEntity.ok(RsData.success("나의 후원하기 조회 성공", response));
+    }
+
+    @Operation(summary = "최신 2개 후원하기 내역 조회")
+    @ApiResponse(
+            responseCode = "200",
+            description = "최신 후원하기 내역 2개 조회 성공",
+            content = @Content(schema = @Schema(implementation = DonationPaymentDto.RecentDonationPaymentListResponse.class))
+    )
+    @GetMapping("/payment/recent")
+    public ResponseEntity<RsData<List<DonationPaymentDto.RecentDonationPaymentListResponse>>> getRecentDonationPaymentList() {
+        List<DonationPaymentDto.RecentDonationPaymentListResponse> response = donationService.getRecentDonationPayments();
+
+        return ResponseEntity.ok(RsData.success("최신 후원하기 내역 2개 조회 성공", response));
+    }
+
+    @Operation(summary = "후원하기 게시글 등록")
+    @ApiResponse(
+            responseCode = "200",
+            description = "후원하기 게시글 등록 성공",
+            content = @Content(schema = @Schema(implementation = DonationDto.CreateResponse.class))
+    )
+    @PostMapping("/create")
+    public ResponseEntity<RsData<DonationDto.CreateResponse>> create(
+            @Valid @RequestBody DonationDto.CreateRequest request
+    ) {
+        Long memberId = 1L;
+        DonationDto.CreateResponse response = donationService.createDonation(request, memberId);
+        return ResponseEntity.ok(RsData.success("후원하기 게시글 등록 성공", response));
+    }
+
+    @Operation(summary = "후원하기 공지 게시글 등록")
+    @ApiResponse(
+            responseCode = "200",
+            description = "후원하기 공지 게시글 등록 성공",
+            content = @Content(schema = @Schema(implementation = DonationNoticeDto.CreateResponse.class))
+    )
+    @PostMapping("/notice/create")
+    public ResponseEntity<RsData<DonationNoticeDto.CreateResponse>> createDonationNotice(
+            @Valid @RequestBody DonationNoticeDto.CreateRequest request
+    ) {
+        Long memberId = getCurrentMemberId();
+        DonationNoticeDto.CreateResponse response = donationService.createDonationNotice(request, request.donationId(), memberId);
+        return ResponseEntity.ok(RsData.success("후원하기 공지 게시글 등록 성공", response));
     }
 
     @Operation(summary = "TOSS 결제")
