@@ -38,9 +38,6 @@ public class Donations extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-//    @Column(name = "thumbnail_image_url")
-//    private String thumbnailImageUrl;
-
     @Builder.Default
     @ElementCollection
     @CollectionTable(
