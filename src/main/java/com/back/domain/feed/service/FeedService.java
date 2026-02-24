@@ -15,6 +15,9 @@ import com.back.domain.feed.repository.FeedBookmarkRepository;
 import com.back.domain.feed.repository.FeedReactionRepository;
 import com.back.domain.feed.repository.FeedRepository;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,6 +47,7 @@ public class FeedService {
     private final TagService tagService;
     private final com.back.domain.together.repository.TogetherRepository togetherRepository;
     private final MemberTagStatisticsService memberTagStatisticsService;
+    private final NotificationService notificationService;
 
     /**
      * 피드 생성
@@ -128,19 +134,15 @@ public class FeedService {
     /**
      * 피드 목록 조회 (QueryDSL 동적 검색 + 무한 스크롤)
      */
-    public InfiniteScrollResponse<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest) {
-        // 1. 무한 스크롤 설정
+    public InfiniteScrollResponse<FeedSummaryResponse> getFeedList(FeedSearchRequest searchRequest, Long currentMemberId) {
         Long cursorId = searchRequest.getLastFeedId() != null ? searchRequest.getLastFeedId() : Long.MAX_VALUE;
         int requestedSize = searchRequest.getSizeOrDefault();
 
-        // 2. FeedSearchRequest → FeedSearchCondition 변환
         FeedSearchCondition condition = FeedSearchCondition.from(searchRequest);
 
-        // 3. QueryDSL로 검색 (동적 쿼리, requestedSize + 1개 조회)
         List<Feed> feeds = feedRepository.searchFeedsForInfiniteScroll(condition, cursorId, requestedSize + 1);
 
-        // 4. 무한 스크롤 응답 생성
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
@@ -156,16 +158,13 @@ public class FeedService {
 
         List<Feed> feeds;
 
-        // 첫 페이지만 추천 섞기
         if (lastFeedId == null && currentMemberId != null) {
-            // 첫 페이지: 추천 3개 + 일반 17개 섞기
             feeds = getMixedRecommendedAndRegularFeeds(currentMemberId, requestedSize);
         } else {
-            // 두 번째 페이지부터: 기존 방식 (최신순)
             feeds = feedRepository.findFeedsForInfiniteScroll(cursorId, requestedSize + 1);
         }
 
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
@@ -190,25 +189,25 @@ public class FeedService {
     public InfiniteScrollResponse<FeedSummaryResponse> getMemberFeedsInfiniteScroll(
             Long memberId,
             Long lastFeedId,
-            Integer size
+            Integer size,
+            Long currentMemberId
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
-        // 동적 limit 지원 (requestedSize + 1)
         List<Feed> feeds = feedRepository.findMemberFeedsForInfiniteScroll(memberId, cursorId, requestedSize + 1);
 
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
      * 특정 Together의 피드 무한 스크롤 (커서 기반)
-     * 첫 페이지일 때만 핀 고정 피드 포함, 이후 페이지에서는 일반 피드만 반환
      */
     public InfiniteScrollResponse<FeedSummaryResponse> getTogetherFeedsInfiniteScroll(
             Long togetherId,
             Long lastFeedId,
-            Integer size
+            Integer size,
+            Long currentMemberId
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         boolean isFirstPage = (lastFeedId == null);
@@ -218,7 +217,6 @@ public class FeedService {
                 togetherId, cursorId, requestedSize + 1, isFirstPage
         );
 
-        // 첫 페이지일 때 핀 고정 피드와 일반 피드를 분리하여 nextCursor 계산
         if (isFirstPage) {
             List<Feed> unpinnedFeeds = feeds.stream().filter(f -> !f.getIsPinned()).toList();
             List<Feed> pinnedFeeds = feeds.stream().filter(Feed::getIsPinned).toList();
@@ -230,11 +228,13 @@ public class FeedService {
             List<Feed> actualFeeds = new ArrayList<>(pinnedFeeds);
             actualFeeds.addAll(actualUnpinned);
 
+            Set<Long> reactedFeedIds = extractReactedFeedIds(actualFeeds, currentMemberId);
+            Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(actualFeeds, currentMemberId);
+
             List<FeedSummaryResponse> responses = actualFeeds.stream()
-                    .map(FeedSummaryResponse::from)
+                    .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                     .collect(Collectors.toList());
 
-            // nextCursor는 일반 피드 마지막 아이템의 ID
             Long nextCursor = actualUnpinned.isEmpty() ? null :
                     actualUnpinned.get(actualUnpinned.size() - 1).getId();
 
@@ -247,8 +247,7 @@ public class FeedService {
                     .build();
         }
 
-        // 두 번째 페이지 이후: 일반 피드만 반환되므로 공통 로직 사용
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
@@ -351,10 +350,19 @@ public class FeedService {
                     .build();
             feedReactionRepository.save(reaction);
             log.info("피드 리액션 생성 - 피드 ID: {}, 회원 ID: {}", feedId, currentMemberId);
-            
+
+            // 알림 발송 (피드 작성자에게)
+            notificationService.createNotification(
+                    feed.getMember().getId(),
+                    currentMemberId,
+                    NotificationType.FEED_REACTION,
+                    NotificationTargetType.FEED,
+                    feedId
+            );
+
             // 통계 비동기 업데이트
             memberTagStatisticsService.updateStatisticsAsync(currentMemberId);
-            
+
             return true;
         }
     }
@@ -392,14 +400,15 @@ public class FeedService {
     public InfiniteScrollResponse<FeedSummaryResponse> searchByTagInfiniteScroll(
             String tag,
             Long lastFeedId,
-            Integer size
+            Integer size,
+            Long currentMemberId
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
         List<Feed> feeds = feedRepository.findByTagForInfiniteScroll(tag, cursorId, requestedSize + 1);
 
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
@@ -408,68 +417,73 @@ public class FeedService {
     public InfiniteScrollResponse<FeedSummaryResponse> getBookmarkedFeedsInfiniteScroll(
             Long memberId,
             Long lastFeedId,
-            Integer size
+            Integer size,
+            Long currentMemberId
     ) {
         int requestedSize = (size != null && size > 0 && size <= 50) ? size : 20;
         Long cursorId = lastFeedId != null ? lastFeedId : Long.MAX_VALUE;
 
         Pageable pageable = PageRequest.of(0, requestedSize + 1);
         Page<Feed> feedPage = feedBookmarkRepository.findBookmarkedFeedsByMemberIdForInfiniteScroll(
-            memberId,
-            cursorId,
-            pageable
+            memberId, cursorId, pageable
         );
 
         List<Feed> feeds = feedPage.getContent();
 
-        return createInfiniteScrollResponse(feeds, requestedSize);
+        return createInfiniteScrollResponse(feeds, requestedSize, currentMemberId);
     }
 
     /**
      * 인기 피드 조회 (최근 7일 기준, QueryDSL)
      */
-    public List<FeedSummaryResponse> getPopularFeeds(int size) {
-        // size 검증 추가 (최대 50개)
+    public List<FeedSummaryResponse> getPopularFeeds(int size, Long currentMemberId) {
         int validatedSize = Math.min(Math.max(size, 1), 50);
-        
+
         FeedSearchCondition condition = FeedSearchCondition.builder()
-                .startDate(LocalDateTime.now().minusDays(7))  // 최근 7일
+                .startDate(LocalDateTime.now().minusDays(7))
                 .build();
 
         List<Feed> feeds = feedRepository.findPopularFeedsWithCondition(condition, validatedSize);
 
+        Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
+
         return feeds.stream()
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
     }
 
     /**
      * 댓글 많은 피드 Top N
      */
-    public List<FeedSummaryResponse> getMostCommentedFeeds(int size) {
-        // size 검증 추가 (최대 50개)
+    public List<FeedSummaryResponse> getMostCommentedFeeds(int size, Long currentMemberId) {
         int validatedSize = Math.min(Math.max(size, 1), 50);
-        
+
         List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByCommentCountDescCreatedAtDesc();
+
+        Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
 
         return feeds.stream()
                 .limit(validatedSize)
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
     }
 
     /**
      * 북마크 많은 피드 Top N
      */
-    public List<FeedSummaryResponse> getMostBookmarkedFeeds(int size) {
-        // size 검증 추가 (최대 50개)
+    public List<FeedSummaryResponse> getMostBookmarkedFeeds(int size, Long currentMemberId) {
         int validatedSize = Math.min(Math.max(size, 1), 50);
-        
+
         List<Feed> feeds = feedRepository.findTop20ByDeletedAtIsNullOrderByBookmarkCountDescCreatedAtDesc();
+
+        Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
 
         return feeds.stream()
                 .limit(validatedSize)
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
     }
 
@@ -484,36 +498,35 @@ public class FeedService {
 
     /**
      * 특정 Together의 공지 피드 목록 조회
-     * 상단 고정된 것 우선, 최신순 정렬
-     * 
-     * @param togetherId Together ID
-     * @return 공지 피드 목록
      */
-    public List<FeedSummaryResponse> getTogetherNoticeFeeds(Long togetherId) {
+    public List<FeedSummaryResponse> getTogetherNoticeFeeds(Long togetherId, Long currentMemberId) {
         List<Feed> feeds = feedRepository.findByTogether_IdAndFeedTypeAndDeletedAtIsNullOrderByIsPinnedDescCreatedAtDesc(
                 togetherId,
                 com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE
         );
 
+        Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
+
         return feeds.stream()
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
     }
 
     /**
      * 특정 Together의 상단 고정된 공지 피드만 조회
-     * 
-     * @param togetherId Together ID
-     * @return 상단 고정된 공지 피드 목록
      */
-    public List<FeedSummaryResponse> getPinnedNoticeFeeds(Long togetherId) {
+    public List<FeedSummaryResponse> getPinnedNoticeFeeds(Long togetherId, Long currentMemberId) {
         List<Feed> feeds = feedRepository.findByTogether_IdAndFeedTypeAndIsPinnedTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
                 togetherId,
                 com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE
         );
 
+        Set<Long> reactedFeedIds = extractReactedFeedIds(feeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(feeds, currentMemberId);
+
         return feeds.stream()
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
     }
 
@@ -663,20 +676,19 @@ public class FeedService {
      */
     private InfiniteScrollResponse<FeedSummaryResponse> createInfiniteScrollResponse(
             List<Feed> feeds,
-            int requestedSize
+            int requestedSize,
+            Long currentMemberId
     ) {
-        // hasNext 계산: 요청한 개수보다 많이 조회되면 다음 페이지 존재
         boolean hasNext = feeds.size() > requestedSize;
-
-        // 실제 반환할 데이터는 요청한 size만큼만
         List<Feed> actualFeeds = hasNext ? feeds.subList(0, requestedSize) : feeds;
 
-        // DTO 변환
+        Set<Long> reactedFeedIds = extractReactedFeedIds(actualFeeds, currentMemberId);
+        Set<Long> bookmarkedFeedIds = extractBookmarkedFeedIds(actualFeeds, currentMemberId);
+
         List<FeedSummaryResponse> responses = actualFeeds.stream()
-                .map(FeedSummaryResponse::from)
+                .map(feed -> FeedSummaryResponse.from(feed, reactedFeedIds, bookmarkedFeedIds))
                 .collect(Collectors.toList());
 
-        // nextCursor: 마지막 아이템의 ID (없으면 null)
         Long nextCursor = actualFeeds.isEmpty() ? null :
                 actualFeeds.get(actualFeeds.size() - 1).getId();
 
@@ -687,6 +699,28 @@ public class FeedService {
                 .size(responses.size())
                 .requestedSize(requestedSize)
                 .build();
+    }
+
+    /**
+     * 배치 조회로 현재 사용자가 좋아요한 피드 ID Set 반환 (N+1 방지)
+     */
+    private Set<Long> extractReactedFeedIds(List<Feed> feeds, Long currentMemberId) {
+        if (currentMemberId == null || feeds.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> feedIds = feeds.stream().map(Feed::getId).collect(Collectors.toList());
+        return new HashSet<>(feedReactionRepository.findReactedFeedIdsByMemberIdAndFeedIdIn(currentMemberId, feedIds));
+    }
+
+    /**
+     * 배치 조회로 현재 사용자가 북마크한 피드 ID Set 반환 (N+1 방지)
+     */
+    private Set<Long> extractBookmarkedFeedIds(List<Feed> feeds, Long currentMemberId) {
+        if (currentMemberId == null || feeds.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> feedIds = feeds.stream().map(Feed::getId).collect(Collectors.toList());
+        return new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIdsByMemberIdAndFeedIdIn(currentMemberId, feedIds));
     }
 
     // ========== 회원 통계 ==========

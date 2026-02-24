@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -119,10 +118,36 @@ public class FeedController {
     })
     @GetMapping
     public ResponseEntity<InfiniteScrollResponse<FeedSummaryResponse>> getFeedList(
-            @Parameter(description = "검색 및 필터 조건", required = false)
-            @ModelAttribute FeedSearchRequest searchRequest
+            @Parameter(description = "검색 키워드", required = false, example = "환경")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "태그 리스트", required = false)
+            @RequestParam(required = false) List<String> tags,
+            @Parameter(description = "피드 타입", required = false)
+            @RequestParam(required = false) com.back.domain.feed.entity.FeedType feedType,
+            @Parameter(description = "작성자 ID", required = false)
+            @RequestParam(required = false) Long memberId,
+            @Parameter(description = "함께하기 ID", required = false)
+            @RequestParam(required = false) Long togetherId,
+            @Parameter(description = "마지막으로 조회한 피드 ID", required = false, example = "100")
+            @RequestParam(required = false) Long lastFeedId,
+            @Parameter(description = "조회할 개수 (기본 20, 최대 100)", required = false, example = "20")
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "정렬 기준 (latest/popular/comments/bookmarks)", required = false, example = "latest")
+            @RequestParam(required = false) String sortBy
     ) {
-        InfiniteScrollResponse<FeedSummaryResponse> response = feedService.getFeedList(searchRequest);
+        // FeedSearchRequest 객체 생성
+        FeedSearchRequest searchRequest = FeedSearchRequest.builder()
+                .keyword(keyword)
+                .tags(tags)
+                .feedType(feedType)
+                .memberId(memberId)
+                .togetherId(togetherId)
+                .lastFeedId(lastFeedId)
+                .size(size)
+                .sortBy(sortBy)
+                .build();
+
+        InfiniteScrollResponse<FeedSummaryResponse> response = feedService.getFeedList(searchRequest, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -172,7 +197,7 @@ public class FeedController {
             @RequestParam(required = false) Integer size
     ) {
         InfiniteScrollResponse<FeedSummaryResponse> response =
-                feedService.getMemberFeedsInfiniteScroll(memberId, lastFeedId, size);
+                feedService.getMemberFeedsInfiniteScroll(memberId, lastFeedId, size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -198,7 +223,7 @@ public class FeedController {
             @RequestParam(required = false) Integer size
     ) {
         InfiniteScrollResponse<FeedSummaryResponse> response =
-                feedService.getTogetherFeedsInfiniteScroll(togetherId, lastFeedId, size);
+                feedService.getTogetherFeedsInfiniteScroll(togetherId, lastFeedId, size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -319,7 +344,7 @@ public class FeedController {
             @RequestParam(required = false) Integer size
     ) {
         InfiniteScrollResponse<FeedSummaryResponse> response = 
-            feedService.searchByTagInfiniteScroll(tag, lastFeedId, size);
+            feedService.searchByTagInfiniteScroll(tag, lastFeedId, size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -340,7 +365,7 @@ public class FeedController {
             @Parameter(description = "조회할 개수", example = "10")
             @RequestParam(defaultValue = "10") int size
     ) {
-        List<FeedSummaryResponse> response = feedService.getPopularFeeds(size);
+        List<FeedSummaryResponse> response = feedService.getPopularFeeds(size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -361,7 +386,7 @@ public class FeedController {
             @Parameter(description = "조회할 개수", example = "10")
             @RequestParam(defaultValue = "10") int size
     ) {
-        List<FeedSummaryResponse> response = feedService.getMostCommentedFeeds(size);
+        List<FeedSummaryResponse> response = feedService.getMostCommentedFeeds(size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -382,7 +407,7 @@ public class FeedController {
             @Parameter(description = "조회할 개수", example = "10")
             @RequestParam(defaultValue = "10") int size
     ) {
-        List<FeedSummaryResponse> response = feedService.getMostBookmarkedFeeds(size);
+        List<FeedSummaryResponse> response = feedService.getMostBookmarkedFeeds(size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -408,7 +433,7 @@ public class FeedController {
         Long currentMemberId = getCurrentMemberId();
 
         InfiniteScrollResponse<FeedSummaryResponse> response = 
-            feedService.getBookmarkedFeedsInfiniteScroll(currentMemberId, lastFeedId, size);
+            feedService.getBookmarkedFeedsInfiniteScroll(currentMemberId, lastFeedId, size, currentMemberId);
 
         return ResponseEntity.ok(response);
     }
@@ -434,7 +459,7 @@ public class FeedController {
             @RequestParam(required = false) Integer size
     ) {
         InfiniteScrollResponse<FeedSummaryResponse> response = 
-            feedService.getBookmarkedFeedsInfiniteScroll(memberId, lastFeedId, size);
+            feedService.getBookmarkedFeedsInfiniteScroll(memberId, lastFeedId, size, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -477,7 +502,7 @@ public class FeedController {
             @Parameter(description = "함께하기 ID", required = true, example = "1")
             @PathVariable Long togetherId
     ) {
-        List<FeedSummaryResponse> response = feedService.getTogetherNoticeFeeds(togetherId);
+        List<FeedSummaryResponse> response = feedService.getTogetherNoticeFeeds(togetherId, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }
@@ -498,7 +523,7 @@ public class FeedController {
             @Parameter(description = "함께하기 ID", required = true, example = "1")
             @PathVariable Long togetherId
     ) {
-        List<FeedSummaryResponse> response = feedService.getPinnedNoticeFeeds(togetherId);
+        List<FeedSummaryResponse> response = feedService.getPinnedNoticeFeeds(togetherId, getCurrentMemberIdOrNull());
 
         return ResponseEntity.ok(response);
     }

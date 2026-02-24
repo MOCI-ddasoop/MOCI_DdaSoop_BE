@@ -45,6 +45,7 @@ public class Participants extends BaseEntity {
         p.member = member;
         p.participantsStatus = ParticipantsStatus.PARTICIPATING;
         p.joinAt = LocalDateTime.now();
+        p.participantRole = ParticipantRole.LEADER;
         together.getParticipants().add(p);
         return p;
     }

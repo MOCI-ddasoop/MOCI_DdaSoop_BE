@@ -85,10 +85,6 @@ public class Comment extends BaseEntity {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public void restore() {
-        this.deletedAt = null;
-    }
-
     public boolean isDeleted() {
         return this.deletedAt != null;
     }
@@ -106,12 +102,6 @@ public class Comment extends BaseEntity {
     // 댓글 수정
     public void updateContent(String content) {
         this.content = content;
-    }
-
-    // 대댓글 추가 (양방향 관계 편의 메서드)
-    public void addReply(Comment reply) {
-        this.replies.add(reply);
-        // reply.parent = this; // 이 부분은 Builder나 생성 시점에서 설정되어야 함
     }
 
     // 피드의 댓글 카운트 업데이트 (Feed 댓글 생성 시)
@@ -187,13 +177,6 @@ public class Comment extends BaseEntity {
      */
     public boolean isFeedComment() {
         return this.commentType == CommentType.FEED;
-    }
-    
-    /**
-     * Together 댓글인지 확인
-     */
-    public boolean isTogetherComment() {
-        return this.commentType == CommentType.TOGETHER;
     }
     
     /**

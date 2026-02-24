@@ -113,6 +113,12 @@ public class TogetherService {
         return together.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
+    // 마이페이지용 참가 & 소유 투게더 조회
+    public List<TogetherDto.DetailResponse> getMemberIdOrParticipating(Long memberId){
+        List<Together> togethers = togetherRepository.findAllByMemberIdOrParticipants_MemberId(memberId);
+        return togethers.stream().map(TogetherDto.DetailResponse::from).toList();
+    }
+
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
 
         Member organizer = memberRepository.findById(memberId)

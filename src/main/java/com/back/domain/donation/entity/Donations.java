@@ -8,6 +8,8 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "donations")
@@ -36,16 +38,34 @@ public class Donations extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(
+            name = "donation_images",
+            joinColumns = @JoinColumn(name = "donation_id")
+    )
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>();
+
+    @Builder.Default
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private DonationStatus status = DonationStatus.RECRUITING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
     private Member member;
 
+    @OneToMany(mappedBy = "donations", fetch = FetchType.LAZY)
+    private List<DonationParticipants> donationParticipants = new ArrayList<>();
+
     @Column(name = "donation_category")
     @Enumerated(EnumType.STRING)
     private DonationCategory donationCategory;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donation_notice_id")
+    private DonationNotice donationNotice;
 
     public void increaseAmount(Long amount) {
         this.currentAmount += amount;
