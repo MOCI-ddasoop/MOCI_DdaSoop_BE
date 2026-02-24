@@ -158,7 +158,7 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.CreateResponse>> create(
             @Valid @RequestBody TogetherDto.CreateRequest request
             ) {
-        Long organizerId = getCurrentMemberId();
+        Long organizerId = 1L;
         TogetherDto.CreateResponse response = togetherService.create(request, organizerId);
         return ResponseEntity.status(201).body(RsData.success("함께하기 게시글이 등록되었습니다.", response));
     }
