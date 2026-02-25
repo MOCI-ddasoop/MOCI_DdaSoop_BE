@@ -46,6 +46,20 @@ public class TogetherController {
         }
         return (Long) authentication.getPrincipal();
     }
+//    private Long getCurrentMemberId() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication == null || !authentication.isAuthenticated()) {
+//            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+//        }
+//        Object principal = authentication.getPrincipal();
+//        if (principal instanceof Long memberId) {
+//            return  memberId;
+//        }
+//        if (principal instanceof String str){
+//            return Long.parseLong(str);
+//        }
+//        throw new IllegalStateException("사용자 정보가 없습니다.");
+//    }
 
     @Operation(summary = "전체 함께하기 조회")
     @Description("전체 리스트 조회, 날짜,제목,카테고리, 온/오프, 모집중")
@@ -88,12 +102,12 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogether(
             @PathVariable Long id
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = null;
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-                && !(authentication.getPrincipal() instanceof String)) {
-            memberId = (Long) authentication.getPrincipal();
+        try{
+            memberId = getCurrentMemberId();
+        } catch (Exception e){
+            memberId = null;
         }
 
         TogetherDto.DetailResponse response = togetherService.getTogether(id, memberId);
@@ -158,7 +172,7 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.CreateResponse>> create(
             @Valid @RequestBody TogetherDto.CreateRequest request
             ) {
-        Long organizerId = 1L;
+        Long organizerId = getCurrentMemberId();
         TogetherDto.CreateResponse response = togetherService.create(request, organizerId);
         return ResponseEntity.status(201).body(RsData.success("함께하기 게시글이 등록되었습니다.", response));
     }
