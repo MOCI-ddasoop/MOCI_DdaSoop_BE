@@ -8,4 +8,7 @@ import java.util.Optional;
 public interface ParticipantsRepository extends JpaRepository<Participants, Long> {
 
     Optional<Participants> findByTogetherIdAndMemberId(Long togetherId, Long memberId);
+
+    boolean existsByTogetherIdAndMemberIdAndParticipantsStatus(
+            Long togetherId, Long memberId, com.back.domain.together.entity.ParticipantsStatus status);
 }

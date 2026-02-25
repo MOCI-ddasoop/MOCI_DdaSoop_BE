@@ -23,20 +23,72 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
     // ========== Top N 조회 (인기 피드) ==========
     
     /**
-     * 댓글 많은 피드 Top 20
-     * 
-     * 사용 예:
-     * - 홈 화면: "토론 많은 게시물"
+     * 댓글 많은 피드 Top N (visibility 필터 적용)
+     *
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인 → PUBLIC/FOLLOWERS만)
+     * @param limit           조회할 개수
      */
-    List<Feed> findTop20ByDeletedAtIsNullOrderByCommentCountDescCreatedAtDesc();
-    
+    @Query("""
+        SELECT f FROM Feed f
+        WHERE f.deletedAt IS NULL
+          AND (
+            f.visibility IN (
+                com.back.domain.feed.entity.FeedVisibility.PUBLIC,
+                com.back.domain.feed.entity.FeedVisibility.FOLLOWERS
+            )
+            OR (f.visibility = com.back.domain.feed.entity.FeedVisibility.PRIVATE
+                AND (:currentMemberId IS NOT NULL AND f.member.id = :currentMemberId))
+            OR (f.visibility = com.back.domain.feed.entity.FeedVisibility.MEMBERS
+                AND (:currentMemberId IS NOT NULL
+                    AND (f.member.id = :currentMemberId
+                         OR EXISTS (
+                             SELECT 1 FROM Participants p
+                             WHERE p.together.id = f.together.id
+                               AND p.member.id = :currentMemberId
+                               AND p.participantsStatus = com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING
+                         ))))
+          )
+        ORDER BY f.commentCount DESC, f.createdAt DESC
+        LIMIT :limit
+        """)
+    List<Feed> findTopByCommentCountWithVisibility(
+            @Param("currentMemberId") Long currentMemberId,
+            @Param("limit") int limit
+    );
+
     /**
-     * 북마크 많은 피드 Top 20
-     * 
-     * 사용 예:
-     * - 홈 화면: "가장 많이 저장된 게시물"
+     * 북마크 많은 피드 Top N (visibility 필터 적용)
+     *
+     * @param currentMemberId 현재 로그인한 회원 ID (null이면 비로그인 → PUBLIC/FOLLOWERS만)
+     * @param limit           조회할 개수
      */
-    List<Feed> findTop20ByDeletedAtIsNullOrderByBookmarkCountDescCreatedAtDesc();
+    @Query("""
+        SELECT f FROM Feed f
+        WHERE f.deletedAt IS NULL
+          AND (
+            f.visibility IN (
+                com.back.domain.feed.entity.FeedVisibility.PUBLIC,
+                com.back.domain.feed.entity.FeedVisibility.FOLLOWERS
+            )
+            OR (f.visibility = com.back.domain.feed.entity.FeedVisibility.PRIVATE
+                AND (:currentMemberId IS NOT NULL AND f.member.id = :currentMemberId))
+            OR (f.visibility = com.back.domain.feed.entity.FeedVisibility.MEMBERS
+                AND (:currentMemberId IS NOT NULL
+                    AND (f.member.id = :currentMemberId
+                         OR EXISTS (
+                             SELECT 1 FROM Participants p
+                             WHERE p.together.id = f.together.id
+                               AND p.member.id = :currentMemberId
+                               AND p.participantsStatus = com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING
+                         ))))
+          )
+        ORDER BY f.bookmarkCount DESC, f.createdAt DESC
+        LIMIT :limit
+        """)
+    List<Feed> findTopByBookmarkCountWithVisibility(
+            @Param("currentMemberId") Long currentMemberId,
+            @Param("limit") int limit
+    );
     
     // ========== 공지 피드 조회 ==========
     
