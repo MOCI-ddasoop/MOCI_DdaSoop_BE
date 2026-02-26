@@ -117,7 +117,7 @@ public class TogetherDto {
                     (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
                             ? together.getImageUrls()
                             : null,
-                    null, // TODO: 추후에 goal 정보 매핑
+                    together.getGoalFeedCount(),
                     null, // TODO: 추후에 progress 정보 매핑
                     false
             );
@@ -136,7 +136,7 @@ public class TogetherDto {
                     (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
                             ? together.getImageUrls()
                             : null,
-                    null, // TODO: 추후에 goal 정보 매핑
+                    together.getGoalFeedCount(),
                     null, // TODO: 추후에 progress 정보 매핑
                     verifiedToday
             );
