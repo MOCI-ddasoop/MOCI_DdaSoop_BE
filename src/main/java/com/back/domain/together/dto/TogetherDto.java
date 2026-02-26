@@ -26,7 +26,8 @@ public class TogetherDto {
             @NotNull LocalDate endDate,
             Long memberId,
             @Size(max = 5, message = "최대 5개의 이미지 URL을 허용합니다.")
-            List<String> imageUrls
+            List<String> imageUrls,
+            Long goalFeedCount
     ) {
     }
 
@@ -172,6 +173,7 @@ public class TogetherDto {
             LocalDate startDate,
             LocalDate endDate,
             String thumbnailImageUrl,
+            Long goalFeedCount,
             Long memberId
     ) {
         public static CreateResponse from(Together together) {
@@ -187,6 +189,7 @@ public class TogetherDto {
                     together.getStartDate(),
                     together.getEndDate(),
                     thumbnail,
+                    together.getGoalFeedCount(),
                     together.getMember().getId()
             );
         }

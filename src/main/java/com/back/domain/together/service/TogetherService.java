@@ -140,12 +140,6 @@ public class TogetherService {
         Member organizer = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원번호:"+memberId+"회원 없음"));
 
-//        String thumbnail = null;
-//
-//        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
-//            thumbnail = request.imageUrls().getFirst();
-//        }
-
         Together together = Together.builder()
                 .title(request.title())
                 .description(request.description())
@@ -155,6 +149,7 @@ public class TogetherService {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .imageUrls(request.imageUrls())
+                .goalFeedCount(request.goalFeedCount())
                 .member(organizer)
                 .togetherStatus(TogetherStatus.RECRUITING)
                 .build();

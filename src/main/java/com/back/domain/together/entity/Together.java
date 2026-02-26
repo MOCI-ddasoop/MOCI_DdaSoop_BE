@@ -62,4 +62,7 @@ public class Together extends BaseEntity {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private TogetherStatus togetherStatus;
+
+    @Column(name = "goal_feed")
+    private Long goalFeedCount;
 }
