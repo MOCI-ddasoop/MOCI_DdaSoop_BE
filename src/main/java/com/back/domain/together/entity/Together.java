@@ -55,7 +55,8 @@ public class Together extends BaseEntity {
     @JoinColumn(name = "organizer_id") // 함께하기 만든 사람 && 운영자, 주최자, 소유자
     private Member member;
 
-    @OneToMany(mappedBy = "together", fetch = FetchType.LAZY)// 함께하기 참가자들
+    @Builder.Default
+    @OneToMany(mappedBy = "together", cascade = CascadeType.ALL, fetch = FetchType.LAZY)// 함께하기 참가자들
     private List<Participants> participants = new ArrayList<>();
 
     @Column(name = "status")

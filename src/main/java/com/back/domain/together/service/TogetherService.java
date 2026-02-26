@@ -134,6 +134,7 @@ public class TogetherService {
         return togethers.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
+    // 함께하기 생성
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
 
         Member organizer = memberRepository.findById(memberId)
@@ -158,6 +159,8 @@ public class TogetherService {
                 .togetherStatus(TogetherStatus.RECRUITING)
                 .build();
 
+        Participants.create(together, organizer);
+
         return TogetherDto.CreateResponse.from(togetherRepository.save(together));
     }
 
@@ -178,13 +181,13 @@ public class TogetherService {
         Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
                 .orElse(null);
 
-        // Participants가 없으면 새로 생성
+        // Participants가 없으면 새로 생성, 있으면 상태 업데이트
         if (participants == null) {
-            participantsRepository.save(Participants.create(together, member));
-            return "참여가 완료되었습니다.";
+            participantsRepository.save(Participants.participateMember(together, member));
+        } else {
+            participants.participate();
         }
 
-        participants.participate();
         return "참여가 완료되었습니다.";
     }
 
