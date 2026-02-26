@@ -50,6 +50,17 @@ public class Participants extends BaseEntity {
         return p;
     }
 
+    public static Participants participateMember(Together together, Member member) {
+        Participants p = new Participants();
+        p.together = together;
+        p.member = member;
+        p.participantsStatus = ParticipantsStatus.PARTICIPATING;
+        p.joinAt = LocalDateTime.now();
+        p.participantRole = ParticipantRole.MEMBER;
+        together.getParticipants().add(p);
+        return p;
+    }
+
     public void participate(){
         if (this.participantsStatus == ParticipantsStatus.PARTICIPATING) {
             throw new IllegalStateException("이미 참여 중인 참가자입니다.");
@@ -59,6 +70,7 @@ public class Participants extends BaseEntity {
         }
         this.participantsStatus = ParticipantsStatus.PARTICIPATING;
         this.joinAt = LocalDateTime.now();
+        this.participantRole = ParticipantRole.MEMBER;
     }
 
     public void leave(){

@@ -170,7 +170,6 @@ public class DonationService {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .imageUrls(request.imageUrls())
-                .status(request.status())
                 .donationCategory(request.category())
                 .member(member)
                 .build();

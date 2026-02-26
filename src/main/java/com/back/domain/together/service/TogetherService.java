@@ -1,5 +1,6 @@
 package com.back.domain.together.service;
 
+import com.back.domain.feed.repository.FeedRepository;
 import com.back.domain.notification.entity.NotificationTargetType;
 import com.back.domain.notification.entity.NotificationType;
 import com.back.domain.notification.service.NotificationService;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -27,6 +30,7 @@ public class TogetherService {
     private final MemberRepository memberRepository;
     private final ParticipantsRepository participantsRepository;
     private final NotificationService notificationService;
+    private final FeedRepository feedRepository;
 
     // 1페이지는 11개, 2페이지부터 12개
     // 최신순, 마감임박순, 인기순 통합
@@ -95,10 +99,21 @@ public class TogetherService {
         return (int) (1 + pagesAfter);
     }
 
-    public TogetherDto.DetailResponse getTogether(Long id) {
-        Together together = togetherRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id+"번 함께하기 없음"));
-        return TogetherDto.DetailResponse.from(together);
+    public TogetherDto.DetailResponse getTogether(Long togetherId, Long memberId) {
+
+        Together together = togetherRepository.findById(togetherId)
+                .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
+
+        boolean verifiedToday = false;
+
+        if(memberId != null){
+            // 인증 여부
+            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+            Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
+            verifiedToday = cnt != null && cnt > 0;
+        }
+        return TogetherDto.DetailResponse.of(together, verifiedToday);
     }
 
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
@@ -123,6 +138,7 @@ public class TogetherService {
         return togethers.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
+    // 함께하기 생성
     @Transactional
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
 
@@ -137,9 +153,13 @@ public class TogetherService {
                 .capacity(request.capacity())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
+                .imageUrls(request.imageUrls())
                 .member(organizer)
                 .togetherStatus(TogetherStatus.RECRUITING)
                 .build();
+
+        // 방장을 LEADER로 참여자 자동 등록
+        Participants.create(together, organizer);
 
         Together saved = togetherRepository.save(together);
 
@@ -173,9 +193,9 @@ public class TogetherService {
         Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
                 .orElse(null);
 
-        // Participants가 없으면 새로 생성
+        // Participants가 없으면 새로 생성, 있으면 상태 업데이트
         if (participants == null) {
-            participantsRepository.save(Participants.create(together, member));
+            participantsRepository.save(Participants.participateMember(together, member));
         } else {
             participants.participate();
         }

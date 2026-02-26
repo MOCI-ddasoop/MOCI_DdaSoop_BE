@@ -206,7 +206,7 @@ public class DonationController {
     public ResponseEntity<RsData<DonationDto.CreateResponse>> create(
             @Valid @RequestBody DonationDto.CreateRequest request
     ) {
-        Long memberId = 1L;
+        Long memberId = getCurrentMemberId();
         DonationDto.CreateResponse response = donationService.createDonation(request, memberId);
         return ResponseEntity.ok(RsData.success("후원하기 게시글 등록 성공", response));
     }

@@ -165,6 +165,11 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             limit = Math.max(limit - pinnedFeeds.size(), 1);
         }
 
+        com.querydsl.core.types.dsl.NumberExpression<Integer> unpinnedPriority =
+                new com.querydsl.core.types.dsl.CaseBuilder()
+                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)).then(1)
+                    .otherwise(0);
+
         BooleanBuilder unpinnedBuilder = new BooleanBuilder();
         unpinnedBuilder.and(feed.together.id.eq(togetherId));
         unpinnedBuilder.and(feed.isPinned.isFalse());
@@ -175,7 +180,10 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
                 .where(unpinnedBuilder)
-                .orderBy(feed.createdAt.desc())
+                .orderBy(
+                    unpinnedPriority.desc(),
+                    feed.createdAt.desc()
+                )
                 .limit(limit)
                 .fetch();
 
