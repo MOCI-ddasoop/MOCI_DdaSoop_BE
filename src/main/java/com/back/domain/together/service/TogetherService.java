@@ -105,15 +105,12 @@ public class TogetherService {
                 .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
 
         boolean verifiedToday = false;
-        Long progress = null;
+        Long progress = feedRepository.countVerificationByTogether(togetherId);
 
         if(memberId != null){
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
             Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
             verifiedToday = cnt != null && cnt > 0;
-
-            // 본인이 해당 Together에 올린 인증 피드 총 개수
-            progress = feedRepository.countVerificationByMemberAndTogether(memberId, togetherId);
         }
 
         return new TogetherDto.DetailResponse(

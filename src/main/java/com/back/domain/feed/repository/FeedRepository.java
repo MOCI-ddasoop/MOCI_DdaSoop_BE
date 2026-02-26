@@ -159,19 +159,16 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
     // ========== progress 계산 ==========
 
     /**
-     * 특정 회원이 특정 함께하기에 올린 인증 피드 총 개수 (progress 계산용)
+     * 특정 함께하기의 전체 멤버 인증 피드 총 개수 (progress 계산용)
      *
-     * @param memberId   회원 ID
      * @param togetherId 함께하기 ID
      * @return 인증 피드 총 개수
      */
     @Query("SELECT COUNT(f) FROM Feed f " +
-           "WHERE f.member.id = :memberId " +
-           "AND f.together.id = :togetherId " +
+           "WHERE f.together.id = :togetherId " +
            "AND f.feedType = com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION " +
            "AND f.deletedAt IS NULL")
-    Long countVerificationByMemberAndTogether(
-            @Param("memberId") Long memberId,
+    Long countVerificationByTogether(
             @Param("togetherId") Long togetherId
     );
 }
