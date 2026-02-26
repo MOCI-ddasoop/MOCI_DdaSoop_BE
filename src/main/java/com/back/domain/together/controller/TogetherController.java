@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+@Tag(name = "Together", description = "함께하기 API")
 @RestController
 @RequestMapping("/api/v1/together")
 @RequiredArgsConstructor
@@ -44,6 +45,14 @@ public class TogetherController {
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
         return (Long) authentication.getPrincipal();
+    }
+
+    private Long getCurrentMemberIdOrNull() {
+        try {
+            return getCurrentMemberId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Operation(summary = "전체 함께하기 조회")
@@ -87,7 +96,10 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.DetailResponse>> getTogether(
             @PathVariable Long id
     ) {
-        TogetherDto.DetailResponse response = togetherService.getTogether(id);
+        Long memberId = getCurrentMemberIdOrNull();
+
+        TogetherDto.DetailResponse response = togetherService.getTogether(id, memberId);
+
         return ResponseEntity.ok().body(RsData.success("함께하기 상세 조회 성공", response));
     }
 

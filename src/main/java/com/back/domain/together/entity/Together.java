@@ -42,14 +42,21 @@ public class Together extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "thumbnail_image_url")
-    private String thumbnailImageUrl;
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(
+            name = "together_images",
+            joinColumns = @JoinColumn(name = "together_id")
+    )
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id") // 함께하기 만든 사람 && 운영자, 주최자, 소유자
     private Member member;
 
-    @OneToMany(mappedBy = "together", fetch = FetchType.LAZY)// 함께하기 참가자들
+    @Builder.Default
+    @OneToMany(mappedBy = "together", cascade = CascadeType.ALL, fetch = FetchType.LAZY)// 함께하기 참가자들
     private List<Participants> participants = new ArrayList<>();
 
     @Column(name = "status")
