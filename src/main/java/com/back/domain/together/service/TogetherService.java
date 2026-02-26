@@ -106,7 +106,7 @@ public class TogetherService {
             // 인증 여부
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
-            Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(togetherId, memberId, startOfToday);
+            Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
             verifiedToday = cnt != null && cnt > 0;
         }
         return TogetherDto.DetailResponse.of(together, verifiedToday);
@@ -140,11 +140,11 @@ public class TogetherService {
         Member organizer = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원번호:"+memberId+"회원 없음"));
 
-        String thumbnail = null;
-
-        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
-            thumbnail = request.imageUrls().getFirst();
-        }
+//        String thumbnail = null;
+//
+//        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+//            thumbnail = request.imageUrls().getFirst();
+//        }
 
         Together together = Together.builder()
                 .title(request.title())
