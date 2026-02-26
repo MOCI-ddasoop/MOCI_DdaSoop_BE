@@ -1,5 +1,8 @@
 package com.back.domain.together.service;
 
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.together.dto.TogetherDto;
@@ -23,6 +26,7 @@ public class TogetherService {
     private final TogetherRepository togetherRepository;
     private final MemberRepository memberRepository;
     private final ParticipantsRepository participantsRepository;
+    private final NotificationService notificationService;
 
     // 1페이지는 11개, 2페이지부터 12개
     // 최신순, 마감임박순, 인기순 통합
@@ -119,6 +123,7 @@ public class TogetherService {
         return togethers.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
+    @Transactional
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
 
         Member organizer = memberRepository.findById(memberId)
@@ -136,9 +141,21 @@ public class TogetherService {
                 .togetherStatus(TogetherStatus.RECRUITING)
                 .build();
 
-        return TogetherDto.CreateResponse.from(togetherRepository.save(together));
+        Together saved = togetherRepository.save(together);
+
+        // 모임 생성 알림 → 본인에게
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_CREATE,
+                NotificationTargetType.TOGETHER,
+                saved.getId()
+        );
+
+        return TogetherDto.CreateResponse.from(saved);
     }
 
+    @Transactional
     public String participate(Long togetherId, Long memberId) {
 
         // Together 조회
@@ -159,21 +176,66 @@ public class TogetherService {
         // Participants가 없으면 새로 생성
         if (participants == null) {
             participantsRepository.save(Participants.create(together, member));
-            return "참여가 완료되었습니다.";
+        } else {
+            participants.participate();
         }
 
-        participants.participate();
+        Long organizerId = together.getMember().getId();
+
+        // 모임장에게 알림 → "님이 참여했습니다" (본인이 모임장이면 NotificationService에서 자동 차단)
+        notificationService.createNotification(
+                organizerId,
+                memberId,
+                NotificationType.TOGETHER_JOIN,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
+        // 참여자 본인에게 알림 → "참여가 완료되었습니다"
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_PARTICIPATE,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
         return "참여가 완료되었습니다.";
     }
 
     @Transactional
     public String leave(Long togetherId, Long memberId) {
 
+        // Together 조회 (모임장 ID 확인용)
+        Together together = togetherRepository.findById(togetherId)
+                .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번 함께하기 없습니다."));
+
         // Participants 조회
         Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
                 .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번, 회원번호: "+memberId+" 번 참가자 정보가 없습니다."));
 
         participants.leave();
+
+        Long organizerId = together.getMember().getId();
+
+        // 탈퇴한 본인에게 알림 → "탈퇴가 완료되었습니다"
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_LEAVE,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
+        // 모임장에게 알림 → "님이 탈퇴했습니다" (본인이 모임장이면 NotificationService에서 자동 차단)
+        notificationService.createNotification(
+                organizerId,
+                memberId,
+                NotificationType.TOGETHER_LEAVE_MEMBER,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
         return "탈퇴가 완료되었습니다.";
     }
 
@@ -192,6 +254,15 @@ public class TogetherService {
                 .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번, 회원번호: "+targetId+" 번 참가자 정보가 없습니다."));
 
         participants.drop();
+
+        // 강퇴된 회원에게 알림 → "강퇴되었습니다"
+        notificationService.createNotification(
+                targetId,
+                null,
+                NotificationType.TOGETHER_DROP,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
 
         return "강퇴가 완료되었습니다.";
     }
