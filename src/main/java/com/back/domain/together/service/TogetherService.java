@@ -100,10 +100,15 @@ public class TogetherService {
         Together together = togetherRepository.findById(togetherId)
                 .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
 
+//         TODO: 함께하기 상세 조회 시, 진행률 계산 (goalFeedCount, currentFeedCount)
+//        Long goalFeedCount = together.getGoalFeedCount() != null ? together.getGoalFeedCount() : 0L;
+//        Long currentFeedCount = feedRepository.countByTogetherId(togetherId);
+//        Long progress = goalFeedCount > 0 ? ((currentFeedCount * 100) / goalFeedCount) : 0L;
+
+        // 인증 여부
         boolean verifiedToday = false;
 
         if(memberId != null){
-            // 인증 여부
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
             Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
