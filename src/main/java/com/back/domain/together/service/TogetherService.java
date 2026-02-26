@@ -104,21 +104,35 @@ public class TogetherService {
         Together together = togetherRepository.findById(togetherId)
                 .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
 
-//         TODO: 함께하기 상세 조회 시, 진행률 계산 (goalFeedCount, currentFeedCount)
-//        Long goalFeedCount = together.getGoalFeedCount() != null ? together.getGoalFeedCount() : 0L;
-//        Long currentFeedCount = feedRepository.countByTogetherId(togetherId);
-//        Long progress = goalFeedCount > 0 ? ((currentFeedCount * 100) / goalFeedCount) : 0L;
-
-        // 인증 여부
         boolean verifiedToday = false;
+        Long progress = null;
 
         if(memberId != null){
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-
             Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
             verifiedToday = cnt != null && cnt > 0;
+
+            // 본인이 해당 Together에 올린 인증 피드 총 개수
+            progress = feedRepository.countVerificationByMemberAndTogether(memberId, togetherId);
         }
-        return TogetherDto.DetailResponse.of(together, verifiedToday);
+
+        return new TogetherDto.DetailResponse(
+                together.getId(),
+                together.getTitle(),
+                together.getCategory(),
+                together.getMode(),
+                together.getCapacity(),
+                together.getStartDate(),
+                together.getEndDate(),
+                together.getMember().getId(),
+                together.getParticipants().stream().map(TogetherDto.ParticipantsResponse::from).toList(),
+                (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                        ? together.getImageUrls()
+                        : null,
+                together.getGoalFeedCount(),
+                progress,
+                verifiedToday
+        );
     }
 
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
