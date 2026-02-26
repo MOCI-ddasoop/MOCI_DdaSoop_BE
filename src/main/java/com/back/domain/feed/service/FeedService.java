@@ -265,9 +265,11 @@ public class FeedService {
             List<Feed> unpinnedFeeds = feeds.stream().filter(f -> !f.getIsPinned()).toList();
             List<Feed> pinnedFeeds = feeds.stream().filter(Feed::getIsPinned).toList();
 
-            boolean hasNext = unpinnedFeeds.size() > (requestedSize - pinnedFeeds.size());
-            int unpinnedSlotSize = requestedSize - pinnedFeeds.size();
-            List<Feed> actualUnpinned = hasNext ? unpinnedFeeds.subList(0, unpinnedSlotSize) : unpinnedFeeds;
+            boolean hasNext = unpinnedFeeds.size() > Math.max(requestedSize - pinnedFeeds.size(), 0);
+            int unpinnedSlotSize = Math.max(requestedSize - pinnedFeeds.size(), 0);
+            List<Feed> actualUnpinned = (hasNext && unpinnedSlotSize > 0)
+                    ? unpinnedFeeds.subList(0, unpinnedSlotSize)
+                    : (unpinnedSlotSize <= 0 ? List.of() : unpinnedFeeds);
 
             List<Feed> actualFeeds = new ArrayList<>(pinnedFeeds);
             actualFeeds.addAll(actualUnpinned);
