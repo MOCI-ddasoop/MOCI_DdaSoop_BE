@@ -160,7 +160,7 @@ public class TogetherController {
     public ResponseEntity<RsData<TogetherDto.CreateResponse>> create(
             @Valid @RequestBody TogetherDto.CreateRequest request
             ) {
-        Long organizerId = getCurrentMemberId();
+        Long organizerId = getCurrentMemberIdOrNull();
         TogetherDto.CreateResponse response = togetherService.create(request, organizerId);
         return ResponseEntity.status(201).body(RsData.success("함께하기 게시글이 등록되었습니다.", response));
     }
@@ -177,7 +177,7 @@ public class TogetherController {
     public ResponseEntity<RsData<String>> participate(
             @PathVariable Long togetherId
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = getCurrentMemberIdOrNull();
         String rsData = togetherService.participate(togetherId, memberId);
         return ResponseEntity.status(201).body(RsData.success("함께하기 참여가 완료되었습니다.", rsData));
     }
@@ -194,7 +194,7 @@ public class TogetherController {
     public ResponseEntity<RsData<String>> leave(
             @PathVariable Long togetherId
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = getCurrentMemberIdOrNull();
         String rsData = togetherService.leave(togetherId, memberId);
         return ResponseEntity.ok().body(RsData.success("함께하기에서 탈퇴되었습니다.", rsData));
     }
@@ -212,7 +212,7 @@ public class TogetherController {
             @PathVariable Long togetherId,
             @PathVariable Long targetId
     ) {
-        Long requestId = getCurrentMemberId();
+        Long requestId = getCurrentMemberIdOrNull();
         String rsData = togetherService.drop(togetherId, targetId, requestId);
         return ResponseEntity.ok().body(RsData.success("함께하기에서 강퇴되었습니다.", rsData));
     }
