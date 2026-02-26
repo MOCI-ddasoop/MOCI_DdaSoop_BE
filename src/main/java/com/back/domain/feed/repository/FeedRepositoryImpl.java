@@ -165,11 +165,6 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             limit = Math.max(limit - pinnedFeeds.size(), 1);
         }
 
-        com.querydsl.core.types.dsl.NumberExpression<Integer> unpinnedPriority =
-                new com.querydsl.core.types.dsl.CaseBuilder()
-                    .when(feed.feedType.eq(com.back.domain.feed.entity.FeedType.TOGETHER_NOTICE)).then(1)
-                    .otherwise(0);
-
         BooleanBuilder unpinnedBuilder = new BooleanBuilder();
         unpinnedBuilder.and(feed.together.id.eq(togetherId));
         unpinnedBuilder.and(feed.isPinned.isFalse());
@@ -180,10 +175,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
                 .where(unpinnedBuilder)
-                .orderBy(
-                    unpinnedPriority.desc(),
-                    feed.createdAt.desc()
-                )
+                .orderBy(feed.createdAt.desc())
                 .limit(limit)
                 .fetch();
 
@@ -404,13 +396,16 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                         )
                         .exists();
 
-        com.querydsl.core.types.dsl.BooleanExpression membersCondition =
-                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.MEMBERS)
+        com.querydsl.core.types.dsl.BooleanExpression membersOrNoticeCondition =
+                feed.visibility.in(
+                        com.back.domain.feed.entity.FeedVisibility.MEMBERS,
+                        com.back.domain.feed.entity.FeedVisibility.NOTICE
+                )
                 .and(isOwner.or(isMember));
 
         return isPublicOrFollowers
                 .or(privateCondition)
-                .or(membersCondition);
+                .or(membersOrNoticeCondition);
     }
 
     /**
@@ -433,7 +428,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                 feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.PRIVATE)
                 .and(isOwner);
 
-        // MEMBERS: togetherId를 직접 사용하여 서브쿼리 JOIN 문제 해결
+        // MEMBERS, NOTICE: togetherId를 직접 사용하여 서브쿼리 JOIN 문제 해결
         com.back.domain.together.entity.QParticipants qParticipants =
                 com.back.domain.together.entity.QParticipants.participants;
 
@@ -449,13 +444,16 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                         )
                         .exists();
 
-        com.querydsl.core.types.dsl.BooleanExpression membersCondition =
-                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.MEMBERS)
+        com.querydsl.core.types.dsl.BooleanExpression membersOrNoticeCondition =
+                feed.visibility.in(
+                        com.back.domain.feed.entity.FeedVisibility.MEMBERS,
+                        com.back.domain.feed.entity.FeedVisibility.NOTICE
+                )
                 .and(isOwner.or(isMember));
 
         return isPublicOrFollowers
                 .or(privateCondition)
-                .or(membersCondition);
+                .or(membersOrNoticeCondition);
     }
 
     /**
