@@ -150,7 +150,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
             pinnedBuilder.and(feed.together.id.eq(togetherId));
             pinnedBuilder.and(feed.isPinned.isTrue());
             pinnedBuilder.and(feed.deletedAt.isNull());
-            pinnedBuilder.and(createVisibilityCondition(feed, currentMemberId));
+            pinnedBuilder.and(createTogetherVisibilityCondition(feed, togetherId, currentMemberId));
 
             List<Feed> pinnedFeeds = queryFactory
                     .selectFrom(feed)
@@ -170,7 +170,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
         unpinnedBuilder.and(feed.isPinned.isFalse());
         unpinnedBuilder.and(feed.id.lt(cursorId));
         unpinnedBuilder.and(feed.deletedAt.isNull());
-        unpinnedBuilder.and(createVisibilityCondition(feed, currentMemberId));
+        unpinnedBuilder.and(createTogetherVisibilityCondition(feed, togetherId, currentMemberId));
 
         List<Feed> unpinnedFeeds = queryFactory
                 .selectFrom(feed)
@@ -390,6 +390,51 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                         .from(qParticipants)
                         .where(
                                 qParticipants.together.id.eq(feed.together.id)
+                                .and(qParticipants.member.id.eq(currentMemberId))
+                                .and(qParticipants.participantsStatus.eq(
+                                        com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING))
+                        )
+                        .exists();
+
+        com.querydsl.core.types.dsl.BooleanExpression membersCondition =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.MEMBERS)
+                .and(isOwner.or(isMember));
+
+        return isPublicOrFollowers
+                .or(privateCondition)
+                .or(membersCondition);
+    }
+
+    /**
+     * Together 피드 전용 Visibility 조건 생성
+     * togetherId가 이미 고정된 컨텍스트에서 사용 — MEMBERS 서브쿼리에 feed.together.id 대신 togetherId 직접 사용
+     */
+    private com.querydsl.core.types.Predicate createTogetherVisibilityCondition(QFeed feed, Long togetherId, Long currentMemberId) {
+        com.querydsl.core.types.dsl.BooleanExpression isPublicOrFollowers =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.PUBLIC)
+                .or(feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.FOLLOWERS));
+
+        if (currentMemberId == null) {
+            return isPublicOrFollowers;
+        }
+
+        com.querydsl.core.types.dsl.BooleanExpression isOwner =
+                feed.member.id.eq(currentMemberId);
+
+        com.querydsl.core.types.dsl.BooleanExpression privateCondition =
+                feed.visibility.eq(com.back.domain.feed.entity.FeedVisibility.PRIVATE)
+                .and(isOwner);
+
+        // MEMBERS: togetherId를 직접 사용하여 서브쿼리 JOIN 문제 해결
+        com.back.domain.together.entity.QParticipants qParticipants =
+                com.back.domain.together.entity.QParticipants.participants;
+
+        com.querydsl.core.types.dsl.BooleanExpression isMember =
+                com.querydsl.jpa.JPAExpressions
+                        .selectOne()
+                        .from(qParticipants)
+                        .where(
+                                qParticipants.together.id.eq(togetherId)
                                 .and(qParticipants.member.id.eq(currentMemberId))
                                 .and(qParticipants.participantsStatus.eq(
                                         com.back.domain.together.entity.ParticipantsStatus.PARTICIPATING))
