@@ -401,7 +401,9 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom {
                         com.back.domain.feed.entity.FeedVisibility.MEMBERS,
                         com.back.domain.feed.entity.FeedVisibility.NOTICE
                 )
-                .and(isOwner.or(isMember));
+                .and(isOwner.or(
+                        feed.together.isNotNull().and(isMember)
+                ));
 
         return isPublicOrFollowers
                 .or(privateCondition)
