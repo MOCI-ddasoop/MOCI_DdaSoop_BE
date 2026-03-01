@@ -226,4 +226,9 @@ public class Feed extends BaseEntity {
         this.visibility = visibility;
         this.contentUpdatedAt = LocalDateTime.now();
     }
+
+    public void updateFeedType(FeedType feedType) {
+        this.feedType = feedType;
+        this.contentUpdatedAt = LocalDateTime.now();
+    }
 }

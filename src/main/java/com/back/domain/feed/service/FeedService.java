@@ -152,7 +152,7 @@ public class FeedService {
                     throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
                 }
             }
-            case MEMBERS -> {
+            case MEMBERS, NOTICE -> {
                 // 작성자 본인 또는 해당 Together PARTICIPATING 멤버
                 if (currentMemberId == null) {
                     throw new IllegalArgumentException(ErrorCode.FEED_NOT_FOUND.getMessage());
@@ -307,6 +307,11 @@ public class FeedService {
         // 권한 체크 (작성자만 수정 가능)
         if (!feed.getMember().getId().equals(currentMemberId)) {
             throw new IllegalArgumentException(ErrorCode.FEED_FORBIDDEN.getMessage());
+        }
+
+        // 피드 타입 수정
+        if (request.getFeedType() != null) {
+            feed.updateFeedType(request.getFeedType());
         }
 
         // 내용 수정
