@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +32,14 @@ import java.util.List;
 public class AdminReportController {
 
     private final ReportService reportService;
+
+    private Long getCurrentMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증되지 않은 사용자입니다.");
+        }
+        return (Long) authentication.getPrincipal();
+    }
 
     // ========== 신고 목록 조회 ==========
 
@@ -172,10 +182,8 @@ public class AdminReportController {
     public ResponseEntity<ReportResponse> processReport(
             @PathVariable Long reportId,
             @Valid @RequestBody ReportProcessRequest request
-            // TODO: @AuthenticationPrincipal 또는 @CurrentAdmin으로 관리자 ID 가져오기
     ) {
-        // 임시: 관리자 ID (실제로는 JWT 토큰에서 추출)
-        Long adminId = 4L;  // DevInitData의 admin ID
+        Long adminId = getCurrentMemberId();
 
         if (request.getStatus() == ReportStatus.APPROVED) {
             reportService.approveReport(reportId, adminId, request.getAdminComment());
@@ -204,10 +212,8 @@ public class AdminReportController {
     @PutMapping("/{reportId}/review")
     public ResponseEntity<ReportResponse> startReview(
             @PathVariable Long reportId
-            // TODO: @AuthenticationPrincipal 또는 @CurrentAdmin으로 관리자 ID 가져오기
     ) {
-        // 임시: 관리자 ID
-        Long adminId = 4L;
+        Long adminId = getCurrentMemberId();
 
         reportService.startReview(reportId, adminId);
 

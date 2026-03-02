@@ -24,7 +24,17 @@ public enum NotificationType {
     TOGETHER_JOIN("님이 회원님의 함께하기 모임에 참여했습니다."),
     TOGETHER_START("함께하기 모임이 시작되었습니다."),
     TOGETHER_END("함께하기 모임이 종료되었습니다."),
-    
+    TOGETHER_CREATE("함께하기 모임이 생성되었습니다."),
+    TOGETHER_PARTICIPATE("함께하기 모임 참여가 완료되었습니다."),
+    TOGETHER_LEAVE("함께하기 모임에서 탈퇴했습니다."),
+    TOGETHER_LEAVE_MEMBER("님이 함께하기 모임에서 탈퇴했습니다."),
+    TOGETHER_DROP("함께하기 모임에서 강퇴되었습니다."),
+
+    // ========== Donation 관련 알림 ==========
+    DONATION_RECEIVED("님이 후원해주셨습니다."),
+    DONATION_COMPLETE("후원이 완료되었습니다."),
+    DONATION_NOTICE("후원 공지가 등록되었습니다."),
+
     // ========== Follow 관련 알림 ==========
     FOLLOW("님이 회원님을 팔로우했습니다."),
     

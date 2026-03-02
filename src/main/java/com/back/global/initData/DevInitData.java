@@ -434,6 +434,7 @@ public class DevInitData {
                 .startDate(LocalDate.now().plusDays(random.nextInt(startDayRange) + 1))
                 .endDate(LocalDate.now().plusDays(100)) // 100일 후 종료
                 .togetherStatus(TogetherStatus.RECRUITING)
+                .goalFeedCount(random.nextLong(100, 1000))
                 .member(organizer)
                 .build();
     }

@@ -35,6 +35,29 @@ public class CommentResponse {
     // 대상 엔티티 정보
     private Long targetId;  // feedId, togetherId, donationId
 
+    // 연관 피드 정보 (FEED 댓글인 경우)
+    private FeedInfo feedInfo;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FeedInfo {
+        private Long feedId;
+        private String feedContent;   // 피드 내용 미리보기
+        private boolean isDeleted;
+        private LocalDateTime deletedAt;
+
+        public static FeedInfo from(com.back.domain.feed.entity.Feed feed) {
+            return FeedInfo.builder()
+                    .feedId(feed.getId())
+                    .feedContent(feed.getContent())
+                    .isDeleted(feed.isDeleted())
+                    .deletedAt(feed.getDeletedAt())
+                    .build();
+        }
+    }
+
     // 부모 댓글 정보 (대댓글인 경우)
     private Long parentId;
     private boolean isReply;  // 대댓글 여부
@@ -69,6 +92,9 @@ public class CommentResponse {
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
@@ -109,6 +135,9 @@ public class CommentResponse {
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
@@ -147,6 +176,9 @@ public class CommentResponse {
                 .authorNickname(comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
                 .replies(null)  // 대댓글 제외

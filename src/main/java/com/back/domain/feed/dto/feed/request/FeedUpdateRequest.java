@@ -1,5 +1,6 @@
 package com.back.domain.feed.dto.feed.request;
 
+import com.back.domain.feed.entity.FeedType;
 import com.back.domain.feed.entity.FeedVisibility;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,8 @@ public class FeedUpdateRequest {
 
     @Size(max = 2000, message = "내용은 최대 2000자까지 입력 가능합니다.")
     private String content;
+
+    private FeedType feedType;
 
     @Size(max = 10, message = "이미지는 최대 10개까지 업로드 가능합니다.")
     @Builder.Default

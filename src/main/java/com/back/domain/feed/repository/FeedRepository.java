@@ -143,11 +143,6 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
     
     /**
      * 특정 회원이 특정 함께하기에 오늘 인증한 피드 개수
-     * 
-     * @param memberId 회원 ID
-     * @param togetherId 함께하기 ID
-     * @param startOfDay 오늘 시작 시간 (00:00:00)
-     * @return 오늘 인증한 피드 개수
      */
     @Query("SELECT COUNT(f) FROM Feed f " +
            "WHERE f.member.id = :memberId " +
@@ -159,5 +154,21 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
             @Param("memberId") Long memberId,
             @Param("togetherId") Long togetherId,
             @Param("startOfDay") java.time.LocalDateTime startOfDay
+    );
+
+    // ========== progress 계산 ==========
+
+    /**
+     * 특정 함께하기의 전체 멤버 인증 피드 총 개수 (progress 계산용)
+     *
+     * @param togetherId 함께하기 ID
+     * @return 인증 피드 총 개수
+     */
+    @Query("SELECT COUNT(f) FROM Feed f " +
+           "WHERE f.together.id = :togetherId " +
+           "AND f.feedType = com.back.domain.feed.entity.FeedType.TOGETHER_VERIFICATION " +
+           "AND f.deletedAt IS NULL")
+    Long countVerificationByTogether(
+            @Param("togetherId") Long togetherId
     );
 }
