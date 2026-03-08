@@ -1,6 +1,8 @@
 package com.back.domain.admin.controller;
 
 import com.back.domain.admin.dto.request.AdminMemberRoleUpdateRequest;
+import com.back.domain.admin.dto.response.AdminCommentSummaryResponse;
+import com.back.domain.admin.dto.response.AdminFeedSummaryResponse;
 import com.back.domain.admin.dto.response.AdminMemberDetailResponse;
 import com.back.domain.admin.dto.response.AdminMemberSummaryResponse;
 import com.back.domain.admin.dto.response.DashboardStatsResponse;
@@ -8,6 +10,8 @@ import com.back.domain.admin.service.AdminCommentService;
 import com.back.domain.admin.service.AdminDashboardService;
 import com.back.domain.admin.service.AdminFeedService;
 import com.back.domain.admin.service.AdminMemberService;
+import com.back.domain.comment.entity.CommentType;
+import com.back.domain.feed.entity.FeedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -148,6 +152,32 @@ public class AdminController {
 
     // ========== 피드 ==========
 
+    @Operation(summary = "피드 목록 페이징 (관리자)", description = "관리자용 피드 리스트를 필터/페이징하여 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = AdminFeedSummaryResponse.class))
+        )
+    })
+    @GetMapping("/feeds")
+    public ResponseEntity<Page<AdminFeedSummaryResponse>> getFeedPageForAdmin(
+            @RequestParam(required = false) FeedVisibility visibility,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false, defaultValue = "false") boolean reportedOnly,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AdminFeedSummaryResponse> result = adminFeedService.getFeedPageForAdmin(
+                visibility,
+                authorId,
+                reportedOnly,
+                pageable
+        );
+        return ResponseEntity.ok(result);
+    }
+
     @Operation(summary = "피드 강제 삭제", description = "피드를 강제 삭제합니다. (Soft Delete)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "삭제 성공"),
@@ -171,6 +201,32 @@ public class AdminController {
     }
 
     // ========== 댓글 ==========
+
+    @Operation(summary = "댓글 목록 페이징 (관리자)", description = "관리자용 댓글 리스트를 필터/페이징하여 조회합니다.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = AdminCommentSummaryResponse.class))
+        )
+    })
+    @GetMapping("/comments")
+    public ResponseEntity<Page<AdminCommentSummaryResponse>> getCommentPageForAdmin(
+            @RequestParam(required = false) CommentType commentType,
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false, defaultValue = "false") boolean reportedOnly,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AdminCommentSummaryResponse> result = adminCommentService.getCommentPageForAdmin(
+                commentType,
+                authorId,
+                reportedOnly,
+                pageable
+        );
+        return ResponseEntity.ok(result);
+    }
 
     @Operation(summary = "댓글 강제 삭제", description = "댓글을 강제 삭제합니다. (Soft Delete)")
     @ApiResponses({
