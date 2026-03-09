@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://moci-db:5432/ddasoop
+    username: postgres
+    password: ${POSTGRES_PASSWORD}
+
+app:
+  jpa:
+    hibernate:
+      ddl-auto: update
