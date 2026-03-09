@@ -1,16 +1,24 @@
 package com.back.domain.admin.service;
 
+import com.back.domain.admin.dto.response.AdminCommentSummaryResponse;
 import com.back.domain.comment.entity.Comment;
+import com.back.domain.comment.entity.CommentType;
 import com.back.domain.comment.repository.CommentRepository;
+import com.back.domain.report.entity.ReportTargetType;
+import com.back.domain.report.service.ReportService;
 import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
- * 관리자 댓글 제어 서비스.
- * CommentRepository만 사용 (comment 도메인 코드 수정 없음).
+ * 관리자 댓글 제어/조회 서비스.
  */
 @Slf4j
 @Service
@@ -18,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminCommentService {
 
     private final CommentRepository commentRepository;
+    private final ReportService reportService;
 
     /**
      * 댓글 강제 삭제 (soft delete)
@@ -33,4 +42,39 @@ public class AdminCommentService {
         commentRepository.save(comment);
         log.info("관리자 댓글 강제 삭제 - commentId: {}", commentId);
     }
+
+    /**
+     * 관리자용 댓글 리스트 조회 (필터 + 페이징).
+     * - commentType: FEED/TOGETHER/DONATION 필터
+     * - authorId: 작성자 필터
+     * - reportedOnly: 신고가 1건 이상 있는 댓글만
+     */
+    @Transactional(readOnly = true)
+    public Page<AdminCommentSummaryResponse> getCommentPageForAdmin(
+            CommentType commentType,
+            Long authorId,
+            Boolean reportedOnly,
+            Pageable pageable
+    ) {
+        Page<Comment> comments;
+        if (authorId != null) {
+            comments = commentRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(authorId, pageable);
+        } else {
+            comments = commentRepository.findAll(pageable);
+        }
+
+        List<AdminCommentSummaryResponse> content = comments.getContent().stream()
+                .filter(comment -> !comment.isDeleted())
+                .filter(comment -> commentType == null || comment.getCommentType() == commentType)
+                .map(comment -> {
+                    Long reportCount = reportService.getReportCount(ReportTargetType.COMMENT, comment.getId());
+                    return AdminCommentSummaryResponse.from(comment, reportCount);
+                })
+                .filter(dto -> reportedOnly == null || !reportedOnly || (dto.getReportCount() != null && dto.getReportCount() > 0))
+                .toList();
+
+        // 간단 구현: 필터 후 현재 페이지 기준 요소/total 유지
+        return new PageImpl<>(content, pageable, comments.getTotalElements());
+    }
 }
+

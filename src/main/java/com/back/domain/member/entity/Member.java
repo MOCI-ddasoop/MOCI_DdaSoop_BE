@@ -67,6 +67,8 @@ public class Member extends BaseEntity {
     private LocalDateTime deletedAt;
 
     public static final String WITHDRAWN_NAME = "탈퇴한 회원";
+    /** 탈퇴 회원 표시용 닉네임 (API 응답에서 사용, DB에는 저장하지 않음 - unique 제약으로 인해) */
+    public static final String WITHDRAWN_NICKNAME = "탈퇴한 회원";
 
     /** 탈퇴 시 이름·프로필 이미지를 익명 처리. 게시글/댓글 등에서 그대로 노출 */
     public void applyWithdrawnProfile() {
