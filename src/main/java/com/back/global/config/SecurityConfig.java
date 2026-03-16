@@ -78,7 +78,7 @@ public class SecurityConfig {
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
@@ -91,6 +91,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
+            "https://www.ddasoop.xyz",
+            "https://ddasoop.xyz",
             "http://localhost:3000",
             "http://127.0.0.1:3000"
         ));

@@ -1,0 +1,59 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  h2:
+    console:
+      enabled: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+          naver:
+            client-id: ${NAVER_CLIENT_ID}
+            client-secret: ${NAVER_CLIENT_SECRET}
+            redirect-uri: ${NAVER_REDIRECT_URI}
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY}
+  refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY}
+
+app:
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI}
+  auth:
+    dev-login-enabled: false
+  cookie:
+    secure: true
+    same-site: None
+    domain: ${COOKIE_DOMAIN}
+
+file:
+  server:
+    url: ${FILE_SERVER_URL}
