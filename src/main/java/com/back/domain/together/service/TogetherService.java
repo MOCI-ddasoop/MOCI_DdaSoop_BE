@@ -1,5 +1,9 @@
 package com.back.domain.together.service;
 
+import com.back.domain.feed.repository.FeedRepository;
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.together.dto.TogetherDto;
@@ -14,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -23,6 +29,8 @@ public class TogetherService {
     private final TogetherRepository togetherRepository;
     private final MemberRepository memberRepository;
     private final ParticipantsRepository participantsRepository;
+    private final NotificationService notificationService;
+    private final FeedRepository feedRepository;
 
     // 1페이지는 11개, 2페이지부터 12개
     // 최신순, 마감임박순, 인기순 통합
@@ -91,10 +99,38 @@ public class TogetherService {
         return (int) (1 + pagesAfter);
     }
 
-    public TogetherDto.DetailResponse getTogether(Long id) {
-        Together together = togetherRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id+"번 함께하기 없음"));
-        return TogetherDto.DetailResponse.from(together);
+    public TogetherDto.DetailResponse getTogether(Long togetherId, Long memberId) {
+
+        Together together = togetherRepository.findById(togetherId)
+                .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
+
+        boolean verifiedToday = false;
+        Long progress = feedRepository.countVerificationByTogether(togetherId);
+
+        if(memberId != null){
+            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
+            verifiedToday = cnt != null && cnt > 0;
+        }
+
+        return new TogetherDto.DetailResponse(
+                together.getId(),
+                together.getTitle(),
+                together.getDescription(),
+                together.getCategory(),
+                together.getMode(),
+                together.getCapacity(),
+                together.getStartDate(),
+                together.getEndDate(),
+                together.getMember().getId(),
+                together.getParticipants().stream().map(TogetherDto.ParticipantsResponse::from).toList(),
+                (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                        ? together.getImageUrls()
+                        : null,
+                together.getGoalFeedCount(),
+                progress,
+                verifiedToday
+        );
     }
 
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
@@ -119,6 +155,8 @@ public class TogetherService {
         return togethers.stream().map(TogetherDto.DetailResponse::from).toList();
     }
 
+    // 함께하기 생성
+    @Transactional
     public TogetherDto.CreateResponse create(TogetherDto.CreateRequest request, Long memberId) {
 
         Member organizer = memberRepository.findById(memberId)
@@ -132,13 +170,30 @@ public class TogetherService {
                 .capacity(request.capacity())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
+                .imageUrls(request.imageUrls())
+                .goalFeedCount(request.goalFeedCount())
                 .member(organizer)
                 .togetherStatus(TogetherStatus.RECRUITING)
                 .build();
 
-        return TogetherDto.CreateResponse.from(togetherRepository.save(together));
+        // 방장을 LEADER로 참여자 자동 등록
+        Participants.create(together, organizer);
+
+        Together saved = togetherRepository.save(together);
+
+        // 모임 생성 알림 → 본인에게
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_CREATE,
+                NotificationTargetType.TOGETHER,
+                saved.getId()
+        );
+
+        return TogetherDto.CreateResponse.from(saved);
     }
 
+    @Transactional
     public String participate(Long togetherId, Long memberId) {
 
         // Together 조회
@@ -156,24 +211,69 @@ public class TogetherService {
         Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
                 .orElse(null);
 
-        // Participants가 없으면 새로 생성
+        // Participants가 없으면 새로 생성, 있으면 상태 업데이트
         if (participants == null) {
-            participantsRepository.save(Participants.create(together, member));
-            return "참여가 완료되었습니다.";
+            participantsRepository.save(Participants.participateMember(together, member));
+        } else {
+            participants.participate();
         }
 
-        participants.participate();
+        Long organizerId = together.getMember().getId();
+
+        // 모임장에게 알림 → "님이 참여했습니다" (본인이 모임장이면 NotificationService에서 자동 차단)
+        notificationService.createNotification(
+                organizerId,
+                memberId,
+                NotificationType.TOGETHER_JOIN,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
+        // 참여자 본인에게 알림 → "참여가 완료되었습니다"
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_PARTICIPATE,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
         return "참여가 완료되었습니다.";
     }
 
     @Transactional
     public String leave(Long togetherId, Long memberId) {
 
+        // Together 조회 (모임장 ID 확인용)
+        Together together = togetherRepository.findById(togetherId)
+                .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번 함께하기 없습니다."));
+
         // Participants 조회
         Participants participants = participantsRepository.findByTogetherIdAndMemberId(togetherId, memberId)
                 .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번, 회원번호: "+memberId+" 번 참가자 정보가 없습니다."));
 
         participants.leave();
+
+        Long organizerId = together.getMember().getId();
+
+        // 탈퇴한 본인에게 알림 → "탈퇴가 완료되었습니다"
+        notificationService.createNotification(
+                memberId,
+                null,
+                NotificationType.TOGETHER_LEAVE,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
+        // 모임장에게 알림 → "님이 탈퇴했습니다" (본인이 모임장이면 NotificationService에서 자동 차단)
+        notificationService.createNotification(
+                organizerId,
+                memberId,
+                NotificationType.TOGETHER_LEAVE_MEMBER,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
+
         return "탈퇴가 완료되었습니다.";
     }
 
@@ -192,6 +292,15 @@ public class TogetherService {
                 .orElseThrow(() -> new IllegalArgumentException("함께하기 번호: "+togetherId+" 번, 회원번호: "+targetId+" 번 참가자 정보가 없습니다."));
 
         participants.drop();
+
+        // 강퇴된 회원에게 알림 → "강퇴되었습니다"
+        notificationService.createNotification(
+                targetId,
+                null,
+                NotificationType.TOGETHER_DROP,
+                NotificationTargetType.TOGETHER,
+                togetherId
+        );
 
         return "강퇴가 완료되었습니다.";
     }

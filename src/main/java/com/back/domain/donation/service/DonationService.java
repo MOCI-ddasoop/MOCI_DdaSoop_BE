@@ -1,5 +1,8 @@
 package com.back.domain.donation.service;
 
+import com.back.domain.notification.entity.NotificationTargetType;
+import com.back.domain.notification.entity.NotificationType;
+import com.back.domain.notification.service.NotificationService;
 import com.back.domain.donation.client.TossPaymentsClient;
 import com.back.domain.donation.dto.*;
 import com.back.domain.donation.entity.*;
@@ -28,6 +31,7 @@ public class DonationService {
     private final TossPaymentRepository tossPaymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
     
     public DonationDto.PageResponse<DonationDto.ListResponse> getAllDonations(
             List<DonationCategory> categories,
@@ -166,7 +170,6 @@ public class DonationService {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .imageUrls(request.imageUrls())
-                .status(request.status())
                 .donationCategory(request.category())
                 .member(member)
                 .build();
@@ -193,6 +196,18 @@ public class DonationService {
                 .build();
 
         donationNoticeRepository.save(notice);
+
+        // 후원 참여자 전체에게 공지 알림 → "후원 공지가 등록되었습니다"
+        List<DonationPayments> participants = donationPaymentsRepository.findAllDonorList(donationId);
+        for (DonationPayments participant : participants) {
+            notificationService.createNotification(
+                    participant.getMember().getId(),
+                    memberId,
+                    NotificationType.DONATION_NOTICE,
+                    NotificationTargetType.DONATION,
+                    donationId
+            );
+        }
 
         return DonationNoticeDto.CreateResponse.from(notice);
     }
@@ -238,6 +253,24 @@ public class DonationService {
 
         if (TossPaymentStatus.DONE.name().equals(tossResponse.status())) {
             donation.increaseAmount(tossResponse.totalAmount());
+
+            // 후원 개설자에게 알림 → "님이 후원해주셨습니다" (본인이 개설자이면 NotificationService에서 자동 차단)
+            notificationService.createNotification(
+                    donation.getMember().getId(),
+                    memberId,
+                    NotificationType.DONATION_RECEIVED,
+                    NotificationTargetType.DONATION,
+                    donationId
+            );
+
+            // 후원자 본인에게 알림 → "후원이 완료되었습니다"
+            notificationService.createNotification(
+                    memberId,
+                    null,
+                    NotificationType.DONATION_COMPLETE,
+                    NotificationTargetType.DONATION,
+                    donationId
+            );
         }
 
         // 프론트로 응답

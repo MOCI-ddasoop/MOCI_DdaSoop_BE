@@ -2,6 +2,7 @@ package com.back.domain.comment.dto.response;
 
 import com.back.domain.comment.entity.Comment;
 import com.back.domain.comment.entity.CommentType;
+import com.back.domain.member.entity.Member;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,6 +36,29 @@ public class CommentResponse {
     // 대상 엔티티 정보
     private Long targetId;  // feedId, togetherId, donationId
 
+    // 연관 피드 정보 (FEED 댓글인 경우)
+    private FeedInfo feedInfo;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FeedInfo {
+        private Long feedId;
+        private String feedContent;   // 피드 내용 미리보기
+        private boolean isDeleted;
+        private LocalDateTime deletedAt;
+
+        public static FeedInfo from(com.back.domain.feed.entity.Feed feed) {
+            return FeedInfo.builder()
+                    .feedId(feed.getId())
+                    .feedContent(feed.getContent())
+                    .isDeleted(feed.isDeleted())
+                    .deletedAt(feed.getDeletedAt())
+                    .build();
+        }
+    }
+
     // 부모 댓글 정보 (대댓글인 경우)
     private Long parentId;
     private boolean isReply;  // 대댓글 여부
@@ -51,6 +75,7 @@ public class CommentResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime contentUpdatedAt; // 내용 수정 시점 (최초엔 createdAt과 동일)
 
     /**
      * Entity -> DTO 변환 (대댓글 포함)
@@ -64,10 +89,13 @@ public class CommentResponse {
                 // 작성자 정보
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
@@ -88,6 +116,7 @@ public class CommentResponse {
                 .isReacted(false)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 
@@ -103,10 +132,13 @@ public class CommentResponse {
                 // 작성자 정보
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 // 부모 댓글
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
@@ -127,6 +159,7 @@ public class CommentResponse {
                 .isReacted(reactedCommentIds.contains(comment.getId()))
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 
@@ -141,9 +174,12 @@ public class CommentResponse {
                 .content(comment.getContent())
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 .targetId(comment.getTargetEntityId())
+                // 연관 피드 정보
+                .feedInfo(comment.isFeedComment() && comment.getFeed() != null
+                        ? FeedInfo.from(comment.getFeed()) : null)
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .isReply(comment.isReply())
                 .replies(null)  // 대댓글 제외
@@ -156,6 +192,7 @@ public class CommentResponse {
                 .isReacted(isReacted)
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
+                .contentUpdatedAt(comment.getContentUpdatedAt())
                 .build();
     }
 }

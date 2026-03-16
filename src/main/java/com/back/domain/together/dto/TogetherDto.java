@@ -6,6 +6,7 @@ import com.back.domain.together.entity.TogetherCategory;
 import com.back.domain.together.entity.TogetherMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -23,7 +24,10 @@ public class TogetherDto {
             Long capacity,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
-            Long memberId
+            Long memberId,
+            @Size(max = 5, message = "최대 5개의 이미지 URL을 허용합니다.")
+            List<String> imageUrls,
+            Long goalFeedCount
     ) {
     }
 
@@ -58,7 +62,9 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
-                    together.getThumbnailImageUrl(),
+                    (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                            ? together.getImageUrls().getFirst()
+                            : null,
                     null, // TODO: progress 정보 매핑
                     dDay
             );
@@ -85,6 +91,7 @@ public class TogetherDto {
     public record DetailResponse(
             Long id,
             String title,
+            String description,
             TogetherCategory category,
             TogetherMode mode,
             Long capacity,
@@ -92,14 +99,16 @@ public class TogetherDto {
             LocalDate endDate,
             Long memberId,
             List<ParticipantsResponse> participants,
-            String thumbnailImage,
+            List<String> imageUrls,
             Long goal,
-            Long progress
+            Long progress,
+            boolean verifiedToday
     ) {
         public static DetailResponse from(Together together) {
             return new DetailResponse(
                     together.getId(),
                     together.getTitle(),
+                    together.getDescription(),
                     together.getCategory(),
                     together.getMode(),
                     together.getCapacity(),
@@ -107,9 +116,32 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
-                    null, // TODO: 추후에 thumbnailImage 정보 매핑
-                    null, // TODO: 추후에 goal 정보 매핑
-                    null // TODO: 추후에 progress 정보 매핑
+                    (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                            ? together.getImageUrls()
+                            : null,
+                    together.getGoalFeedCount(),
+                    null, // TODO: 추후에 progress 정보 매핑
+                    false
+            );
+        }
+        public static DetailResponse of(Together together, boolean verifiedToday) {
+            return new DetailResponse(
+                    together.getId(),
+                    together.getTitle(),
+                    together.getDescription(),
+                    together.getCategory(),
+                    together.getMode(),
+                    together.getCapacity(),
+                    together.getStartDate(),
+                    together.getEndDate(),
+                    together.getMember().getId(),
+                    together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
+                    (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                            ? together.getImageUrls()
+                            : null,
+                    together.getGoalFeedCount(),
+                    null, // TODO: 추후에 progress 정보 매핑
+                    verifiedToday
             );
         }
     }
@@ -143,9 +175,13 @@ public class TogetherDto {
             Long capacity,
             LocalDate startDate,
             LocalDate endDate,
+            String thumbnailImageUrl,
+            Long goalFeedCount,
             Long memberId
     ) {
         public static CreateResponse from(Together together) {
+            String thumbnail = (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
+                    ? together.getImageUrls().getFirst() : null;
             return new CreateResponse(
                     together.getId(),
                     together.getTitle(),
@@ -155,6 +191,8 @@ public class TogetherDto {
                     together.getCapacity(),
                     together.getStartDate(),
                     together.getEndDate(),
+                    thumbnail,
+                    together.getGoalFeedCount(),
                     together.getMember().getId()
             );
         }

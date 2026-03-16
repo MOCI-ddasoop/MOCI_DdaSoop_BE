@@ -21,10 +21,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "Auth", description = "인증 API")
 @Slf4j
@@ -38,6 +41,9 @@ public class AuthController {
     private final CookieUtil cookieUtil;
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    
+    @Value("${app.auth.dev-login-enabled:true}")
+    private boolean devLoginEnabled;
 
     @Operation(
         summary = "로그인",
@@ -57,6 +63,11 @@ public class AuthController {
             @RequestParam Long memberId,
             HttpServletResponse response
     ) {
+        // 운영 환경 등에서 테스트용 로그인 엔드포인트를 비활성화할 수 있도록 설정 플래그 적용
+        if (!devLoginEnabled) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
         // memberId 유효성 검증
         if (memberId == null || memberId <= 0) {
             throw new IllegalArgumentException(com.back.global.exception.ErrorCode.INVALID_INPUT_VALUE.getMessage());

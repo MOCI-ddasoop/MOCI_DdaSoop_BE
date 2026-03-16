@@ -36,16 +36,26 @@ public enum NotificationCategory {
     
     /**
      * 함께하기 탭
-     * - 모임 초대
-     * - 모임 참여
-     * - 모임 시작
-     * - 모임 종료
      */
     TOGETHER("함께하기", List.of(
             NotificationType.TOGETHER_INVITE,
             NotificationType.TOGETHER_JOIN,
             NotificationType.TOGETHER_START,
-            NotificationType.TOGETHER_END
+            NotificationType.TOGETHER_END,
+            NotificationType.TOGETHER_CREATE,
+            NotificationType.TOGETHER_PARTICIPATE,
+            NotificationType.TOGETHER_LEAVE,
+            NotificationType.TOGETHER_LEAVE_MEMBER,
+            NotificationType.TOGETHER_DROP
+    )),
+
+    /**
+     * 후원 탭
+     */
+    DONATION("후원", List.of(
+            NotificationType.DONATION_RECEIVED,
+            NotificationType.DONATION_COMPLETE,
+            NotificationType.DONATION_NOTICE
     )),
     
     /**

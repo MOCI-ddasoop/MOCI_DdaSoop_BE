@@ -29,6 +29,7 @@ public class Donations extends BaseEntity {
     @Column(name = "goal_amount")
     private Long goalAmount;
 
+    @Builder.Default
     @Column(name = "current_amount")
     private Long currentAmount = 0L;
 

@@ -3,6 +3,7 @@ package com.back.domain.feed.dto.feed.response;
 import com.back.domain.feed.entity.Feed;
 import com.back.domain.feed.entity.FeedType;
 import com.back.domain.feed.entity.FeedVisibility;
+import com.back.domain.member.entity.Member;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,6 +59,7 @@ public class FeedResponse {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime contentUpdatedAt; // 내용/태그/이미지/공개범위 수정 시점 (최초엔 createdAt과 동일)
 
     /**
      * Entity -> DTO 변환 (비로그인 또는 isReacted/isBookmarked 불필요 시)
@@ -98,7 +100,7 @@ public class FeedResponse {
                 .bookmarkCount(feed.getBookmarkCount())
                 .authorId(feed.getMember().getId())
                 .authorName(feed.getMember().getName())
-                .authorNickname(feed.getMember().getNickname())
+                .authorNickname(feed.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : feed.getMember().getNickname())
                 .authorProfileImage(feed.getMember().getProfileImageUrl())
                 .togetherId(feed.getTogether() != null ? feed.getTogether().getId() : null)
                 .togetherTitle(feed.getTogether() != null ? feed.getTogether().getTitle() : null)
@@ -111,6 +113,7 @@ public class FeedResponse {
                 .isBookmarked(isBookmarked)
                 .createdAt(feed.getCreatedAt())
                 .updatedAt(feed.getUpdatedAt())
+                .contentUpdatedAt(feed.getContentUpdatedAt())
                 .build();
     }
 }

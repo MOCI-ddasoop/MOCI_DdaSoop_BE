@@ -77,6 +77,15 @@ public class Feed extends BaseEntity {
     @Column
     private LocalDateTime deletedAt;       // 삭제 시점 (null이면 삭제되지 않음)
 
+    // ========== 컨텐츠 수정 시간 ==========
+    @Column
+    private LocalDateTime contentUpdatedAt; // 내용/태그/이미지/공개범위 수정 시점 (최초엔 createdAt과 동일)
+
+    @PostPersist
+    private void initContentUpdatedAt() {
+        this.contentUpdatedAt = this.getCreatedAt();
+    }
+
     // ========== 비즈니스 로직 ==========
 
     // 리액션 카운트 증감
@@ -161,6 +170,7 @@ public class Feed extends BaseEntity {
 
     public void clearImages() {
         this.images.clear();
+        this.contentUpdatedAt = LocalDateTime.now();
     }
 
     /**
@@ -203,14 +213,22 @@ public class Feed extends BaseEntity {
 
     public void clearTags() {
         this.tags.clear();
+        this.contentUpdatedAt = LocalDateTime.now();
     }
 
     // 피드 수정
     public void updateContent(String content) {
         this.content = content;
+        this.contentUpdatedAt = LocalDateTime.now();
     }
 
     public void updateVisibility(FeedVisibility visibility) {
         this.visibility = visibility;
+        this.contentUpdatedAt = LocalDateTime.now();
+    }
+
+    public void updateFeedType(FeedType feedType) {
+        this.feedType = feedType;
+        this.contentUpdatedAt = LocalDateTime.now();
     }
 }
