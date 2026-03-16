@@ -116,6 +116,7 @@ public class TogetherService {
         return new TogetherDto.DetailResponse(
                 together.getId(),
                 together.getTitle(),
+                together.getDescription(),
                 together.getCategory(),
                 together.getMode(),
                 together.getCapacity(),

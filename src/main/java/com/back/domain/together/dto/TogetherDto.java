@@ -91,6 +91,7 @@ public class TogetherDto {
     public record DetailResponse(
             Long id,
             String title,
+            String description,
             TogetherCategory category,
             TogetherMode mode,
             Long capacity,
@@ -107,6 +108,7 @@ public class TogetherDto {
             return new DetailResponse(
                     together.getId(),
                     together.getTitle(),
+                    together.getDescription(),
                     together.getCategory(),
                     together.getMode(),
                     together.getCapacity(),
@@ -126,6 +128,7 @@ public class TogetherDto {
             return new DetailResponse(
                     together.getId(),
                     together.getTitle(),
+                    together.getDescription(),
                     together.getCategory(),
                     together.getMode(),
                     together.getCapacity(),
