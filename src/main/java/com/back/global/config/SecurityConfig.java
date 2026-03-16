@@ -74,6 +74,9 @@ public class SecurityConfig {
         
         http
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/*").permitAll()
+                .requestMatchers("/_next/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
