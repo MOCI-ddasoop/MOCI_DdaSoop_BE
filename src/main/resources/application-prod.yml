@@ -1,59 +1,46 @@
 spring:
-  config:
-    activate:
-      on-profile: prod
-
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: ${DB_DRIVER_CLASS_NAME}
-
+    url: jdbc:postgresql://moci-db:5432/ddasoop
+    username: postgres
+    password: ${POSTGRES_PASSWORD}
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-
-  h2:
-    console:
-      enabled: false
-
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: ${GOOGLE_REDIRECT_URI}
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            redirect-uri: ${GOOGLE_REDIRECT_URI:https://api.ddasoop.xyz/login/oauth2/code/google}
           kakao:
-            client-id: ${KAKAO_CLIENT_ID}
-            redirect-uri: ${KAKAO_REDIRECT_URI}
+            client-id: ${KAKAO_CLIENT_ID:}
+            redirect-uri: ${KAKAO_REDIRECT_URI:https://api.ddasoop.xyz/login/oauth2/code/kakao}
           naver:
-            client-id: ${NAVER_CLIENT_ID}
-            client-secret: ${NAVER_CLIENT_SECRET}
-            redirect-uri: ${NAVER_REDIRECT_URI}
-
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY}
-  refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY}
+            client-id: ${NAVER_CLIENT_ID:}
+            client-secret: ${NAVER_CLIENT_SECRET:}
+            redirect-uri: ${NAVER_REDIRECT_URI:https://api.ddasoop.xyz/login/oauth2/code/naver}
 
 app:
+  jpa:
+    hibernate:
+      ddl-auto: update
   oauth2:
-    redirect-uri: ${OAUTH2_REDIRECT_URI}
+    redirect-uri: ${OAUTH2_REDIRECT_URI:https://www.ddasoop.xyz/auth/callback}
   auth:
     dev-login-enabled: false
   cookie:
     secure: true
     same-site: None
-    domain: ${COOKIE_DOMAIN}
+    domain: ${COOKIE_DOMAIN:.ddasoop.xyz}
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:3600000}
+  refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY:604800000}
 
 file:
   server:
-    url: ${FILE_SERVER_URL}
+    url: ${FILE_SERVER_URL:https://api.ddasoop.xyz}
