@@ -83,6 +83,12 @@ jwt:
 app:
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/auth/callback}
+  auth:
+    dev-login-enabled: ${DEV_LOGIN_ENABLED:true}
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+    same-site: ${COOKIE_SAME_SITE:Lax}
+    domain: ${COOKIE_DOMAIN:}
 
   jpa:
     hibernate:

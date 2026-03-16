@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 
 /** OAuth2 소셜 로그인 성공 핸들러 (회원 조회/생성, JWT 토큰 발급) */
 @Slf4j
@@ -78,7 +79,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 // 추가 정보 입력이 필요한 경우: 임시 토큰 발급 (회원 상태 미확정)
                 // OAuth 인증만 완료하고, JWT는 추가 정보 입력 완료 후에만 발급
                 String temporaryToken = jwtTokenProvider.createTemporaryToken(latestMember.getId());
-                targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/login-additional")
+                targetUrl = UriComponentsBuilder.fromUriString(getFrontendOrigin() + "/login-additional")
                         .queryParam("token", temporaryToken)
                         .queryParam("provider", provider.name())
                         .build()
@@ -86,7 +87,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             } else {
                 // 추가 정보 입력이 완료된 경우: JWT 발급 (회원 상태 확정)
                 authService.login(latestMember.getId(), response);
-                targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000")
+                targetUrl = UriComponentsBuilder.fromUriString(getFrontendOrigin())
                         .queryParam("provider", provider.name())
                         .build()
                         .toUriString();
@@ -102,6 +103,32 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                     .build()
                     .toUriString();
             getRedirectStrategy().sendRedirect(request, response, errorUrl);
+        }
+    }
+
+    /**
+     * app.oauth2.redirect-uri 값에서 프론트 origin(scheme://host[:port])을 추출한다.
+     * 예: https://ddasoop.xyz/auth/callback -> https://ddasoop.xyz
+     */
+    private String getFrontendOrigin() {
+        try {
+            URI uri = URI.create(redirectUri);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            int port = uri.getPort();
+
+            if (scheme == null || host == null) {
+                return "http://localhost:3000";
+            }
+
+            if (port == -1) {
+                return scheme + "://" + host;
+            }
+
+            return scheme + "://" + host + ":" + port;
+        } catch (Exception e) {
+            log.warn("redirect-uri 파싱 실패, localhost fallback 사용: {}", redirectUri);
+            return "http://localhost:3000";
         }
     }
 

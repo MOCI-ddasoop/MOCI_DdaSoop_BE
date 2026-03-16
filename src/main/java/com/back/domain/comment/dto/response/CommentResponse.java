@@ -2,6 +2,7 @@ package com.back.domain.comment.dto.response;
 
 import com.back.domain.comment.entity.Comment;
 import com.back.domain.comment.entity.CommentType;
+import com.back.domain.member.entity.Member;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -88,7 +89,7 @@ public class CommentResponse {
                 // 작성자 정보
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
@@ -131,7 +132,7 @@ public class CommentResponse {
                 // 작성자 정보
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 // 대상 엔티티
                 .targetId(comment.getTargetEntityId())
@@ -173,7 +174,7 @@ public class CommentResponse {
                 .content(comment.getContent())
                 .authorId(comment.getMember().getId())
                 .authorName(comment.getMember().getName())
-                .authorNickname(comment.getMember().getNickname())
+                .authorNickname(comment.getMember().isDeleted() ? Member.WITHDRAWN_NICKNAME : comment.getMember().getNickname())
                 .authorProfileImage(comment.getMember().getProfileImageUrl())
                 .targetId(comment.getTargetEntityId())
                 // 연관 피드 정보

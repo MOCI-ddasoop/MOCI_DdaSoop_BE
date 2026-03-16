@@ -10,12 +10,9 @@ import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * 관리자 댓글 제어/조회 서비스.
@@ -56,25 +53,13 @@ public class AdminCommentService {
             Boolean reportedOnly,
             Pageable pageable
     ) {
-        Page<Comment> comments;
-        if (authorId != null) {
-            comments = commentRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDesc(authorId, pageable);
-        } else {
-            comments = commentRepository.findAll(pageable);
-        }
+        boolean reportFilter = Boolean.TRUE.equals(reportedOnly);
+        Page<Comment> comments = commentRepository.findAdminComments(commentType, authorId, reportFilter, pageable);
 
-        List<AdminCommentSummaryResponse> content = comments.getContent().stream()
-                .filter(comment -> !comment.isDeleted())
-                .filter(comment -> commentType == null || comment.getCommentType() == commentType)
-                .map(comment -> {
-                    Long reportCount = reportService.getReportCount(ReportTargetType.COMMENT, comment.getId());
-                    return AdminCommentSummaryResponse.from(comment, reportCount);
-                })
-                .filter(dto -> reportedOnly == null || !reportedOnly || (dto.getReportCount() != null && dto.getReportCount() > 0))
-                .toList();
-
-        // 간단 구현: 필터 후 현재 페이지 기준 요소/total 유지
-        return new PageImpl<>(content, pageable, comments.getTotalElements());
+        return comments.map(comment -> {
+            Long reportCount = reportService.getReportCount(ReportTargetType.COMMENT, comment.getId());
+            return AdminCommentSummaryResponse.from(comment, reportCount);
+        });
     }
 }
 

@@ -1,6 +1,9 @@
 package com.back.domain.feed.repository;
 
 import com.back.domain.feed.entity.Feed;
+import com.back.domain.feed.entity.FeedVisibility;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +22,41 @@ public interface FeedRepository extends JpaRepository<Feed, Long>, FeedRepositor
      * ID로 삭제되지 않은 피드 단건 조회
      */
     Optional<Feed> findByIdAndDeletedAtIsNull(Long id);
+
+    /**
+     * 관리자용 피드 목록 조회 (필터 + 페이징, 최신순)
+     */
+    @Query(
+        value = """
+            SELECT f FROM Feed f
+            WHERE f.deletedAt IS NULL
+              AND (:visibility IS NULL OR f.visibility = :visibility)
+              AND (:authorId IS NULL OR f.member.id = :authorId)
+              AND (:reportedOnly = false OR EXISTS (
+                    SELECT 1 FROM Report r
+                    WHERE r.targetType = com.back.domain.report.entity.ReportTargetType.FEED
+                      AND r.targetId = f.id
+              ))
+            ORDER BY f.createdAt DESC
+            """,
+        countQuery = """
+            SELECT COUNT(f) FROM Feed f
+            WHERE f.deletedAt IS NULL
+              AND (:visibility IS NULL OR f.visibility = :visibility)
+              AND (:authorId IS NULL OR f.member.id = :authorId)
+              AND (:reportedOnly = false OR EXISTS (
+                    SELECT 1 FROM Report r
+                    WHERE r.targetType = com.back.domain.report.entity.ReportTargetType.FEED
+                      AND r.targetId = f.id
+              ))
+            """
+    )
+    Page<Feed> findAdminFeeds(
+            @Param("visibility") FeedVisibility visibility,
+            @Param("authorId") Long authorId,
+            @Param("reportedOnly") boolean reportedOnly,
+            Pageable pageable
+    );
     
     // ========== Top N 조회 (인기 피드) ==========
     
