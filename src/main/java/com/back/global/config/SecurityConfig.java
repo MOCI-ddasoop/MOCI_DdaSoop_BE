@@ -57,7 +57,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         
@@ -74,6 +74,7 @@ public class SecurityConfig {
         
         http
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/error", "/favicon.ico").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
