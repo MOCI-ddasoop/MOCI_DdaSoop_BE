@@ -1,7 +1,6 @@
 package com.back.domain.admin.service;
 
 import com.back.domain.admin.dto.response.AdminFeedSummaryResponse;
-import com.back.domain.feed.dto.feed.request.FeedSearchCondition;
 import com.back.domain.feed.entity.Feed;
 import com.back.domain.feed.entity.FeedVisibility;
 import com.back.domain.feed.repository.FeedRepository;
@@ -11,12 +10,9 @@ import com.back.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * 관리자 피드 제어/조회 서비스.
@@ -72,30 +68,13 @@ public class AdminFeedService {
             Boolean reportedOnly,
             Pageable pageable
     ) {
-        FeedSearchCondition condition = FeedSearchCondition.builder()
-                .feedType(null)
-                .memberId(authorId)
-                .tags(null)
-                .keyword(null)
-                .sortBy("latest")
-                .startDate(null)
-                .endDate(null)
-                .visibility(visibility)
-                .togetherId(null)
-                .build();
+        boolean reportFilter = Boolean.TRUE.equals(reportedOnly);
+        Page<Feed> feeds = feedRepository.findAdminFeeds(visibility, authorId, reportFilter, pageable);
 
-        Page<Feed> feeds = feedRepository.searchFeeds(condition, pageable);
-
-        List<AdminFeedSummaryResponse> content = feeds.getContent().stream()
-                .map(feed -> {
-                    Long reportCount = reportService.getReportCount(ReportTargetType.FEED, feed.getId());
-                    return AdminFeedSummaryResponse.from(feed, reportCount);
-                })
-                .filter(dto -> reportedOnly == null || !reportedOnly || (dto.getReportCount() != null && dto.getReportCount() > 0))
-                .toList();
-
-        // reportedOnly로 필터링되면 페이지 내 요소 수가 줄 수 있음 (간단 구현)
-        return new PageImpl<>(content, pageable, feeds.getTotalElements());
+        return feeds.map(feed -> {
+            Long reportCount = reportService.getReportCount(ReportTargetType.FEED, feed.getId());
+            return AdminFeedSummaryResponse.from(feed, reportCount);
+        });
     }
 }
 

@@ -1,6 +1,7 @@
 package com.back.domain.comment.repository;
 
 import com.back.domain.comment.entity.Comment;
+import com.back.domain.comment.entity.CommentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -19,6 +20,41 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * ID로 삭제되지 않은 댓글 조회
      */
     Optional<Comment> findByIdAndDeletedAtIsNull(Long id);
+
+    /**
+     * 관리자용 댓글 목록 조회 (필터 + 페이징, 최신순)
+     */
+    @Query(
+        value = """
+            SELECT c FROM Comment c
+            WHERE c.deletedAt IS NULL
+              AND (:commentType IS NULL OR c.commentType = :commentType)
+              AND (:authorId IS NULL OR c.member.id = :authorId)
+              AND (:reportedOnly = false OR EXISTS (
+                    SELECT 1 FROM Report r
+                    WHERE r.targetType = com.back.domain.report.entity.ReportTargetType.COMMENT
+                      AND r.targetId = c.id
+              ))
+            ORDER BY c.createdAt DESC
+            """,
+        countQuery = """
+            SELECT COUNT(c) FROM Comment c
+            WHERE c.deletedAt IS NULL
+              AND (:commentType IS NULL OR c.commentType = :commentType)
+              AND (:authorId IS NULL OR c.member.id = :authorId)
+              AND (:reportedOnly = false OR EXISTS (
+                    SELECT 1 FROM Report r
+                    WHERE r.targetType = com.back.domain.report.entity.ReportTargetType.COMMENT
+                      AND r.targetId = c.id
+              ))
+            """
+    )
+    Page<Comment> findAdminComments(
+            @Param("commentType") CommentType commentType,
+            @Param("authorId") Long authorId,
+            @Param("reportedOnly") boolean reportedOnly,
+            Pageable pageable
+    );
 
     // ========== 피드의 댓글 조회 ==========
 
