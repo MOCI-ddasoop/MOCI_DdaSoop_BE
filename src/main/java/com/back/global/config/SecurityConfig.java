@@ -88,6 +88,10 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/members/check-nickname",
+                        "/api/members/check-email"
+                ).permitAll()
                 .requestMatchers(HttpMethod.GET,
                         "/api/feeds",
                         "/api/feeds/*",
