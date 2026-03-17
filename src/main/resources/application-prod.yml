@@ -8,6 +8,9 @@ spring:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
+  jpa:
+    hibernate:
+      ddl-auto: update
   security:
     oauth2:
       client:
