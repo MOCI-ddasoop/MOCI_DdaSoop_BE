@@ -85,10 +85,26 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/feeds/**").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                        "/api/feeds",
+                        "/api/feeds/*",
+                        "/api/feeds/members/*/scroll",
+                        "/api/feeds/together/*/scroll",
+                        "/api/feeds/search/tag",
+                        "/api/feeds/bookmarks/members/*",
+                        "/api/feeds/together/*/notices",
+                        "/api/feeds/together/*/notices/pinned"
+                ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/together/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/donation/**").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/donation/list",
+                        "/api/v1/donation/list/*",
+                        "/api/v1/donation/list/*/description",
+                        "/api/v1/donation/list/*/donorList",
+                        "/api/v1/donation/notice/list",
+                        "/api/v1/donation/notice/*"
+                ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
