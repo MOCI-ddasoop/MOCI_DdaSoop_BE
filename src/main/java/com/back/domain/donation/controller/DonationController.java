@@ -38,7 +38,15 @@ public class DonationController {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalStateException("인증되지 않은 사용자입니다.");
         }
-        return (Long) authentication.getPrincipal();
+        return Long.parseLong(authentication.getPrincipal().toString());
+    }
+
+    private Long getCurrentMemberIdOrNull(){
+        try {
+            return getCurrentMemberId();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Operation(summary = "전체 후원 조회")
@@ -206,7 +214,7 @@ public class DonationController {
     public ResponseEntity<RsData<DonationDto.CreateResponse>> create(
             @Valid @RequestBody DonationDto.CreateRequest request
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = getCurrentMemberIdOrNull();
         DonationDto.CreateResponse response = donationService.createDonation(request, memberId);
         return ResponseEntity.ok(RsData.success("후원하기 게시글 등록 성공", response));
     }
@@ -221,7 +229,7 @@ public class DonationController {
     public ResponseEntity<RsData<DonationNoticeDto.CreateResponse>> createDonationNotice(
             @Valid @RequestBody DonationNoticeDto.CreateRequest request
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = getCurrentMemberIdOrNull();
         DonationNoticeDto.CreateResponse response = donationService.createDonationNotice(request, request.donationId(), memberId);
         return ResponseEntity.ok(RsData.success("후원하기 공지 게시글 등록 성공", response));
     }
