@@ -51,7 +51,7 @@ public class ImageController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (파일이 없거나 이미지가 아님)"),
             @ApiResponse(responseCode = "500", description = "업로드 실패")
     })
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImageUploadResponse> uploadImage(
             @Parameter(
                     description = "업로드할 이미지 파일",
@@ -117,7 +117,7 @@ public class ImageController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (파일 개수 초과 등)"),
             @ApiResponse(responseCode = "500", description = "업로드 실패")
     })
-    @PostMapping("/upload-multiple")
+    @PostMapping(value = "/upload-multiple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<List<ImageUploadResponse>> uploadMultipleImages(
             @Parameter(
                     description = "업로드할 이미지 파일들 (최대 10개)",
