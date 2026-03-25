@@ -3,6 +3,7 @@ package com.back.domain.donation.dto;
 import com.back.domain.donation.entity.DonationPayments;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class DonationPaymentDto {
 
@@ -42,12 +43,16 @@ public class DonationPaymentDto {
                     payments.getDonations().getId(),
                     payments.getMember().getId(),
                     payments.getDonations().getTitle(),
-                    payments.getDonations().getImageUrls().getFirst(),
+                    getFirstImageUrlOrNull(payments.getDonations().getImageUrls()),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()
             );
         }
+    }
+
+    private static String getFirstImageUrlOrNull(List<String> imageUrls) {
+        return (imageUrls == null || imageUrls.isEmpty()) ? null : imageUrls.getFirst();
     }
 
     public record RecentDonationPaymentListResponse(
@@ -68,7 +73,7 @@ public class DonationPaymentDto {
                     payments.getMember().getId(),
                     payments.getMember().getName(),
                     payments.getDonations().getTitle(),
-                    payments.getDonations().getImageUrls().getFirst(),
+                    getFirstImageUrlOrNull(payments.getDonations().getImageUrls()),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()
