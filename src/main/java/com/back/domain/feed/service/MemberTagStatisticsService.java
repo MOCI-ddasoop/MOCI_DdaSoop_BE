@@ -7,6 +7,7 @@ import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,8 @@ public class MemberTagStatisticsService {
     private final MemberTagStatisticsRepository memberTagStatisticsRepository;
     private final FeedReactionRepository feedReactionRepository;
     private final MemberRepository memberRepository;
+    @Lazy
+    private final MemberTagStatisticsService self;
 
     // ========== 조회 ==========
 
@@ -43,7 +46,7 @@ public class MemberTagStatisticsService {
         if (statsOptional.isEmpty()) {
             // 통계가 없으면 즉시 생성
             log.info("통계 없음 - 즉시 생성: 회원 ID {}", memberId);
-            updateStatisticsSync(memberId);
+            self.updateStatisticsSync(memberId);
             statsOptional = memberTagStatisticsRepository.findByMemberId(memberId);
         }
         
