@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -90,7 +91,7 @@ public class MemberTagStatisticsService {
      * 
      * @param memberId 회원 ID
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateStatisticsSync(Long memberId) {
         // 1. 현재 좋아요 개수 확인
         Long currentReactionCount = feedReactionRepository.countByMemberId(memberId);
