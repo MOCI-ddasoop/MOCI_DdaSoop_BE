@@ -7,6 +7,7 @@ import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -29,8 +30,9 @@ public class MemberTagStatisticsService {
     private final MemberTagStatisticsRepository memberTagStatisticsRepository;
     private final FeedReactionRepository feedReactionRepository;
     private final MemberRepository memberRepository;
+    @Autowired
     @Lazy
-    private final MemberTagStatisticsService self;
+    private MemberTagStatisticsService self;
 
     // ========== 조회 ==========
 
