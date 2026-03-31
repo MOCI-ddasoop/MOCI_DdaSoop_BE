@@ -1,9 +1,6 @@
 package com.back.domain.together.dto;
 
-import com.back.domain.together.entity.Participants;
-import com.back.domain.together.entity.Together;
-import com.back.domain.together.entity.TogetherCategory;
-import com.back.domain.together.entity.TogetherMode;
+import com.back.domain.together.entity.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -43,6 +40,7 @@ public class TogetherDto {
             LocalDate endDate,
             Long memberId,
             List<ParticipantsResponse> participants,
+            TogetherStatus status,
             String thumbnailImage,
             Long progress,
             Long dDay
@@ -62,6 +60,7 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
+                    together.getTogetherStatus(),
                     (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
                             ? together.getImageUrls().getFirst()
                             : null,
@@ -72,7 +71,7 @@ public class TogetherDto {
         public static ListResponse fakeCard() {
             return new ListResponse(
                     -1L,"새 함께하기 추가",null,null,0L,null,
-                    null,null,null,null,null,null
+                    null,null,null,null,null,null,null
             );
         }
     }
@@ -99,12 +98,18 @@ public class TogetherDto {
             LocalDate endDate,
             Long memberId,
             List<ParticipantsResponse> participants,
+            TogetherStatus status,
             List<String> imageUrls,
             Long goal,
             Long progress,
-            boolean verifiedToday
+            boolean verifiedToday,
+            Long dDay
     ) {
         public static DetailResponse from(Together together) {
+
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, together.getEndDate());
+
             return new DetailResponse(
                     together.getId(),
                     together.getTitle(),
@@ -116,15 +121,21 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
+                    together.getTogetherStatus(),
                     (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
                             ? together.getImageUrls()
                             : null,
                     together.getGoalFeedCount(),
                     null, // TODO: 추후에 progress 정보 매핑
-                    false
+                    false,
+                    dDay
             );
         }
-        public static DetailResponse of(Together together, boolean verifiedToday) {
+        public static DetailResponse of(Together together, boolean verifiedToday, Long progress) {
+
+            LocalDate today = LocalDate.now();
+            long dDay = ChronoUnit.DAYS.between(today, together.getEndDate());
+
             return new DetailResponse(
                     together.getId(),
                     together.getTitle(),
@@ -136,12 +147,14 @@ public class TogetherDto {
                     together.getEndDate(),
                     together.getMember().getId(),
                     together.getParticipants().stream().map(ParticipantsResponse::from).toList(),
+                    together.getTogetherStatus(),
                     (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
                             ? together.getImageUrls()
                             : null,
                     together.getGoalFeedCount(),
                     null, // TODO: 추후에 progress 정보 매핑
-                    verifiedToday
+                    verifiedToday,
+                    dDay
             );
         }
     }
