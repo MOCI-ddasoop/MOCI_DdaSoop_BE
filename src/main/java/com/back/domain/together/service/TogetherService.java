@@ -102,35 +102,19 @@ public class TogetherService {
     public TogetherDto.DetailResponse getTogether(Long togetherId, Long memberId) {
 
         Together together = togetherRepository.findById(togetherId)
-                .orElseThrow(() -> new IllegalArgumentException(togetherId+"번 함께하기 없음"));
+                .orElseThrow(() -> new IllegalArgumentException(togetherId + "번 함께하기 없음"));
 
         boolean verifiedToday = false;
         Long progress = feedRepository.countVerificationByTogether(togetherId);
 
-        if(memberId != null){
+        if (memberId != null) {
             LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
             Long cnt = feedRepository.countTodayVerificationByMemberAndTogether(memberId, togetherId, startOfToday);
             verifiedToday = cnt != null && cnt > 0;
         }
 
-        return new TogetherDto.DetailResponse(
-                together.getId(),
-                together.getTitle(),
-                together.getDescription(),
-                together.getCategory(),
-                together.getMode(),
-                together.getCapacity(),
-                together.getStartDate(),
-                together.getEndDate(),
-                together.getMember().getId(),
-                together.getParticipants().stream().map(TogetherDto.ParticipantsResponse::from).toList(),
-                (together.getImageUrls() != null && !together.getImageUrls().isEmpty())
-                        ? together.getImageUrls()
-                        : null,
-                together.getGoalFeedCount(),
-                progress,
-                verifiedToday
-        );
+        return TogetherDto.DetailResponse.of(together, verifiedToday, progress);
+
     }
 
     public TogetherDto.DescriptionResponse getTogetherDescription(Long id) {
