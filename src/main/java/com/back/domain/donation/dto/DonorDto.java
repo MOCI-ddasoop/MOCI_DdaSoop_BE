@@ -11,7 +11,7 @@ public class DonorDto {
     public record ListResponse(
             Long donationPaymentId,
             Long memberId,
-            String memberName,
+            String nickname,
             Long amount,
             String paymentMethod,
             LocalDateTime createdAt
@@ -22,7 +22,7 @@ public class DonorDto {
             return new ListResponse(
                     payments.getId(),
                     member.getId(),
-                    member.getName(),
+                    member.getNickname(),
                     payments.getAmount(),
                     payments.getPaymentMethod(),
                     payments.getCreatedAt()
